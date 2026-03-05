@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert'; // <--- ADD THIS LINE
 
 class AdminUsersPage extends StatefulWidget {
   const AdminUsersPage({super.key});
@@ -10,40 +12,32 @@ class AdminUsersPage extends StatefulWidget {
 class _AdminUsersPageState extends State<AdminUsersPage> {
   String _selectedFilter = "All Roles";
 
-  final List<Map<String, dynamic>> _users = [
-    {
-      "name": "Sarah Johnson",
-      "userType": "Admin",
-      "role": "Super Admin",
-      "status": "active",
-      "lastLogin": "2024-05-20 08:30 AM",
-      "activities": ["Logged in", "Updated alumni record #102"]
-    },
-    {
-      "name": "Michael Chen",
-      "userType": "Admin",
-      "role": "Staff Admin",
-      "status": "active",
-      "lastLogin": "2024-05-21 10:45 AM",
-      "activities": ["Modified system settings"]
-    },
-    {
-      "name": "Dr. Arnel Ramos",
-      "userType": "Dean",
-      "role": "College Dean",
-      "status": "active",
-      "lastLogin": "2024-05-21 11:00 AM",
-      "activities": ["Approved 5 verification requests"]
-    },
-    {
-      "name": "John Doe",
-      "userType": "Alumni",
-      "role": "Alumni",
-      "status": "active",
-      "lastLogin": "2024-05-22 09:00 AM",
-      "activities": ["Updated profile picture"]
-    },
-  ];
+ List<Map<String, dynamic>> _users = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUsers(); // This runs as soon as the page opens
+  }
+
+  Future<void> _fetchUsers() async {
+    try {
+      // Use 10.0.2.2 for Android Emulator, or your Local IP for physical devices
+      final response = await http.get(Uri.parse('http://localhost:8080/alumni_api/get_users.php'));
+
+      if (response.statusCode == 200) {
+        setState(() {
+          _users = List<Map<String, dynamic>>.from(json.decode(response.body));
+          _isLoading = false; // Stop showing the loading spinner
+        });
+      }
+    } catch (e) {
+      debugPrint("Error fetching users: $e");
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
 
   List<Map<String, dynamic>> get _filteredUsers {
     if (_selectedFilter == "All Roles") return _users;
@@ -82,9 +76,14 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
 
   @override
   Widget build(BuildContext context) {
-    int adminCount = _users.where((u) => u['userType'] == "Admin").length;
-    int alumniCount = _users.where((u) => u['userType'] == "Alumni").length;
-    int deanCount = _users.where((u) => u['userType'] == "Dean").length;
+    if (_isLoading) {
+    return const Scaffold(body: Center(child: CircularProgressIndicator()));
+  }
+    // Match the lowercase 'admin', 'alumni', and 'dean' from your database
+int adminCount = _users.where((u) => u['role'] == 'admin').length;
+int alumniCount = _users.where((u) => u['role'] == 'alumni').length;
+int deanCount = _users.where((u) => u['role'] == 'dean').length;
+int totalCount = _users.length; // This should show '4' now
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
@@ -100,6 +99,7 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
                 DropdownButton<String>(
                   value: _selectedFilter,
                   underline: const SizedBox(),
+                  
                   items: ["All Roles", "Admin", "Alumni", "Dean"]
                       .map((val) => DropdownMenuItem(value: val, child: Text(val)))
                       .toList(),
@@ -143,34 +143,99 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
                   ),
                 ],
                 rows: _filteredUsers.asMap().entries.map((entry) {
-                  int idx = entry.key;
-                  Map<String, dynamic> user = entry.value;
-                  return DataRow(cells: [
-                    DataCell(SizedBox(width: 180, child: Row(children: [const CircleAvatar(radius: 12, backgroundColor: Colors.redAccent), const SizedBox(width: 10), Expanded(child: Text(user['name'], overflow: TextOverflow.ellipsis))]))),
-                    DataCell(SizedBox(width: 140, child: _roleBadge(user['role']))),
-                    DataCell(SizedBox(width: 100, child: _statusBadge(user['status']))),
-                    DataCell(SizedBox(width: 160, child: Text(user['lastLogin']))),
-                    // DINHI NA-UPDATE: Align icon to the absolute right
-                    DataCell(
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: PopupMenuButton<String>(
-                          padding: EdgeInsets.zero,
-                          icon: const Icon(Icons.more_vert),
-                          onSelected: (val) {
-                            if (val == 'delete') _deleteUser(idx);
-                            if (val == 'history') _showHistory(user);
-                          },
-                          itemBuilder: (context) => [
-                            const PopupMenuItem(value: 'edit', child: ListTile(leading: Icon(Icons.edit_outlined), title: Text('Edit'), contentPadding: EdgeInsets.zero)),
-                            const PopupMenuItem(value: 'delete', child: ListTile(leading: Icon(Icons.delete_outline, color: Colors.red), title: Text('Delete'), contentPadding: EdgeInsets.zero)),
-                            const PopupMenuItem(value: 'history', child: ListTile(leading: Icon(Icons.history_outlined), title: Text('History'), contentPadding: EdgeInsets.zero)),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ]);
-                }).toList(),
+  int idx = entry.key;
+  Map<String, dynamic> user = entry.value;
+
+  return DataRow(cells: [
+    // --- NAME COLUMN ---
+    DataCell(
+      SizedBox(
+        width: 180,
+        child: Row(
+          children: [
+            const CircleAvatar(radius: 12, backgroundColor: Colors.redAccent),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                user['full_name'] ?? 'Unknown Name',
+                style: const TextStyle(fontSize: 14),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+
+    // --- ROLE COLUMN ---
+    DataCell(
+      SizedBox(
+        width: 140,
+        child: _roleBadge(user['role'] ?? 'No Role'),
+      ),
+    ),
+
+    // --- STATUS COLUMN ---
+    DataCell(
+      SizedBox(
+        width: 100,
+        child: _statusBadge(user['status'] ?? 'inactive'),
+      ),
+    ),
+
+    // --- LAST LOGIN COLUMN ---
+    DataCell(
+      SizedBox(
+        width: 160,
+        child: Text(
+          user['lastLogin'] ?? 'Never',
+          style: const TextStyle(fontSize: 13),
+        ),
+      ),
+    ),
+
+    // --- ACTIONS COLUMN ---
+    DataCell(
+      Align(
+        alignment: Alignment.centerRight,
+        child: PopupMenuButton<String>(
+          padding: EdgeInsets.zero,
+          icon: const Icon(Icons.more_vert),
+          onSelected: (val) {
+            if (val == 'delete') _deleteUser(idx); // Update this to call DB delete later
+            if (val == 'history') _showHistory(user);
+          },
+          itemBuilder: (context) => [
+            const PopupMenuItem(
+              value: 'edit',
+              child: ListTile(
+                leading: Icon(Icons.edit_outlined),
+                title: Text('Edit'),
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+            const PopupMenuItem(
+              value: 'delete',
+              child: ListTile(
+                leading: Icon(Icons.delete_outline, color: Colors.red),
+                title: Text('Delete'),
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+            const PopupMenuItem(
+              value: 'history',
+              child: ListTile(
+                leading: Icon(Icons.history_outlined),
+                title: Text('History'),
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  ]);
+}).toList(),
               ),
             ),
           ],
@@ -199,21 +264,34 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
     );
   }
 
-  Widget _statusBadge(String status) {
-    bool isActive = status == "active";
-    return UnconstrainedBox(
-      alignment: Alignment.centerLeft,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-        decoration: BoxDecoration(color: isActive ? const Color(0xFFD1FAE5) : Colors.red[50], borderRadius: BorderRadius.circular(20)),
-        child: Text(status, style: TextStyle(color: isActive ? const Color(0xFF10B981) : Colors.red[700], fontSize: 11, fontWeight: FontWeight.bold)),
+  Widget _statusBadge(String? status) {
+  String currentStatus = status ?? "inactive"; // Fallback inside the function
+  bool isActive = currentStatus == "active";
+  return UnconstrainedBox(
+    alignment: Alignment.centerLeft,
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: isActive ? const Color(0xFFD1FAE5) : Colors.red[50],
+        borderRadius: BorderRadius.circular(20),
       ),
-    );
-  }
+      child: Text(
+        currentStatus,
+        style: TextStyle(
+          color: isActive ? const Color(0xFF10B981) : Colors.red[700],
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    ),
+  );
+}
 
   Widget _roleBadge(String role) {
+    String currentRole = role ?? "User";
     Color bg = const Color(0xFFE0D7FF);
     Color text = const Color(0xFF6C5DD3);
+    
     if (role == "College Dean") {
       bg = const Color(0xFFFEF3C7);
       text = const Color(0xFFD97706);
@@ -226,7 +304,9 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(20)),
-        child: Text(role, style: TextStyle(color: text, fontSize: 11, fontWeight: FontWeight.bold)),
+        child: Text(
+          currentRole, 
+          style: TextStyle(color: text, fontSize: 11, fontWeight: FontWeight.bold)),
       ),
     );
   }

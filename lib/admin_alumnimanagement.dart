@@ -8,51 +8,45 @@ class AlumniManagementPage extends StatefulWidget {
 }
 
 class _AlumniManagementPageState extends State<AlumniManagementPage> {
-  // 1. DATA SOURCE (The "Database")
+  final Color primaryMaroon = const Color(0xFF420031);
+  final Color accentGold = const Color(0xFFB08900);
+  final Color bgGrey = const Color(0xFFF8F9FA);
+
+  String _selectedStatus = "All Statuses";
+  String _selectedVerification = "All Verification";
+
+  // Data structure expanded with Admin-only fields
   final List<Map<String, dynamic>> _allAlumni = [
     {
-      "id": "ALM-2024-001",
-      "name": "Sarah Johnson",
-      "batch": "2024",
-      "program": "Information Technology",
-      "employment": "employed",
-      "status": "verified",
+      "name": "John Smith",
+      "batch": "Batch 2020",
+      "course": "BS Information Technology",
+      "birthDate": "January 15, 1998",
+      "gender": "Male",
+      "email": "john.smith@university.edu",
+      "contact": "+63 912 345 6789",
+      "employment": "Employed",
+      "verification": "Verified",
+      "position": "Software Engineer",
       "company": "Tech Corp",
-      "email": "sarah.j@example.com",
-      "phone": "+63 912 345 6789",
-      "address": "Davao City, Philippines",
-      "docs": ["Diploma.pdf", "TOR.pdf", "Valid_ID.jpg"]
+      "industry": "Technology",
     },
     {
-      "id": "ALM-2024-002",
-      "name": "Michael Chen",
-      "batch": "2023",
-      "program": "Computer Science",
-      "employment": "employed",
-      "status": "verified",
-      "company": "DataFlow Inc",
-      "email": "m.chen@example.com",
-      "phone": "+63 912 987 6543",
-      "address": "Tagum City, Philippines",
-      "docs": ["Diploma.pdf", "Employment_Cert.pdf"]
+      "name": "Sarah Johnson",
+      "batch": "Batch 2020",
+      "course": "BS Computer Science",
+      "birthDate": "March 22, 1999",
+      "gender": "Female",
+      "email": "s.johnson@corporate.com",
+      "contact": "+63 922 888 1111",
+      "employment": "Employed",
+      "verification": "Verified",
+      "position": "Data Analyst",
+      "company": "Data Solutions",
+      "industry": "Data Science",
     },
-    {
-      "id": "ALM-2024-003",
-      "name": "Emily Rodriguez",
-      "batch": "2024",
-      "program": "Information Systems",
-      "employment": "unemployed",
-      "status": "pending",
-      "company": "N/A",
-      "email": "emily.rod@example.com",
-      "phone": "+63 945 111 2222",
-      "address": "Panabo City, Philippines",
-      "docs": ["Pending_Review.pdf"]
-    },
-    // Add more here to match your image...
   ];
 
-  // 2. FILTERING LOGIC
   List<Map<String, dynamic>> _foundAlumni = [];
   final TextEditingController _searchController = TextEditingController();
 
@@ -62,220 +56,227 @@ class _AlumniManagementPageState extends State<AlumniManagementPage> {
     super.initState();
   }
 
-  void _runFilter(String enteredKeyword) {
-    List<Map<String, dynamic>> results = [];
-    if (enteredKeyword.isEmpty) {
-      results = _allAlumni;
-    } else {
-      results = _allAlumni
-          .where((user) =>
-              user["name"].toLowerCase().contains(enteredKeyword.toLowerCase()) ||
-              user["id"].toLowerCase().contains(enteredKeyword.toLowerCase()))
-          .toList();
-    }
-
+  void _runFilter() {
+    String keyword = _searchController.text.toLowerCase();
     setState(() {
-      _foundAlumni = results;
+      _foundAlumni = _allAlumni.where((user) {
+        // Null-safe search to prevent red screen crashes
+        String name = (user["name"] ?? "").toLowerCase();
+        String batch = (user["batch"] ?? "").toLowerCase();
+        
+        bool matchesSearch = name.contains(keyword) || batch.contains(keyword);
+        bool matchesStatus = _selectedStatus == "All Statuses" || user["employment"] == _selectedStatus;
+        bool matchesVerify = _selectedVerification == "All Verification" || user["verification"] == _selectedVerification;
+        return matchesSearch && matchesStatus && matchesVerify;
+      }).toList();
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(25),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            "Alumni Management",
-            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.black87),
-          ),
-          const Text(
-            "Manage and verify alumni records",
-            style: TextStyle(fontSize: 14, color: Colors.black54),
-          ),
-          const SizedBox(height: 25),
-
-          // SEARCH BAR
-          _buildSearchBar(),
-          const SizedBox(height: 20),
-
-          // TABLE
-          Expanded(
-            child: Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.black12),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: SingleChildScrollView(
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(minWidth: MediaQuery.of(context).size.width - 310),
-                      child: DataTable(
-                        headingRowColor: WidgetStateProperty.all(Colors.grey[100]),
-                        columns: const [
-                          DataColumn(label: Text('Student ID', style: TextStyle(fontWeight: FontWeight.bold))),
-                          DataColumn(label: Text('Name', style: TextStyle(fontWeight: FontWeight.bold))),
-                          DataColumn(label: Text('Batch', style: TextStyle(fontWeight: FontWeight.bold))),
-                          DataColumn(label: Text('Program', style: TextStyle(fontWeight: FontWeight.bold))),
-                          DataColumn(label: Text('Employment', style: TextStyle(fontWeight: FontWeight.bold))),
-                          DataColumn(label: Text('Status', style: TextStyle(fontWeight: FontWeight.bold))),
-                          DataColumn(label: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold))),
-                        ],
-                        rows: _foundAlumni.map((alumni) => _buildDataRow(alumni)).toList(),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSearchBar() {
-    return Row(
-      children: [
-        Expanded(
-          child: TextField(
-            controller: _searchController,
-            onChanged: (value) => _runFilter(value),
-            decoration: InputDecoration(
-              hintText: "Search by name or ID number...",
-              prefixIcon: const Icon(Icons.search),
-              filled: true,
-              fillColor: Colors.grey[200],
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: BorderSide.none,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 15),
-        _iconButton(Icons.filter_list, "Filter"),
-        const SizedBox(width: 10),
-        _iconButton(Icons.download, "Export"),
-      ],
-    );
-  }
-
-  DataRow _buildDataRow(Map<String, dynamic> alumni) {
-    return DataRow(cells: [
-      DataCell(Text(alumni['id'])),
-      DataCell(Text(alumni['name'])),
-      DataCell(Text(alumni['batch'])),
-      DataCell(Text(alumni['program'])),
-      DataCell(_statusBadge(alumni['employment'], alumni['employment'] == "employed" ? Colors.blue[50]! : Colors.grey[200]!, alumni['employment'] == "employed" ? Colors.blue : Colors.black54)),
-      DataCell(_statusBadge(alumni['status'], alumni['status'] == "verified" ? Colors.green[50]! : Colors.orange[50]!, alumni['status'] == "verified" ? Colors.green : Colors.orange)),
-      DataCell(
-        IconButton(
-          icon: const Icon(Icons.visibility_outlined, color: Color(0xFF420031)),
-          onPressed: () => _showAlumniDetails(alumni),
-        ),
-      ),
-    ]);
-  }
-
-  // 3. ACTION: SHOW DETAILS DIALOG
-  void _showAlumniDetails(Map<String, dynamic> alumni) {
+  // UPDATED MODAL: Added Gender, Course, Birth Date, Contact, and Email
+  void _showAlumniProfile(Map<String, dynamic> alumni) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text("Alumni Information"),
-            IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close))
-          ],
-        ),
-        content: SizedBox(
-          width: 600,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Container(
+          width: 550, // Slightly wider for admin details
+          padding: const EdgeInsets.all(32),
           child: SingleChildScrollView(
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _detailHeader(alumni['name'], alumni['id']),
-                const Divider(height: 30),
-                _infoSection("Personal Details", {
-                  "Email": alumni['email'],
-                  "Phone": alumni['phone'],
-                  "Address": alumni['address'],
-                  "Program": alumni['program'],
-                  "Batch": alumni['batch'],
-                }),
-                const SizedBox(height: 20),
-                _infoSection("Employment", {
-                  "Status": alumni['employment'].toUpperCase(),
-                  "Company": alumni['company'],
-                }),
-                const SizedBox(height: 20),
-                const Text("Uploaded Documents", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 10,
-                  children: (alumni['docs'] as List).map((doc) => Chip(
-                    label: Text(doc),
-                    avatar: const Icon(Icons.description, size: 16),
-                    backgroundColor: Colors.grey[100],
-                  )).toList(),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text("Alumni Profile", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: primaryMaroon)),
+                    IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close, size: 20)),
+                  ],
                 ),
+                const SizedBox(height: 30),
+                
+                // PERSONAL INFO SECTION
+                Row(
+                  children: [
+                    Expanded(child: _infoField("Name", alumni['name'] ?? "N/A")),
+                    Expanded(child: _infoField("Course", alumni['course'] ?? "N/A")),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(child: _infoField("Batch", alumni['batch'] ?? "N/A")),
+                    Expanded(child: _infoField("Gender", alumni['gender'] ?? "N/A")),
+                    Expanded(child: _infoField("Birth Date", alumni['birthDate'] ?? "N/A")),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(child: _infoField("Email", alumni['email'] ?? "N/A")),
+                    Expanded(child: _infoField("Contact Info", alumni['contact'] ?? "N/A")),
+                  ],
+                ),
+
+                const Padding(padding: EdgeInsets.symmetric(vertical: 25), child: Divider()),
+
+                // EMPLOYMENT INFO SECTION
+                Text("Current Employment", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: primaryMaroon)),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(child: _infoField("Position", alumni['position'] ?? "N/A")),
+                    Expanded(child: _infoField("Company", alumni['company'] ?? "N/A")),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(child: _infoField("Industry", alumni['industry'] ?? "N/A")),
+                    Expanded(child: _badgeField("Employment Status", alumni['employment'] ?? "N/A", const Color(0xFFE6F4EA), Colors.green)),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                _badgeField("Verification Status", alumni['verification'] ?? "N/A", const Color(0xFFFEF7E0), accentGold),
+                const SizedBox(height: 10),
               ],
             ),
           ),
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Close")),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF420031)),
-            onPressed: () {}, 
-            child: const Text("Approve Verification", style: TextStyle(color: Colors.white))
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: bgGrey,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(35),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("Department Alumni", style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: primaryMaroon)),
+            const Text("View and search alumni under your department", style: TextStyle(fontSize: 13, color: Colors.black54)),
+            const SizedBox(height: 35),
+
+            // SEARCH & FILTER
+            _buildSearchAndFilter(),
+
+            const SizedBox(height: 30),
+
+            // DATA TABLE
+            Container(
+              width: double.infinity,
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.black.withOpacity(0.05))),
+              child: DataTable(
+                headingRowColor: WidgetStateProperty.all(const Color(0xFFFAFAFA)),
+                dataRowMinHeight: 65,
+                dataRowMaxHeight: 65,
+                columns: const [
+                  DataColumn(label: Text('Name', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
+                  DataColumn(label: Text('Batch', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
+                  DataColumn(label: Text('Employment', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
+                  DataColumn(label: Text('Verification', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
+                  DataColumn(label: Text('Action', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
+                ],
+                rows: _foundAlumni.map((alumni) => DataRow(cells: [
+                  DataCell(Text(alumni['name'] ?? "N/A")),
+                  DataCell(Text(alumni['batch'] ?? "N/A")),
+                  DataCell(_statusBadge(alumni['employment'] ?? "N/A", alumni['employment'] == "Employed" ? const Color(0xFFE6F4EA) : const Color(0xFFF1F3F4), alumni['employment'] == "Employed" ? Colors.green : Colors.black54)),
+                  DataCell(_statusBadge(alumni['verification'] ?? "N/A", const Color(0xFFFEF7E0), accentGold)),
+                  DataCell(
+                    TextButton.icon(
+                      onPressed: () => _showAlumniProfile(alumni),
+                      icon: Icon(Icons.visibility_outlined, size: 16, color: primaryMaroon),
+                      label: Text("View", style: TextStyle(color: primaryMaroon, fontWeight: FontWeight.bold, fontSize: 13)),
+                    ),
+                  ),
+                ])).toList(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // --- HELPER COMPONENTS ---
+
+  Widget _buildSearchAndFilter() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.black.withOpacity(0.05))),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text("Search & Filter", style: TextStyle(fontWeight: FontWeight.bold, color: primaryMaroon, fontSize: 14)),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                flex: 3,
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: (_) => _runFilter(),
+                  decoration: InputDecoration(
+                    hintText: "Search by name or batch...",
+                    prefixIcon: const Icon(Icons.search, size: 18),
+                    filled: true,
+                    fillColor: bgGrey,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 15),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 15),
+              Expanded(child: _dropdownFilter(["All Statuses", "Employed", "Unemployed"], _selectedStatus, (v) => setState(() => _selectedStatus = v!))),
+              const SizedBox(width: 15),
+              Expanded(child: _dropdownFilter(["All Verification", "Verified", "Pending"], _selectedVerification, (v) => setState(() => _selectedVerification = v!))),
+            ],
           ),
         ],
       ),
     );
   }
 
-  // UI HELPERS
-  Widget _detailHeader(String name, String id) {
-    return Row(
+  Widget _dropdownFilter(List<String> items, String value, ValueChanged<String?> onChanged) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(color: bgGrey, borderRadius: BorderRadius.circular(8)),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: value,
+          isExpanded: true,
+          style: const TextStyle(fontSize: 13, color: Colors.black87),
+          items: items.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+          onChanged: (v) {
+            onChanged(v);
+            _runFilter();
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _infoField(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        CircleAvatar(radius: 30, backgroundColor: const Color(0xFF420031), child: Text(name[0], style: const TextStyle(color: Colors.white, fontSize: 24))),
-        const SizedBox(width: 15),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            Text(id, style: const TextStyle(color: Colors.grey)),
-          ],
-        )
+        Text(label, style: const TextStyle(color: Colors.blueGrey, fontSize: 11, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 4),
+        Text(value, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.black87)),
       ],
     );
   }
 
-  Widget _infoSection(String title, Map<String, String> data) {
+  Widget _badgeField(String label, String value, Color bgColor, Color textColor) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF420031))),
-        const SizedBox(height: 10),
-        ...data.entries.map((e) => Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Row(
-            children: [
-              SizedBox(width: 80, child: Text("${e.key}:", style: const TextStyle(fontWeight: FontWeight.w600))),
-              Text(e.value),
-            ],
-          ),
-        )),
+        Text(label, style: const TextStyle(color: Colors.blueGrey, fontSize: 11, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 6),
+        _statusBadge(value, bgColor, textColor),
       ],
     );
   }
@@ -283,11 +284,11 @@ class _AlumniManagementPageState extends State<AlumniManagementPage> {
   Widget _statusBadge(String label, Color bgColor, Color textColor) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(20)),
-      child: Text(label, style: TextStyle(color: textColor, fontSize: 12, fontWeight: FontWeight.bold)),
+      decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(6)),
+      child: Text(label, style: TextStyle(color: textColor, fontSize: 11, fontWeight: FontWeight.bold)),
     );
   }
-
+}
   Widget _iconButton(IconData icon, String label) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
@@ -295,4 +296,3 @@ class _AlumniManagementPageState extends State<AlumniManagementPage> {
       child: Row(children: [Icon(icon, size: 18), const SizedBox(width: 5), Text(label)]),
     );
   }
-}

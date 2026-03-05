@@ -23,7 +23,7 @@ class _VerificationQueuePageState extends State<VerificationQueuePage> {
   Future<void> _fetchPendingUsers() async {
     try {
       // Usba ang IP kung naggamit ka og physical device (pananglitan: 192.168.1.x)
-      final response = await http.get(Uri.parse('http://localhost/alumni_api/get_pending_users.php'));
+      final response = await http.get(Uri.parse('http://localhost:8080/alumni_api/get_pending_users.php'));
       
       if (response.statusCode == 200) {
         setState(() {

@@ -261,7 +261,7 @@ class _DeanMainShellState extends State<DeanMainShell> {
             children: [
               Text(
                 widget.deanName,
-                style: const TextStyle(color: Color(0xFF420031), fontWeight: FontWeight.bold, fontSize: 14),
+                style: const TextStyle(color: Color.from(alpha: 1, red: 0.259, green: 0, blue: 0.192), fontWeight: FontWeight.bold, fontSize: 14),
               ),
               Text(
                 widget.deanRole,

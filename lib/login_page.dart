@@ -24,94 +24,103 @@ class _LoginPageState extends State<LoginPage> {
   bool _isLoading = false;
 
   Future<void> _handleLogin() async {
-    setState(() {
-      errorMessage = null;
-      successMessage = null;
-    });
+  setState(() {
+    errorMessage = null;
+    successMessage = null;
+  });
 
-    String email = _emailController.text.trim();
-    String password = _passwordController.text.trim();
+  String email = _emailController.text.trim();
+  String password = _passwordController.text.trim();
 
-    if (email.isEmpty || password.isEmpty) {
-      setState(() => errorMessage = "Please enter your email and password");
-      return;
-    }
+  if (email.isEmpty || password.isEmpty) {
+    setState(() => errorMessage = "Please enter your email and password");
+    return;
+  }
 
-    setState(() => _isLoading = true);
+  setState(() => _isLoading = true);
 
-    try {
-      // For local development on emulator, 10.0.2.2 is usually used instead of localhost
-      final url = Uri.parse('http://localhost:8080/alumni_api/login.php'); 
-      
-      final response = await http.post(
-        url,
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          "email": email,
-          "password": password,
-        }),
-      );
+  try {
+    final url = Uri.parse('http://localhost:8080/alumni_api/login.php');
 
+    final response = await http.post(
+      url,
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({
+        "email": email,
+        "password": password,
+      }),
+    );
+
+    // Check if server returned success HTTP status
+    if (response.statusCode == 200) {
       final result = jsonDecode(response.body);
 
       if (result['status'] == 'success') {
         setState(() => successMessage = "Login Successful! Redirecting...");
-        
-        // 1. EXTRACT DATA FROM UPDATED PHP RESPONSE
+
         String dbRole = result['role'].toString().toLowerCase();
-        String fullName = result['full_name'] ?? "User"; 
+        String fullName = result['full_name'] ?? "User";
         String roleDisplay = result['role_display'] ?? "Alumni Member";
-        String userEmail = result['email'] ?? email; // Use email from DB or input
-        
-        await Future.delayed(const Duration(milliseconds: 1500));
-        
-        if (mounted) {
-          // 2. DYNAMIC NAVIGATION WITH PARAMETERS
-          if (email == "superuser@jmc.edu.ph" || dbRole == "admin" || dbRole == "superuser") {
-            // Navigate to ADMIN
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => AdminMainShell(
-                  adminName: fullName,
-                  adminRole: roleDisplay,
-                ),
+        String userEmail = result['email'] ?? email;
+
+        await Future.delayed(const Duration(milliseconds: 1200));
+
+        if (!mounted) return;
+
+        if (email == "superuser@jmc.edu.ph" ||
+            dbRole == "admin" ||
+            dbRole == "superuser") {
+
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => AdminMainShell(
+                adminName: fullName,
+                adminRole: roleDisplay,
               ),
-            );
-          } else if (dbRole == "dean") {
-            // Navigate to DEAN
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => DeanMainShell(
-                  deanName: fullName,
-                  deanRole: roleDisplay,
-                ),
+            ),
+          );
+
+        } else if (dbRole == "dean") {
+
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => DeanMainShell(
+                deanName: fullName,
+                deanRole: roleDisplay,
               ),
-            );
-          } else {
-            // Navigate to ALUMNI (Passes name and email to the Profile Page)
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => MainShell(
-                  userName: fullName,
-                  userRole: roleDisplay,
-                  userEmail: userEmail, // Passing this for the Profile Page
-                ),
+            ),
+          );
+
+        } else {
+
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => MainShell(
+                userName: fullName,
+                userRole: roleDisplay,
+                userEmail: userEmail,
               ),
-            );
-          }
+            ),
+          );
         }
+
       } else {
-        setState(() => errorMessage = result['message']);
+        setState(() => errorMessage = result['message'] ?? "Login failed.");
       }
-    } catch (e) {
-      setState(() => errorMessage = "Connection error. Ensure XAMPP/Apache is running.");
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+
+    } else {
+      setState(() => errorMessage = "Server error: ${response.statusCode}");
     }
+
+  } catch (e) {
+    setState(() => errorMessage = "Connection failed. Check if XAMPP is running.");
+  } finally {
+    if (mounted) setState(() => _isLoading = false);
   }
+}
 
   Future<void> _launchURL(String url) async {
     final Uri uri = Uri.parse(url);
