@@ -31,12 +31,13 @@ dependencies:
   flutter:
     sdk: flutter
 
-  fl_chart: ^0.66.0
+  fl_chart: ^1.2.0
   cupertino_icons: ^1.0.8
   image_picker: ^1.2.1
   font_awesome_flutter: ^10.12.0
   url_launcher: ^6.3.1
   http: ^1.1.0
+  intl: ^0.18.0
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -66,6 +67,8 @@ flutter:
   assets:
     - assets/logo.png
     - assets/jmc.jpg
+    - assets/download.png
+  
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
