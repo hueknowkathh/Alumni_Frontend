@@ -29,7 +29,7 @@ class _PendingUsersPageState extends State<PendingUsersPage> {
     setState(() => isLoading = true);
     try {
       final response = await http.get(
-        Uri.parse("http://localhost:8080/alumni_php/get_pending_users.php"),
+        Uri.parse("http://localhost/alumni_php/get_pending_users.php"),
       );
 
       if (response.statusCode == 200) {
@@ -50,7 +50,7 @@ class _PendingUsersPageState extends State<PendingUsersPage> {
 
     try {
       final response = await http.post(
-        Uri.parse("http://localhost:8080/alumni_php/approve_user.php"),
+        Uri.parse("http://localhost/alumni_php/approve_user.php"),
         body: {
           "id": id,
           "action": action,

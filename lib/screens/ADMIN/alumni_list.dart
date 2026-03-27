@@ -32,7 +32,7 @@ class _AlumniListState extends State<AlumniList> {
   Future<void> fetchAlumni() async {
     setState(() => isLoading = true);
     try {
-      final response = await http.get(Uri.parse("http://localhost:8080/alumni_php/get_alumni_list.php"));
+      final response = await http.get(Uri.parse("http://localhost/alumni_php/get_alumni_list.php"));
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
         setState(() {
@@ -68,7 +68,7 @@ class _AlumniListState extends State<AlumniList> {
     if (confirm == true) {
       try {
         final response = await http.post(
-          Uri.parse("http://localhost:8080/alumni_php/delete_alumni.php"),
+          Uri.parse("http://localhost/alumni_php/delete_alumni.php"),
           body: {
           "id": id.toString(),
           }
@@ -105,14 +105,14 @@ class _AlumniListState extends State<AlumniList> {
           mainAxisSize: MainAxisSize.min,
           children: [
             DropdownButtonFormField<String>(
-              value: editProgram, // Changed 'initialValue' to 'value' for better state sync
+              initialValue: editProgram, // Changed 'initialValue' to 'value' for better state sync
               decoration: const InputDecoration(labelText: "Program"),
               items: ["BSIT", "BSCS", "BSECE"].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
               onChanged: (val) => setModalState(() => editProgram = val!),
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
-              value: editStatus, // This matches our safety-checked variable
+              initialValue: editStatus, // This matches our safety-checked variable
               decoration: const InputDecoration(labelText: "Employment Status"),
               // Include "approved" in the items list to prevent the assertion crash
               items: statusOptions.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
@@ -125,7 +125,7 @@ class _AlumniListState extends State<AlumniList> {
             ElevatedButton(
               onPressed: () async {
                 final response = await http.post(
-                  Uri.parse("http://localhost:8080/alumni_php/update_alumni.php"),
+                  Uri.parse("http://localhost/alumni_php/update_alumni.php"),
                   body: {
                     "id": user['id'].toString(),
                     "status": editStatus,

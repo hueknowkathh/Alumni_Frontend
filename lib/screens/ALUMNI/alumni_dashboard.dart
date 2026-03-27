@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'bsit_tracer.dart';
+import 'bssw_tracer.dart';
 
 class AlumniDashboard extends StatelessWidget {
-  const AlumniDashboard({super.key});
+  final Map<String, dynamic> user; // ✅ add this
+
+  const AlumniDashboard({super.key, required this.user});
 
   static const Color primaryMaroon = Color(0xFF4A152C);
   static const Color lightBackground = Color(0xFFF7F8FA);
@@ -34,7 +38,7 @@ class AlumniDashboard extends StatelessWidget {
               children: [
                 Expanded(child: _profileCard()),
                 const SizedBox(width: 24),
-                Expanded(child: _tracerCard()),
+                Expanded(child: _tracerCard(context)),
               ],
             ),
 
@@ -156,49 +160,73 @@ class AlumniDashboard extends StatelessWidget {
   }
 
   /// TRACER CARD (Fixed Const Error)
-  Widget _tracerCard() {
-    return _cardBase(
-      "Tracer Form Status",
-      Icons.assignment_turned_in_outlined,
-      Column(
-        children: [
-          _infoRow("Submission", "Not Submitted", Colors.red),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.amber.shade50,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.amber.shade200),
-            ),
-            child: Text(
-              "Please complete your tracer form to help us track alumni career outcomes. Deadline: March 31, 2026",
-              style: TextStyle(
-                fontSize: 12, 
-                color: Colors.amber[900], // FIXED: Removed const from parent to allow runtime lookup
-                fontWeight: FontWeight.w500,
-              ),
+  Widget _tracerCard(BuildContext context) {
+  return _cardBase(
+    "Tracer Form Status",
+    Icons.assignment_turned_in_outlined,
+    Column(
+      children: [
+        _infoRow("Submission", "Not Submitted", Colors.red),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.amber.shade50,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.amber.shade200),
+          ),
+          child: Text(
+            "Please complete your tracer form to help us track alumni career outcomes. Deadline: March 31, 2026",
+            style: TextStyle(
+              fontSize: 12, 
+              color: Colors.amber[900],
+              fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 18),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {},
-              style: ElevatedButton.styleFrom(
-                backgroundColor: primaryMaroon,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-              child: const Text("Complete Tracer Form"),
+        ),
+        const SizedBox(height: 18),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: () => _navigateToTracer(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: primaryMaroon,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
+            child: const Text("Complete Tracer Form"),
           ),
-        ],
-      ),
-    );
+        ),
+      ],
+    ),
+  );
+}
+
+void _navigateToTracer(BuildContext context) {
+  final program = this.user['program'] ?? "";
+
+  Widget? page;
+
+  switch (program) {
+    case "BSSW":
+      page = BSSWTracerPage();
+      break;
+    case "BSIT":
+      page = BSITTracerPage();
+      break;
+    default:
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Program not recognized")),
+      );
+      return;
   }
 
+  Navigator.push(
+    context,
+    MaterialPageRoute(builder: (_) => page!),
+  );
+}
   Widget _profileCard() {
     return _cardBase(
       "Profile Status",

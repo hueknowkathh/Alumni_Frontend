@@ -40,7 +40,7 @@ class _DepartmentAlumniPageState extends State<DepartmentAlumniPage> {
     setState(() => _isLoading = true);
     try {
       // Construct URL with query parameters for filtering
-      final String url = "http://localhost:8080/alumni_php/get_department_alumni.php"
+      final String url = "http://localhost/alumni_php/get_department_alumni.php"
           "?program=$selectedProgram"
           "&batch=$selectedBatch"
           "&status=$selectedStatus";

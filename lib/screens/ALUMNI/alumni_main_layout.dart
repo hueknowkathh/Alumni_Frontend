@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import '../widgets/sidebar.dart';
 import 'alumni_dashboard.dart';
 import 'profile_page.dart';
-import 'tracer_form.dart';
 import 'announcement_page.dart';
 import 'settings_page.dart';
+import 'bsit_tracer.dart';
+import 'bssw_tracer.dart';
 
 class AlumniMainLayout extends StatefulWidget {
   final Map<String, dynamic> user; 
@@ -28,12 +29,14 @@ class _AlumniMainLayoutState extends State<AlumniMainLayout> {
   void initState() {
     super.initState();
     _pages = [
-      const AlumniDashboard(),
+      AlumniDashboard(user: widget.user),
       const ProfilePage(),
-      const TracerFormPage(),
       const AnnouncementPage(),
       const SettingsPage(),
-    ];
+      BSSWTracerPage(), 
+      BSITTracerPage(),
+];
+  
   }
 
   @override

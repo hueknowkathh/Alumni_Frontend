@@ -137,7 +137,6 @@ class Sidebar extends StatelessWidget {
         return [
           {'title': 'Dashboard', 'icon': Icons.grid_view_outlined},
           {'title': 'Profile', 'icon': Icons.person_outline},
-          {'title': 'Tracer Form', 'icon': Icons.assignment_outlined},
           {'title': 'Announcements', 'icon': Icons.campaign_outlined},
           {'title': 'Settings', 'icon': Icons.settings_outlined},
         ];

@@ -32,7 +32,7 @@ class _TracerDataPageState extends State<TracerDataPage> {
     setState(() => _isLoading = true);
     try {
       final response = await http.get(
-        Uri.parse("http://localhost:8080/alumni_php/get_tracer_submissions.php"),
+        Uri.parse("http://localhost/alumni_php/get_tracer_submissions.php"),
       );
 
       if (response.statusCode == 200) {

@@ -42,7 +42,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
   Future<void> fetchAnnouncements() async {
     setState(() => isLoading = true);
     try {
-      var url = Uri.parse("http://localhost:8080/alumni_php/get_announcements.php");
+      var url = Uri.parse("http://localhost/alumni_php/get_announcements.php");
       var response = await http.get(url);
 
       if (response.statusCode == 200) {
@@ -64,7 +64,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
     String? id,
   }) async {
     final url =
-        Uri.parse("http://localhost:8080/alumni_php/add_announcement.php");
+        Uri.parse("http://localhost/alumni_php/add_announcement.php");
 
     setState(() => isSaving = true);
 
@@ -127,7 +127,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
   /// DELETE
   Future<void> deleteAnnouncement(String id) async {
   try {
-    final url = Uri.parse("http://localhost:8080/alumni_php/delete_announcement.php?id=1");
+    final url = Uri.parse("http://localhost/alumni_php/delete_announcement.php?id=1");
 
     final response = await http.post(
       url,
@@ -195,7 +195,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                value: selectedCategory,
+                initialValue: selectedCategory,
                 items: [
                   "Events",
                   "Reminders",

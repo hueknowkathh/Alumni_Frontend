@@ -25,51 +25,47 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> _handleLogin() async {
   setState(() => _isLoading = true);
-  final url = Uri.parse("http://localhost:8080/alumni_php/login.php");
+  final url = Uri.parse("http://localhost/alumni_php/login.php");
+  http.Response? response; // declare outside try
 
   try {
-    final response = await http.post(
+    response = await http.post(
       url,
       headers: {"Content-Type": "application/json"},
       body: jsonEncode({
         "email": _emailController.text.trim(),
         "password": _passwordController.text,
       }),
-    ).timeout(const Duration(seconds: 10)); // Added a timeout for safety
+    ).timeout(const Duration(seconds: 10));
 
-    // 1. Check if the server actually returned a "Success" status code
     if (response.statusCode != 200) {
       _showError("Server Error: ${response.statusCode}. Please try again later.");
       return;
     }
 
-    // 2. Safely try to decode the JSON
-    try {
-      final data = jsonDecode(response.body);
-      
-      if (data['status'] == 'success') {
-        String role = data['role'] ?? 'alumni';
-        Map<String, dynamic> user = data['user'] != null 
-            ? Map<String, dynamic>.from(data['user']) 
-            : {"name": data['name'] ?? "User", "role": role}; 
-            
+    final Map<String, dynamic> data = jsonDecode(response.body);
+
+    if (data['status'] == 'success') {
+      if (data['user'] != null && data['user'] is Map) {
+        Map<String, dynamic> user = Map<String, dynamic>.from(data['user']);
+        String role = user['role'] ?? 'alumni';
         _navigateTo(role, user);
       } else {
-        _showError(data['message'] ?? "Invalid email or password");
+        _showError("User data is missing or invalid.");
       }
-    } catch (parseError) {
-      // This catches the "Unexpected token <" error specifically!
-      _showError("The server sent an invalid response. It might be under maintenance.");
-      print("Raw response that caused error: ${response.body}"); 
+    } else {
+      _showError(data['message'] ?? "Invalid email or password.");
     }
-
+  } on FormatException {
+    _showError("The server sent an invalid response. It might be under maintenance.");
+    if (response != null) print("Raw response: ${response.body}");
   } catch (e) {
     _showError("Check your internet or server connection.");
+    print("Login error: $e");
   } finally {
     if (mounted) setState(() => _isLoading = false);
   }
 }
-
   void _navigateTo(String role, Map<String, dynamic> user) {
     Widget nextScreen;
 

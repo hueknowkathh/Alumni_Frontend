@@ -33,7 +33,7 @@ class _AnnouncementPageState extends State<AnnouncementPage> {
 
     try {
       // Ensure this URL is accessible from your device/emulator
-      var url = Uri.parse("http://localhost:8080/alumni_php/get_announcements.php");
+      var url = Uri.parse("http://localhost/alumni_php/get_announcements.php");
       var response = await http.get(url);
 
       if (response.statusCode == 200) {

@@ -59,7 +59,7 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
     setState(() => _isLoadingActivity = true);
     try {
       final response = await http.get(
-        Uri.parse("http://localhost:8080/alumni_php/get_full_activity.php")
+        Uri.parse("http://localhost/alumni_php/get_full_activity.php")
       );
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
@@ -77,7 +77,7 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
     setState(() => _isLoadingUsers = true);
     try {
       final response = await http.get(
-        Uri.parse("http://localhost:8080/alumni_php/get_latest_reg.php")
+        Uri.parse("http://localhost/alumni_php/get_latest_reg.php")
       );
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);

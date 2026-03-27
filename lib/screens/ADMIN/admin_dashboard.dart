@@ -4,8 +4,6 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:intl/intl.dart';
 import 'dart:async';
-import 'recent_activity.dart';
-import 'latest_registrations.dart';
 
 class AdminDashboard extends StatefulWidget {
   final Function(int) onActionSelected;
@@ -87,7 +85,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       await Future.delayed(const Duration(milliseconds: 500));
 
       final response = await http.get(
-        Uri.parse("http://localhost:8080/alumni_php/get_admin_stats.php"),
+        Uri.parse("http://localhost/alumni_php/get_admin_stats.php"),
       );
 
       if (response.statusCode == 200) {
@@ -345,7 +343,7 @@ Expanded(
   Widget _actionButton(String title, IconData icon, int targetIndex) {
     return ElevatedButton.icon(
       onPressed: () {
-        widget.onActionSelected?.call(targetIndex);
+        widget.onActionSelected.call(targetIndex);
       },
       icon: Icon(icon, size: 18, color: Colors.white),
       label: Text(title, style: const TextStyle(color: Colors.white)),

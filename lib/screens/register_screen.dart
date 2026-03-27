@@ -24,42 +24,51 @@ class _RegisterPageState extends State<RegisterPage> {
   String? selectedYear;
   bool isLoading = false;
 
-  final List<String> programs = ['BSIT', 'BSCS', 'BSED', 'BSBA', 'BSHM'];
+  final List<String> programs = ['BSIT', 'BSSW',];
   final List<String> years = List.generate(10, (index) => (2026 - index).toString());
 
   Future<void> _handleRegister() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() => isLoading = true);
 
-      final url = Uri.parse("http://localhost:8080/alumni_php/register.php");
+  if (_formKey.currentState!.validate()) {
 
-      try {
-        final response = await http.post(
-          url,
-          headers: {"Content-Type": "application/json"},
-          body: jsonEncode({
-            "name": nameController.text,
-            "email": emailController.text,
-            "password": passwordController.text,
-            "program": selectedProgram,
-            "year_graduated": selectedYear,
-          }),
-        );
-
-        final data = jsonDecode(response.body);
-
-        if (data['status'] == 'success') {
-          _showSuccess();
-        } else {
-          _showError("Registration failed");
-        }
-      } catch (e) {
-        _showError("Connection error");
-      }
-
-      setState(() => isLoading = false);
+    // ✅ ADD THIS (password check)
+    if (passwordController.text != confirmPasswordController.text) {
+      _showError("Passwords do not match");
+      return;
     }
+
+    setState(() => isLoading = true);
+
+    final url = Uri.parse("http://localhost/alumni_php/register.php");
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "name": nameController.text,
+          "email": emailController.text,
+          "password": passwordController.text,
+          "program": selectedProgram,
+          "year_graduated": selectedYear,
+        }),
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (data['status'] == 'success') {
+        _showSuccess();
+      } else {
+        // ✅ OPTIONAL IMPROVEMENT (shows backend message)
+        _showError(data['message'] ?? "Registration failed");
+      }
+    } catch (e) {
+      _showError("Connection error");
+    }
+
+    setState(() => isLoading = false);
   }
+}
 
   void _showError(String message) {
     showDialog(
