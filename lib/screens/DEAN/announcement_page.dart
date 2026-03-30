@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import '../../services/api_service.dart';
 
 class AnnouncementPage extends StatefulWidget {
   const AnnouncementPage({super.key});
@@ -33,11 +34,14 @@ class _AnnouncementPageState extends State<AnnouncementPage> {
 
     try {
       // Ensure this URL is accessible from your device/emulator
-      var url = Uri.parse("http://localhost/alumni_php/get_announcements.php");
+      var url = ApiService.uri('get_announcements.php');
       var response = await http.get(url);
 
       if (response.statusCode == 200) {
-        final List decodedData = json.decode(response.body);
+        final decoded = json.decode(response.body);
+        final List decodedData = decoded is List
+            ? decoded
+            : (decoded is Map ? decoded['announcements'] ?? [] : []);
         setState(() {
           announcements = decodedData;
           applyFilters();
@@ -57,7 +61,7 @@ class _AnnouncementPageState extends State<AnnouncementPage> {
         // Null safety: use ?? "" to prevent crashes if a field is null
         final String title = (ann['title'] ?? "").toString().toLowerCase();
         final String category = (ann['category'] ?? "General").toString();
-        
+
         final matchesSearch = title.contains(searchQuery.toLowerCase());
         final matchesCategory = selectedCategory == "All Categories"
             ? true
@@ -71,10 +75,14 @@ class _AnnouncementPageState extends State<AnnouncementPage> {
   // 🎨 CATEGORY COLOR
   Color getCategoryColor(String category) {
     switch (category) {
-      case "Events": return Colors.blue;
-      case "Reminders": return Colors.orange;
-      case "Job Opportunities": return Colors.green;
-      default: return Colors.blueGrey;
+      case "Events":
+        return Colors.blue;
+      case "Reminders":
+        return Colors.orange;
+      case "Job Opportunities":
+        return Colors.green;
+      default:
+        return Colors.blueGrey;
     }
   }
 
@@ -128,9 +136,18 @@ class _AnnouncementPageState extends State<AnnouncementPage> {
                     flex: 2,
                     child: DropdownButtonFormField<String>(
                       initialValue: selectedCategory,
-                      items: ["All Categories", "Events", "Reminders", "Job Opportunities"]
-                          .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                          .toList(),
+                      items:
+                          [
+                                "All Categories",
+                                "Events",
+                                "Reminders",
+                                "Job Opportunities",
+                              ]
+                              .map(
+                                (e) =>
+                                    DropdownMenuItem(value: e, child: Text(e)),
+                              )
+                              .toList(),
                       onChanged: (value) {
                         if (value != null) {
                           selectedCategory = value;
@@ -153,27 +170,32 @@ class _AnnouncementPageState extends State<AnnouncementPage> {
 
               /// LIST SECTION
               isLoading
-                  ? const Center(child: Padding(
-                      padding: EdgeInsets.only(top: 50),
-                      child: CircularProgressIndicator(color: primaryMaroon),
-                    ))
+                  ? const Center(
+                      child: Padding(
+                        padding: EdgeInsets.only(top: 50),
+                        child: CircularProgressIndicator(color: primaryMaroon),
+                      ),
+                    )
                   : filteredAnnouncements.isEmpty
-                      ? const Center(child: Padding(
-                          padding: EdgeInsets.only(top: 50),
-                          child: Text("No announcements found"),
-                        ))
-                      : Column(
-                          children: filteredAnnouncements.map((ann) {
-                            return _buildAnnouncementCard(
-                              title: ann['title'] ?? "No Title",
-                              // date maps to created_at in your DB
-                              date: ann['date'] ?? "Recent", 
-                              category: ann['category'] ?? "General",
-                              // description maps to content in your DB
-                              description: ann['description'] ?? "No description provided.",
-                            );
-                          }).toList(),
-                        ),
+                  ? const Center(
+                      child: Padding(
+                        padding: EdgeInsets.only(top: 50),
+                        child: Text("No announcements found"),
+                      ),
+                    )
+                  : Column(
+                      children: filteredAnnouncements.map((ann) {
+                        return _buildAnnouncementCard(
+                          title: ann['title'] ?? "No Title",
+                          // date maps to created_at in your DB
+                          date: ann['date'] ?? "Recent",
+                          category: ann['category'] ?? "General",
+                          // description maps to content in your DB
+                          description:
+                              ann['description'] ?? "No description provided.",
+                        );
+                      }).toList(),
+                    ),
             ],
           ),
         ),
@@ -199,7 +221,7 @@ class _AnnouncementPageState extends State<AnnouncementPage> {
         border: Border.all(color: Colors.grey.shade100),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -213,7 +235,7 @@ class _AnnouncementPageState extends State<AnnouncementPage> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(Icons.campaign_outlined, color: color),
@@ -223,20 +245,37 @@ class _AnnouncementPageState extends State<AnnouncementPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 18)),
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
                     const SizedBox(height: 6),
                     Row(
                       children: [
-                        const Icon(Icons.calendar_today, size: 14, color: Colors.grey),
+                        const Icon(
+                          Icons.calendar_today,
+                          size: 14,
+                          color: Colors.grey,
+                        ),
                         const SizedBox(width: 6),
-                        Text(date, style: const TextStyle(fontSize: 13, color: Colors.grey)),
+                        Text(
+                          date,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey,
+                          ),
+                        ),
                         const SizedBox(width: 12),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
-                            color: color.withOpacity(0.1),
+                            color: color.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
@@ -258,7 +297,11 @@ class _AnnouncementPageState extends State<AnnouncementPage> {
           const SizedBox(height: 16),
           Text(
             description,
-            style: TextStyle(fontSize: 14, color: Colors.grey.shade800, height: 1.5),
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade800,
+              height: 1.5,
+            ),
           ),
         ],
       ),

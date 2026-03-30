@@ -1,9 +1,12 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import '../../services/api_service.dart';
+import '../../services/content_service.dart';
 
 class AnnouncementPage extends StatefulWidget {
-  const AnnouncementPage({super.key});
+  final Map<String, dynamic> user;
+  const AnnouncementPage({super.key, required this.user});
 
   @override
   State<AnnouncementPage> createState() => _AnnouncementPageState();
@@ -13,9 +16,8 @@ class _AnnouncementPageState extends State<AnnouncementPage> {
   static const Color primaryMaroon = Color(0xFF4A152C);
   static const Color lightBackground = Color(0xFFF7F8FA);
 
-  List announcements = [];
-  List filteredAnnouncements = [];
-
+  List<Map<String, dynamic>> announcements = [];
+  List<Map<String, dynamic>> filteredAnnouncements = [];
   String selectedCategory = "All Categories";
   String searchQuery = "";
   bool isLoading = false;
@@ -26,23 +28,17 @@ class _AnnouncementPageState extends State<AnnouncementPage> {
     fetchAnnouncements();
   }
 
-  // ✅ FETCH FROM API
   Future<void> fetchAnnouncements() async {
     if (!mounted) return;
     setState(() => isLoading = true);
 
     try {
-      // Ensure this URL is accessible from your device/emulator
-      var url = Uri.parse("http://localhost/alumni_php/get_announcements.php");
-      var response = await http.get(url);
-
-      if (response.statusCode == 200) {
-        final List decodedData = json.decode(response.body);
-        setState(() {
-          announcements = decodedData;
-          applyFilters();
-        });
-      }
+      final decodedData = await ContentService.fetchAnnouncements();
+      if (!mounted) return;
+      setState(() {
+        announcements = decodedData;
+        applyFilters();
+      });
     } catch (e) {
       debugPrint("Error fetching announcements: $e");
     } finally {
@@ -50,31 +46,30 @@ class _AnnouncementPageState extends State<AnnouncementPage> {
     }
   }
 
-  // ✅ FILTER LOGIC
   void applyFilters() {
     setState(() {
       filteredAnnouncements = announcements.where((ann) {
-        // Null safety: use ?? "" to prevent crashes if a field is null
         final String title = (ann['title'] ?? "").toString().toLowerCase();
         final String category = (ann['category'] ?? "General").toString();
-        
         final matchesSearch = title.contains(searchQuery.toLowerCase());
         final matchesCategory = selectedCategory == "All Categories"
             ? true
             : category == selectedCategory;
-
         return matchesSearch && matchesCategory;
       }).toList();
     });
   }
 
-  // 🎨 CATEGORY COLOR
   Color getCategoryColor(String category) {
     switch (category) {
-      case "Events": return Colors.blue;
-      case "Reminders": return Colors.orange;
-      case "Job Opportunities": return Colors.green;
-      default: return Colors.blueGrey;
+      case "Events":
+        return Colors.blue;
+      case "Reminders":
+        return Colors.orange;
+      case "Job Opportunities":
+        return Colors.green;
+      default:
+        return Colors.blueGrey;
     }
   }
 
@@ -100,8 +95,6 @@ class _AnnouncementPageState extends State<AnnouncementPage> {
                 style: TextStyle(color: Colors.grey, fontSize: 14),
               ),
               const SizedBox(height: 32),
-
-              /// SEARCH + FILTER ROW
               Row(
                 children: [
                   Expanded(
@@ -128,7 +121,12 @@ class _AnnouncementPageState extends State<AnnouncementPage> {
                     flex: 2,
                     child: DropdownButtonFormField<String>(
                       initialValue: selectedCategory,
-                      items: ["All Categories", "Events", "Reminders", "Job Opportunities"]
+                      items: [
+                        "All Categories",
+                        "Events",
+                        "Reminders",
+                        "Job Opportunities",
+                      ]
                           .map((e) => DropdownMenuItem(value: e, child: Text(e)))
                           .toList(),
                       onChanged: (value) {
@@ -150,30 +148,36 @@ class _AnnouncementPageState extends State<AnnouncementPage> {
                 ],
               ),
               const SizedBox(height: 32),
-
-              /// LIST SECTION
-              isLoading
-                  ? const Center(child: Padding(
-                      padding: EdgeInsets.only(top: 50),
-                      child: CircularProgressIndicator(color: primaryMaroon),
-                    ))
-                  : filteredAnnouncements.isEmpty
-                      ? const Center(child: Padding(
-                          padding: EdgeInsets.only(top: 50),
-                          child: Text("No announcements found"),
-                        ))
-                      : Column(
-                          children: filteredAnnouncements.map((ann) {
-                            return _buildAnnouncementCard(
-                              title: ann['title'] ?? "No Title",
-                              // date maps to created_at in your DB
-                              date: ann['date'] ?? "Recent", 
-                              category: ann['category'] ?? "General",
-                              // description maps to content in your DB
-                              description: ann['description'] ?? "No description provided.",
-                            );
-                          }).toList(),
-                        ),
+              if (isLoading)
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.only(top: 50),
+                    child: CircularProgressIndicator(color: primaryMaroon),
+                  ),
+                )
+              else if (filteredAnnouncements.isEmpty)
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.only(top: 50),
+                    child: Text("No announcements found"),
+                  ),
+                )
+              else
+                Column(
+                  children: filteredAnnouncements.map((ann) {
+                    return _buildAnnouncementCard(
+                          title: (ann['title'] ?? "No Title").toString(),
+                          date:
+                              ((ann['created_at'] ?? ann['date']) ?? "Recent")
+                                  .toString(),
+                          category:
+                              (ann['category'] ?? "General").toString(),
+                          description:
+                              (ann['description'] ?? "No description provided.")
+                                  .toString(),
+                    );
+                  }).toList(),
+                ),
             ],
           ),
         ),
@@ -181,7 +185,6 @@ class _AnnouncementPageState extends State<AnnouncementPage> {
     );
   }
 
-  // 🧾 CARD WIDGET
   Widget _buildAnnouncementCard({
     required String title,
     required String date,
@@ -223,9 +226,10 @@ class _AnnouncementPageState extends State<AnnouncementPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 18)),
+                    Text(
+                      title,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                    ),
                     const SizedBox(height: 6),
                     Row(
                       children: [
@@ -241,11 +245,7 @@ class _AnnouncementPageState extends State<AnnouncementPage> {
                           ),
                           child: Text(
                             category,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: color,
-                            ),
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color),
                           ),
                         ),
                       ],

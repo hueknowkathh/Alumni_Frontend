@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-
 import 'register_screen.dart';
 import 'ADMIN/admin_main_layout.dart';
 import 'DEAN/dean_main_layout.dart';
 import 'ALUMNI/alumni_main_layout.dart';
+import '../services/api_service.dart';
+import '../state/user_store.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -24,48 +25,55 @@ class _LoginPageState extends State<LoginPage> {
   bool _isPasswordVisible = false;
 
   Future<void> _handleLogin() async {
-  setState(() => _isLoading = true);
-  final url = Uri.parse("http://localhost/alumni_php/login.php");
-  http.Response? response; // declare outside try
+    setState(() => _isLoading = true);
+    final url = ApiService.uri('login.php');
 
-  try {
-    response = await http.post(
-      url,
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode({
-        "email": _emailController.text.trim(),
-        "password": _passwordController.text,
-      }),
-    ).timeout(const Duration(seconds: 10));
+    try {
+      final response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "email": _emailController.text.trim(),
+          "password": _passwordController.text,
+        }),
+      );
 
-    if (response.statusCode != 200) {
-      _showError("Server Error: ${response.statusCode}. Please try again later.");
-      return;
-    }
+      Map<String, dynamic> data;
+      try {
+        final decoded = jsonDecode(response.body);
+        data = decoded is Map<String, dynamic> ? decoded : <String, dynamic>{};
+      } catch (_) {
+        final snippet = response.body.trim();
+        _showError(
+          "Server returned an invalid response (${response.statusCode})."
+          "${snippet.isNotEmpty ? "\n\n$snippet" : ""}",
+        );
+        return;
+      }
 
-    final Map<String, dynamic> data = jsonDecode(response.body);
-
-    if (data['status'] == 'success') {
-      if (data['user'] != null && data['user'] is Map) {
-        Map<String, dynamic> user = Map<String, dynamic>.from(data['user']);
-        String role = user['role'] ?? 'alumni';
+      if (response.statusCode == 200 &&
+          data['status'] == 'success' &&
+          data['user'] != null) {
+        final user = Map<String, dynamic>.from(data['user']);
+        final role = (user['role'] ?? 'alumni').toString().toLowerCase();
+        UserStore.set(user);
         _navigateTo(role, user);
       } else {
-        _showError("User data is missing or invalid.");
+        _showError(
+          data['message']?.toString() ??
+              (response.statusCode == 200
+                  ? "Invalid email or password."
+                  : "Server Error: ${response.statusCode}"),
+        );
       }
-    } else {
-      _showError(data['message'] ?? "Invalid email or password.");
+    } catch (e) {
+      _showError("Check your internet or server connection.");
+      debugPrint("Login error: $e");
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
-  } on FormatException {
-    _showError("The server sent an invalid response. It might be under maintenance.");
-    if (response != null) print("Raw response: ${response.body}");
-  } catch (e) {
-    _showError("Check your internet or server connection.");
-    print("Login error: $e");
-  } finally {
-    if (mounted) setState(() => _isLoading = false);
   }
-}
+
   void _navigateTo(String role, Map<String, dynamic> user) {
     Widget nextScreen;
 
@@ -73,11 +81,8 @@ class _LoginPageState extends State<LoginPage> {
       nextScreen = AdminMainLayout(user: user);
     } else if (role == "dean") {
       nextScreen = DeanMainLayout(user: user);
-    } else if (role == "alumni") {
-      nextScreen = AlumniMainLayout(user: user);
     } else {
-      _showError("Unknown role: $role");
-      return;
+      nextScreen = AlumniMainLayout(user: user);
     }
 
     Navigator.pushReplacement(
@@ -103,6 +108,13 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
@@ -115,26 +127,25 @@ class _LoginPageState extends State<LoginPage> {
               ),
             ),
           ),
-          Container(color: Colors.black.withOpacity(0.3)),
+          Container(color: Colors.black.withValues(alpha: 0.3)),
           Center(
             child: SingleChildScrollView(
               child: Container(
                 width: 400,
                 padding: const EdgeInsets.all(40),
                 decoration: BoxDecoration(
-                  color: primaryMaroon.withOpacity(0.95),
+                  color: primaryMaroon.withValues(alpha: 0.95),
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.5),
+                      color: Colors.black.withValues(alpha: 0.5),
                       blurRadius: 20,
                       offset: const Offset(0, 10),
-                    )
+                    ),
                   ],
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     const Icon(Icons.school, color: Colors.white, size: 50),
                     const SizedBox(height: 16),
@@ -153,7 +164,7 @@ class _LoginPageState extends State<LoginPage> {
                       "Graduate Outcomes Tracking System",
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.7),
+                        color: Colors.white.withValues(alpha: 0.7),
                         fontSize: 12,
                         fontStyle: FontStyle.italic,
                       ),
@@ -161,7 +172,7 @@ class _LoginPageState extends State<LoginPage> {
                     const SizedBox(height: 40),
                     _buildTextField(
                       controller: _emailController,
-                      label: "Email Address",
+                      label: "Email",
                       icon: Icons.email_outlined,
                     ),
                     const SizedBox(height: 20),
@@ -170,14 +181,6 @@ class _LoginPageState extends State<LoginPage> {
                       label: "Password",
                       icon: Icons.lock_outline,
                       isPassword: true,
-                    ),
-                    const SizedBox(height: 10),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: () {},
-                        child: const Text("Forgot Password?", style: TextStyle(color: Colors.white70, fontSize: 12)),
-                      ),
                     ),
                     const SizedBox(height: 30),
                     SizedBox(
@@ -189,26 +192,47 @@ class _LoginPageState extends State<LoginPage> {
                           backgroundColor: accentGold,
                           foregroundColor: primaryMaroon,
                           elevation: 5,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                         ),
                         child: _isLoading
-                            ? const CircularProgressIndicator(color: Colors.white)
-                            : const Text("LOGIN", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 1)),
+                            ? const CircularProgressIndicator(
+                                color: Colors.white,
+                              )
+                            : const Text(
+                                "LOGIN",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
                       ),
                     ),
                     const SizedBox(height: 20),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text("New Alumni?", style: TextStyle(color: Colors.white70)),
+                        const Text(
+                          "New Alumni?",
+                          style: TextStyle(color: Colors.white70),
+                        ),
                         TextButton(
                           onPressed: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (_) => const RegisterPage()),
+                              MaterialPageRoute(
+                                builder: (_) => const RegisterPage(),
+                              ),
                             );
                           },
-                          child: Text("Register Here", style: TextStyle(color: accentGold, fontWeight: FontWeight.bold)),
+                          child: Text(
+                            "Register Here",
+                            style: TextStyle(
+                              color: accentGold,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -238,21 +262,28 @@ class _LoginPageState extends State<LoginPage> {
         prefixIcon: Icon(icon, color: accentGold, size: 20),
         suffixIcon: isPassword
             ? IconButton(
-                icon: Icon(_isPasswordVisible ? Icons.visibility : Icons.visibility_off, color: Colors.white70),
-                onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
+                icon: Icon(
+                  _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                  color: Colors.white70,
+                ),
+                onPressed: () =>
+                    setState(() => _isPasswordVisible = !_isPasswordVisible),
               )
             : null,
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
           borderSide: BorderSide(color: accentGold, width: 2),
         ),
         filled: true,
-        fillColor: Colors.white.withOpacity(0.05),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+        fillColor: Colors.white.withValues(alpha: 0.05),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 18,
+        ),
       ),
     );
   }

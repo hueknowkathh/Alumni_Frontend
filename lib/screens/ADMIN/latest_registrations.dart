@@ -51,8 +51,12 @@ class _UserRegistrationsPageState extends State<UserRegistrationsPage> {
       _filteredUsers = widget.users.where((user) {
         final name = (user['name'] ?? "").toString().toLowerCase();
         final course = (user['course'] ?? "").toString().toLowerCase();
-        final email = (user['email'] ?? "").toString().toLowerCase(); // ✅ Added Email search
-        return name.contains(query) || course.contains(query) || email.contains(query);
+        final email = (user['email'] ?? "")
+            .toString()
+            .toLowerCase(); // ✅ Added Email search
+        return name.contains(query) ||
+            course.contains(query) ||
+            email.contains(query);
       }).toList();
     });
   }
@@ -121,22 +125,23 @@ class _UserRegistrationsPageState extends State<UserRegistrationsPage> {
             child: widget.isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _filteredUsers.isEmpty
-                    ? const Center(child: Text("No users found"))
-                    : ListView.separated(
-                        itemCount: _filteredUsers.length,
-                        separatorBuilder: (context, index) => const Divider(height: 1),
-                        itemBuilder: (context, index) {
-                          final user = _filteredUsers[index];
-                          // ✅ Pass 5 arguments to match the dashboard logic
-                          return _regItem(
-                            user['name'] ?? "Unknown",
-                            user['course'] ?? "N/A",
-                            user['status'] ?? "Pending",
-                            user['email'] ?? "No Email",
-                            user['year'] ?? "N/A",
-                          );
-                        },
-                      ),
+                ? const Center(child: Text("No users found"))
+                : ListView.separated(
+                    itemCount: _filteredUsers.length,
+                    separatorBuilder: (context, index) =>
+                        const Divider(height: 1),
+                    itemBuilder: (context, index) {
+                      final user = _filteredUsers[index];
+                      // ✅ Pass 5 arguments to match the dashboard logic
+                      return _regItem(
+                        user['name'] ?? "Unknown",
+                        user['course'] ?? "N/A",
+                        user['status'] ?? "Pending",
+                        user['email'] ?? "No Email",
+                        user['year'] ?? "N/A",
+                      );
+                    },
+                  ),
           ),
         ],
       ),
@@ -144,7 +149,13 @@ class _UserRegistrationsPageState extends State<UserRegistrationsPage> {
   }
 
   // 🔹 UPDATED ITEM UI
-  Widget _regItem(String name, String course, String status, String email, String year) {
+  Widget _regItem(
+    String name,
+    String course,
+    String status,
+    String email,
+    String year,
+  ) {
     final lowerStatus = status.toLowerCase();
 
     Color statusColor;
@@ -160,18 +171,19 @@ class _UserRegistrationsPageState extends State<UserRegistrationsPage> {
       contentPadding: const EdgeInsets.symmetric(vertical: 8),
       title: Text(
         name,
-        style: TextStyle(
-          fontWeight: FontWeight.bold,
-          color: primaryMaroon,
-        ),
+        style: TextStyle(fontWeight: FontWeight.bold, color: primaryMaroon),
       ),
-      subtitle: Column( // ✅ Switched to Column to show more details
+      subtitle: Column(
+        // ✅ Switched to Column to show more details
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 4),
           Text(
             "$course | Class of $year",
-            style: TextStyle(color: Colors.grey.shade800, fontWeight: FontWeight.w500),
+            style: TextStyle(
+              color: Colors.grey.shade800,
+              fontWeight: FontWeight.w500,
+            ),
           ),
           const SizedBox(height: 2),
           Text(
@@ -184,7 +196,7 @@ class _UserRegistrationsPageState extends State<UserRegistrationsPage> {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           // ✅ Note: If using latest Flutter, consider using statusColor.withValues(alpha: 0.1)
-          color: statusColor.withOpacity(0.1),
+          color: statusColor.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Text(

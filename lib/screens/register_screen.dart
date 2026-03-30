@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import '../services/api_service.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -14,61 +15,74 @@ class _RegisterPageState extends State<RegisterPage> {
   final Color accentGold = const Color(0xFFC5A046);
 
   final _formKey = GlobalKey<FormState>();
-  
+
   final nameController = TextEditingController();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
-  
+
   String? selectedProgram;
   String? selectedYear;
   bool isLoading = false;
 
-  final List<String> programs = ['BSIT', 'BSSW',];
-  final List<String> years = List.generate(10, (index) => (2026 - index).toString());
+  final List<String> programs = ['BSIT', 'BSSW'];
+  final List<String> years = List.generate(
+    10,
+    (index) => (2026 - index).toString(),
+  );
 
   Future<void> _handleRegister() async {
-
-  if (_formKey.currentState!.validate()) {
-
-    // ✅ ADD THIS (password check)
-    if (passwordController.text != confirmPasswordController.text) {
-      _showError("Passwords do not match");
-      return;
-    }
-
-    setState(() => isLoading = true);
-
-    final url = Uri.parse("http://localhost/alumni_php/register.php");
-
-    try {
-      final response = await http.post(
-        url,
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          "name": nameController.text,
-          "email": emailController.text,
-          "password": passwordController.text,
-          "program": selectedProgram,
-          "year_graduated": selectedYear,
-        }),
-      );
-
-      final data = jsonDecode(response.body);
-
-      if (data['status'] == 'success') {
-        _showSuccess();
-      } else {
-        // ✅ OPTIONAL IMPROVEMENT (shows backend message)
-        _showError(data['message'] ?? "Registration failed");
+    if (_formKey.currentState!.validate()) {
+      // ✅ ADD THIS (password check)
+      if (passwordController.text != confirmPasswordController.text) {
+        _showError("Passwords do not match");
+        return;
       }
-    } catch (e) {
-      _showError("Connection error");
-    }
 
-    setState(() => isLoading = false);
+      setState(() => isLoading = true);
+
+      final url = ApiService.uri('register.php');
+
+      try {
+        final response = await http.post(
+          url,
+          headers: {"Content-Type": "application/json"},
+          body: jsonEncode({
+            "name": nameController.text,
+            "email": emailController.text,
+            "password": passwordController.text,
+            "program": selectedProgram,
+            "year_graduated": selectedYear,
+          }),
+        );
+
+        Map<String, dynamic> data = <String, dynamic>{};
+        try {
+          final decoded = jsonDecode(response.body);
+          if (decoded is Map<String, dynamic>) data = decoded;
+        } catch (_) {
+          _showError("Server returned an invalid response (${response.statusCode}).");
+          return;
+        }
+
+        if (response.statusCode == 200 && data['status'] == 'success') {
+          _showSuccess();
+        } else {
+          // ✅ OPTIONAL IMPROVEMENT (shows backend message)
+          _showError(
+            data['message']?.toString() ??
+                (response.statusCode == 200
+                    ? "Registration failed"
+                    : "Server Error: ${response.statusCode}"),
+          );
+        }
+      } catch (e) {
+        _showError("Connection error");
+      }
+
+      setState(() => isLoading = false);
+    }
   }
-}
 
   void _showError(String message) {
     showDialog(
@@ -77,7 +91,10 @@ class _RegisterPageState extends State<RegisterPage> {
         title: const Text("Error"),
         content: Text(message),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("OK")),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("OK"),
+          ),
         ],
       ),
     );
@@ -103,6 +120,15 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   @override
+  void dispose() {
+    nameController.dispose();
+    emailController.dispose();
+    passwordController.dispose();
+    confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
@@ -115,7 +141,7 @@ class _RegisterPageState extends State<RegisterPage> {
               ),
             ),
           ),
-          Container(color: Colors.black.withOpacity(0.4)),
+          Container(color: Colors.black.withValues(alpha: 0.4)),
           Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(vertical: 40),
@@ -124,7 +150,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 padding: const EdgeInsets.all(32),
                 margin: const EdgeInsets.symmetric(horizontal: 20),
                 decoration: BoxDecoration(
-                  color: primaryMaroon.withOpacity(0.95),
+                  color: primaryMaroon.withValues(alpha: 0.95),
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [BoxShadow(color: Colors.black45, blurRadius: 15)],
                 ),
@@ -132,11 +158,19 @@ class _RegisterPageState extends State<RegisterPage> {
                   key: _formKey,
                   child: Column(
                     children: [
-                      const Icon(Icons.person_add, color: Colors.white, size: 50),
+                      const Icon(
+                        Icons.person_add,
+                        color: Colors.white,
+                        size: 50,
+                      ),
                       const SizedBox(height: 10),
                       const Text(
                         "Alumni Registration",
-                        style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const Text(
                         "Enter your details to join the Tracer System",
@@ -144,22 +178,48 @@ class _RegisterPageState extends State<RegisterPage> {
                       ),
                       const SizedBox(height: 30),
                       _buildLabel("Account Information"),
-                      _buildTextField(nameController, "Full Name", Icons.person),
+                      _buildTextField(
+                        nameController,
+                        "Full Name",
+                        Icons.person,
+                      ),
                       const SizedBox(height: 15),
                       _buildTextField(emailController, "Email", Icons.email),
                       const SizedBox(height: 15),
                       Row(
                         children: [
-                          Expanded(child: _buildTextField(passwordController, "Password", Icons.lock, isPass: true)),
+                          Expanded(
+                            child: _buildTextField(
+                              passwordController,
+                              "Password",
+                              Icons.lock,
+                              isPass: true,
+                            ),
+                          ),
                           const SizedBox(width: 10),
-                          Expanded(child: _buildTextField(confirmPasswordController, "Confirm", Icons.lock_clock, isPass: true)),
+                          Expanded(
+                            child: _buildTextField(
+                              confirmPasswordController,
+                              "Confirm",
+                              Icons.lock_clock,
+                              isPass: true,
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 25),
                       _buildLabel("Academic Background"),
-                      _buildDropdown("Select Program", programs, (val) => setState(() => selectedProgram = val)),
+                      _buildDropdown(
+                        "Select Program",
+                        programs,
+                        (val) => setState(() => selectedProgram = val),
+                      ),
                       const SizedBox(height: 15),
-                      _buildDropdown("Year Graduated", years, (val) => setState(() => selectedYear = val)),
+                      _buildDropdown(
+                        "Year Graduated",
+                        years,
+                        (val) => setState(() => selectedYear = val),
+                      ),
                       const SizedBox(height: 40),
                       SizedBox(
                         width: double.infinity,
@@ -169,16 +229,24 @@ class _RegisterPageState extends State<RegisterPage> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: accentGold,
                             foregroundColor: primaryMaroon,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
                           ),
                           child: isLoading
                               ? const CircularProgressIndicator()
-                              : const Text("REGISTER", style: TextStyle(fontWeight: FontWeight.bold)),
+                              : const Text(
+                                  "REGISTER",
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
                         ),
                       ),
                       TextButton(
                         onPressed: () => Navigator.pop(context),
-                        child: Text("Already have an account? Login", style: TextStyle(color: accentGold)),
+                        child: Text(
+                          "Already have an account? Login",
+                          style: TextStyle(color: accentGold),
+                        ),
                       ),
                     ],
                   ),
@@ -195,11 +263,23 @@ class _RegisterPageState extends State<RegisterPage> {
     return Container(
       alignment: Alignment.centerLeft,
       padding: const EdgeInsets.only(bottom: 10),
-      child: Text(text, style: TextStyle(color: accentGold, fontWeight: FontWeight.bold, fontSize: 14)),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: accentGold,
+          fontWeight: FontWeight.bold,
+          fontSize: 14,
+        ),
+      ),
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, String label, IconData icon, {bool isPass = false}) {
+  Widget _buildTextField(
+    TextEditingController controller,
+    String label,
+    IconData icon, {
+    bool isPass = false,
+  }) {
     return TextFormField(
       controller: controller,
       obscureText: isPass,
@@ -208,8 +288,12 @@ class _RegisterPageState extends State<RegisterPage> {
         labelText: label,
         labelStyle: const TextStyle(color: Colors.white60),
         prefixIcon: Icon(icon, color: Colors.white70, size: 18),
-        enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
-        focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: accentGold)),
+        enabledBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: Colors.white24),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: accentGold),
+        ),
         filled: true,
         fillColor: Colors.white10,
       ),
@@ -217,18 +301,26 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
-  Widget _buildDropdown(String hint, List<String> items, Function(String?) onChanged) {
+  Widget _buildDropdown(
+    String hint,
+    List<String> items,
+    Function(String?) onChanged,
+  ) {
     return DropdownButtonFormField<String>(
       dropdownColor: primaryMaroon,
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: const TextStyle(color: Colors.white60),
-        enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+        enabledBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: Colors.white24),
+        ),
         filled: true,
         fillColor: Colors.white10,
       ),
-      items: items.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+      items: items
+          .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+          .toList(),
       onChanged: onChanged,
       validator: (val) => val == null ? "Required" : null,
     );

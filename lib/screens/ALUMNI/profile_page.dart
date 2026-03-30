@@ -1,40 +1,64 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import '../../services/api_service.dart';
+import '../../state/user_store.dart';
 
 class ProfilePage extends StatefulWidget {
-  const ProfilePage({super.key});
+  final Map<String, dynamic> user;
+  const ProfilePage({super.key, required this.user});
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  // State control
   bool _isEditing = false;
+  bool _isSaving = false;
   final _formKey = GlobalKey<FormState>();
 
-  // Colors based on your theme
   static const Color primaryMaroon = Color(0xFF4A152C);
   static const Color lightBackground = Color(0xFFF7F8FA);
 
-  // Controllers for all profile fields
-  final TextEditingController _firstNameController = TextEditingController(text: "Maria");
-  final TextEditingController _lastNameController = TextEditingController(text: "Santos");
-  final TextEditingController _emailController = TextEditingController(text: "maria.santos@email.com");
-  final TextEditingController _phoneController = TextEditingController(text: "+63 912 345 6789");
-  final TextEditingController _addressController = TextEditingController(text: "123 Main Street, Quezon City, Metro Manila");
-  final TextEditingController _statusController = TextEditingController(text: "Single");
-  final TextEditingController _studentNumController = TextEditingController(text: "2017-00123");
-  final TextEditingController _gradYearController = TextEditingController(text: "2021");
-  final TextEditingController _degreeController = TextEditingController(text: "Bachelor of Science");
-  final TextEditingController _majorController = TextEditingController(text: "Computer Science");
+  late final TextEditingController _firstNameController;
+  late final TextEditingController _lastNameController;
+  late final TextEditingController _emailController;
+  late final TextEditingController _phoneController;
+  late final TextEditingController _addressController;
+  late final TextEditingController _statusController;
+  late final TextEditingController _studentNumController;
+  late final TextEditingController _gradYearController;
+  late final TextEditingController _degreeController;
+  late final TextEditingController _majorController;
+
+  @override
+  void initState() {
+    super.initState();
+    _firstNameController = TextEditingController(text: widget.user['firstName'] ?? '');
+    _lastNameController = TextEditingController(text: widget.user['lastName'] ?? '');
+    _emailController = TextEditingController(text: widget.user['email'] ?? '');
+    _phoneController = TextEditingController(text: widget.user['phone'] ?? '');
+    _addressController = TextEditingController(text: widget.user['address'] ?? '');
+    _statusController = TextEditingController(text: widget.user['status'] ?? '');
+    _studentNumController = TextEditingController(text: widget.user['studentNumber'] ?? '');
+    _gradYearController = TextEditingController(text: widget.user['gradYear'] ?? '');
+    _degreeController = TextEditingController(text: widget.user['degree'] ?? '');
+    _majorController = TextEditingController(text: widget.user['major'] ?? '');
+  }
 
   @override
   void dispose() {
-    // Clean up controllers
     for (var controller in [
-      _firstNameController, _lastNameController, _emailController, 
-      _phoneController, _addressController, _statusController,
-      _studentNumController, _gradYearController, _degreeController, _majorController
+      _firstNameController,
+      _lastNameController,
+      _emailController,
+      _phoneController,
+      _addressController,
+      _statusController,
+      _studentNumController,
+      _gradYearController,
+      _degreeController,
+      _majorController
     ]) {
       controller.dispose();
     }
@@ -52,7 +76,6 @@ class _ProfilePageState extends State<ProfilePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              /// HEADER SECTION
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -65,7 +88,9 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        _isEditing ? "Update your personal and academic details" : "View and manage your personal information",
+                        _isEditing
+                            ? "Update your personal and academic details"
+                            : "View and manage your personal information",
                         style: const TextStyle(color: Colors.grey, fontSize: 14),
                       ),
                     ],
@@ -73,10 +98,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   _buildHeaderButton(),
                 ],
               ),
-
               const SizedBox(height: 32),
-
-              /// STATUS BANNER (Only visible in view mode)
               if (!_isEditing)
                 Container(
                   margin: const EdgeInsets.only(bottom: 32),
@@ -93,15 +115,15 @@ class _ProfilePageState extends State<ProfilePage> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text("Profile Complete", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
-                          Text("All required information has been provided", style: TextStyle(fontSize: 13, color: Colors.green.shade700)),
+                          const Text("Profile Complete",
+                              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+                          Text("All required information has been provided",
+                              style: TextStyle(fontSize: 13, color: Colors.green.shade700)),
                         ],
                       ),
                     ],
                   ),
                 ),
-
-              /// PERSONAL INFORMATION CARD
               _buildProfileSection(
                 title: "Personal Information",
                 icon: Icons.person_outline,
@@ -123,19 +145,19 @@ class _ProfilePageState extends State<ProfilePage> {
                   _buildField("Civil Status", _statusController),
                 ],
               ),
-
               const SizedBox(height: 32),
-
-              /// ACADEMIC INFORMATION CARD
               _buildProfileSection(
                 title: "Academic Information",
                 icon: Icons.school_outlined,
                 children: [
                   Row(
                     children: [
-                      Expanded(child: _buildField("Student Number", _studentNumController, enabled: false)), // Usually read-only
+                      Expanded(
+                          child: _buildField("Student Number", _studentNumController, enabled: false)),
                       const SizedBox(width: 24),
-                      Expanded(child: _buildField("Graduation Year", _gradYearController, icon: Icons.calendar_today_outlined)),
+                      Expanded(
+                          child: _buildField("Graduation Year", _gradYearController,
+                              icon: Icons.calendar_today_outlined)),
                     ],
                   ),
                   const SizedBox(height: 20),
@@ -151,7 +173,6 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  /// Toggle Button Logic
   Widget _buildHeaderButton() {
     if (_isEditing) {
       return Row(
@@ -162,20 +183,20 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           const SizedBox(width: 12),
           ElevatedButton(
-            onPressed: () {
-              if (_formKey.currentState!.validate()) {
-                // Perform save logic here
-                setState(() => _isEditing = false);
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Profile Updated Successfully")));
-              }
-            },
+            onPressed: _isSaving ? null : _saveProfile,
             style: ElevatedButton.styleFrom(
               backgroundColor: primaryMaroon,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
-            child: const Text("Save Changes"),
+            child: _isSaving
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  )
+                : const Text("Save Changes"),
           ),
         ],
       );
@@ -194,8 +215,97 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  /// Section Card Wrapper
-  Widget _buildProfileSection({required String title, required IconData icon, required List<Widget> children}) {
+  Future<void> _saveProfile() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (_isSaving) return;
+
+    setState(() => _isSaving = true);
+    String? feedbackMessage;
+    bool saveSucceeded = true;
+
+    final firstName = _firstNameController.text.trim();
+    final lastName = _lastNameController.text.trim();
+    final fullName = [firstName, lastName].where((s) => s.isNotEmpty).join(' ');
+
+    final localPatch = <String, dynamic>{
+      'firstName': firstName,
+      'lastName': lastName,
+      'name': fullName.isEmpty ? (widget.user['name'] ?? '') : fullName,
+      'email': _emailController.text.trim(),
+      'phone': _phoneController.text.trim(),
+      'address': _addressController.text.trim(),
+      'status': _statusController.text.trim(),
+      'studentNumber': _studentNumController.text.trim(),
+      'gradYear': _gradYearController.text.trim(),
+      'degree': _degreeController.text.trim(),
+      'major': _majorController.text.trim(),
+    };
+
+    // Update local state immediately so other screens update without a restart.
+    UserStore.patch(localPatch);
+
+    // Best-effort persist to backend (requires `update_profile.php` on your server).
+    try {
+      final rawUserId = UserStore.value?['id'] ?? widget.user['id'];
+      final userId = int.tryParse('$rawUserId') ?? 0;
+
+      if (userId > 0) {
+        final response = await http.post(
+          ApiService.uri('update_profile.php'),
+          headers: {"Content-Type": "application/json"},
+          body: jsonEncode({
+            "userId": userId,
+            ...localPatch,
+          }),
+        );
+
+        if (response.statusCode == 200) {
+          final decoded = jsonDecode(response.body);
+          if (decoded is Map<String, dynamic>) {
+            final status = decoded['status']?.toString().toLowerCase();
+            if (status == 'success' && decoded['user'] is Map) {
+              UserStore.patch(Map<String, dynamic>.from(decoded['user'] as Map));
+            } else if (status != null && status != 'success') {
+              saveSucceeded = false;
+              feedbackMessage =
+                  decoded['message']?.toString().trim().isNotEmpty == true
+                  ? decoded['message']?.toString().trim()
+                  : "Failed to update profile.";
+            }
+          } else {
+            saveSucceeded = false;
+            feedbackMessage = "Unexpected response while updating profile.";
+          }
+        } else {
+          saveSucceeded = false;
+          feedbackMessage = "Failed to update profile (${response.statusCode}).";
+        }
+      }
+    } catch (e) {
+      saveSucceeded = false;
+      feedbackMessage = "Error saving profile. Please try again.";
+      debugPrint("Profile update error: $e");
+    } finally {
+      if (!mounted) return;
+      setState(() {
+        _isSaving = false;
+        _isEditing = !saveSucceeded;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            feedbackMessage ??
+                (saveSucceeded
+                    ? "Profile Updated Successfully"
+                    : "Failed to update profile."),
+          ),
+        ),
+      );
+    }
+  }
+
+  Widget _buildProfileSection(
+      {required String title, required IconData icon, required List<Widget> children}) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -220,15 +330,20 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  /// Universal Field (Switches between Text and TextFormField)
-  Widget _buildField(String label, TextEditingController controller, {IconData? icon, bool enabled = true}) {
+  Widget _buildField(String label, TextEditingController controller,
+      {IconData? icon, bool enabled = true}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            if (icon != null) ...[Icon(icon, size: 14, color: Colors.grey.shade700), const SizedBox(width: 6)],
-            Text(label, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Color(0xFF2D2D2D))),
+            if (icon != null) ...[
+              Icon(icon, size: 14, color: Colors.grey.shade700),
+              const SizedBox(width: 6)
+            ],
+            Text(label,
+                style: const TextStyle(
+                    fontWeight: FontWeight.w600, fontSize: 13, color: Color(0xFF2D2D2D))),
           ],
         ),
         const SizedBox(height: 8),
@@ -239,8 +354,12 @@ class _ProfilePageState extends State<ProfilePage> {
                   filled: true,
                   fillColor: Colors.white,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Colors.grey)),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey.shade300)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Colors.grey)),
+                  enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.grey.shade300)),
                 ),
               )
             : Container(
@@ -251,7 +370,8 @@ class _ProfilePageState extends State<ProfilePage> {
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: Colors.grey.shade200),
                 ),
-                child: Text(controller.text, style: const TextStyle(fontSize: 14, color: Colors.black87)),
+                child: Text(controller.text,
+                    style: const TextStyle(fontSize: 14, color: Colors.black87)),
               ),
       ],
     );

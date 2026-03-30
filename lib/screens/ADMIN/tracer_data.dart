@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../../services/api_service.dart';
 
 class TracerDataPage extends StatefulWidget {
   const TracerDataPage({super.key});
@@ -32,20 +33,40 @@ class _TracerDataPageState extends State<TracerDataPage> {
     setState(() => _isLoading = true);
     try {
       final response = await http.get(
-        Uri.parse("http://localhost/alumni_php/get_tracer_submissions.php"),
+        ApiService.uri('get_tracer_submissions.php'),
       );
 
       if (response.statusCode == 200) {
-        final List<dynamic> jsonData = json.decode(response.body);
+        final decoded = json.decode(response.body);
+        final List<dynamic> jsonData = decoded is List
+            ? decoded
+            : (decoded is Map ? decoded['alumni'] ?? [] : []);
         setState(() {
-          _allData = jsonData.map((item) => Map<String, dynamic>.from(item)).toList();
+          _allData = jsonData
+              .map((item) {
+                final map = Map<String, dynamic>.from(item);
+                map['full_name'] = map['full_name'] ?? map['name'] ?? 'N/A';
+                map['job_related'] =
+                    map['job_related'] ?? map['related_job'] ?? 'N/A';
+                map['company_name'] =
+                    map['company_name'] ?? map['employer'] ?? 'N/A';
+                map['submitted_at'] =
+                    map['submitted_at'] ?? map['date_submitted'] ?? 'N/A';
+                return map;
+              })
+              .toList();
           _filteredList = _allData;
           _isLoading = false;
         });
+      } else {
+        debugPrint("HTTP Error: ${response.statusCode} - ${response.body}");
+        setState(() => _isLoading = false);
+        _showErrorSnackBar("Failed to load data: ${response.statusCode}");
       }
     } catch (e) {
       debugPrint("Fetch Error: $e");
       setState(() => _isLoading = false);
+      _showErrorSnackBar("Error loading data: $e");
     }
   }
 
@@ -57,9 +78,11 @@ class _TracerDataPageState extends State<TracerDataPage> {
 
         final matchesSearch = name.contains(query);
         final matchesStatus =
-            selectedStatus == "All Status" || item['employment_status'] == selectedStatus;
+            selectedStatus == "All Status" ||
+            item['employment_status'] == selectedStatus;
         final matchesRelated =
-            selectedRelated == "All Degree Related" || item['job_related'] == selectedRelated;
+            selectedRelated == "All Degree Related" ||
+            item['job_related'] == selectedRelated;
 
         return matchesSearch && matchesStatus && matchesRelated;
       }).toList();
@@ -87,9 +110,10 @@ class _TracerDataPageState extends State<TracerDataPage> {
                   _filteredList.isEmpty
                       ? const Center(
                           child: Padding(
-                          padding: EdgeInsets.all(50.0),
-                          child: Text("No data found."),
-                        ))
+                            padding: EdgeInsets.all(50.0),
+                            child: Text("No data found."),
+                          ),
+                        )
                       : _buildTracerTable(),
                 ],
               ),
@@ -104,11 +128,19 @@ class _TracerDataPageState extends State<TracerDataPage> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("Tracer Submissions",
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: primaryMaroon)),
+            Text(
+              "Tracer Submissions",
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: primaryMaroon,
+              ),
+            ),
             const SizedBox(height: 4),
-            Text("Monitoring outcomes for ${_allData.length} alumni responses.",
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
+            Text(
+              "Monitoring outcomes for ${_allData.length} alumni responses.",
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+            ),
           ],
         ),
         OutlinedButton.icon(
@@ -123,19 +155,40 @@ class _TracerDataPageState extends State<TracerDataPage> {
 
   Widget _buildAnalyticsCards() {
     int total = _allData.length;
-    int employed = _allData.where((e) => e['employment_status'] == "Employed").length;
-    int selfEmployed = _allData.where((e) => e['employment_status'] == "Self-Employed").length;
-    int unemployed = _allData.where((e) => e['employment_status'] == "Unemployed").length;
+    int employed = _allData
+        .where((e) => e['employment_status'] == "Employed")
+        .length;
+    int selfEmployed = _allData
+        .where((e) => e['employment_status'] == "Self-Employed")
+        .length;
+    int unemployed = _allData
+        .where((e) => e['employment_status'] == "Unemployed")
+        .length;
 
     return Row(
       children: [
-        _statCard("Total Responses", total.toString(), Icons.people, Colors.blue),
+        _statCard(
+          "Total Responses",
+          total.toString(),
+          Icons.people,
+          Colors.blue,
+        ),
         const SizedBox(width: 16),
         _statCard("Employed", employed.toString(), Icons.work, Colors.green),
         const SizedBox(width: 16),
-        _statCard("Self-Employed", selfEmployed.toString(), Icons.storefront, Colors.purple),
+        _statCard(
+          "Self-Employed",
+          selfEmployed.toString(),
+          Icons.storefront,
+          Colors.purple,
+        ),
         const SizedBox(width: 16),
-        _statCard("Unemployed", unemployed.toString(), Icons.person_off, Colors.red),
+        _statCard(
+          "Unemployed",
+          unemployed.toString(),
+          Icons.person_off,
+          Colors.red,
+        ),
       ],
     );
   }
@@ -151,13 +204,25 @@ class _TracerDataPageState extends State<TracerDataPage> {
         ),
         child: Row(
           children: [
-            CircleAvatar(backgroundColor: color.withOpacity(0.1), child: Icon(icon, color: color)),
+            CircleAvatar(
+              backgroundColor: color.withValues(alpha: 0.1),
+              child: Icon(icon, color: color),
+            ),
             const SizedBox(width: 16),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
-                Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                Text(
+                  title,
+                  style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                ),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ],
             ),
           ],
@@ -180,41 +245,59 @@ class _TracerDataPageState extends State<TracerDataPage> {
               filled: true,
               fillColor: Colors.white,
               border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderColor)),
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: borderColor),
+              ),
             ),
           ),
         ),
         const SizedBox(width: 16),
-        _dropdown("Status", selectedStatus,
-            ["All Status", "Employed", "Self-Employed", "Unemployed"], (val) {
-          setState(() {
-            selectedStatus = val!;
-            _runFilter();
-          });
-        }),
+        _dropdown(
+          "Status",
+          selectedStatus,
+          ["All Status", "Employed", "Self-Employed", "Unemployed"],
+          (val) {
+            setState(() {
+              selectedStatus = val!;
+              _runFilter();
+            });
+          },
+        ),
         const SizedBox(width: 12),
-        _dropdown("Related", selectedRelated,
-            ["All Degree Related", "Yes", "Somewhat", "No"], (val) {
-          setState(() {
-            selectedRelated = val!;
-            _runFilter();
-          });
-        }),
+        _dropdown(
+          "Related",
+          selectedRelated,
+          ["All Degree Related", "Yes", "Somewhat", "No"],
+          (val) {
+            setState(() {
+              selectedRelated = val!;
+              _runFilter();
+            });
+          },
+        ),
       ],
     );
   }
 
-  Widget _dropdown(String hint, String value, List<String> items, ValueChanged<String?> onChanged) {
+  Widget _dropdown(
+    String hint,
+    String value,
+    List<String> items,
+    ValueChanged<String?> onChanged,
+  ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: borderColor)),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: borderColor),
+      ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: value,
-          items: items.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+          items: items
+              .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+              .toList(),
           onChanged: onChanged,
         ),
       ),
@@ -225,9 +308,10 @@ class _TracerDataPageState extends State<TracerDataPage> {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: borderColor)),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderColor),
+      ),
       child: DataTable(
         headingRowColor: WidgetStateProperty.all(bgLight),
         columns: const [
@@ -240,20 +324,28 @@ class _TracerDataPageState extends State<TracerDataPage> {
         rows: _filteredList.map((data) {
           final isUnemployed = data['employment_status'] == "Unemployed";
 
-          return DataRow(cells: [
-            DataCell(Text(data['full_name'] ?? "N/A",
-                style: const TextStyle(fontWeight: FontWeight.bold))),
-            DataCell(_statusBadge(data['employment_status'] ?? "N/A")),
+          return DataRow(
+            cells: [
+              DataCell(
+                Text(
+                  data['full_name'] ?? "N/A",
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+              DataCell(_statusBadge(data['employment_status'] ?? "N/A")),
 
-            // ✅ FIX: Hide job title if unemployed
-            DataCell(Text(isUnemployed ? "—" : (data['job_title'] ?? "N/A"))),
+              // ✅ FIX: Hide job title if unemployed
+              DataCell(Text(isUnemployed ? "—" : (data['job_title'] ?? "N/A"))),
 
-            DataCell(Text(data['job_related'] ?? "N/A")),
-            DataCell(IconButton(
-              icon: const Icon(Icons.visibility, color: Colors.blue),
-              onPressed: () => _showTracerDetails(data),
-            )),
-          ]);
+              DataCell(Text(data['job_related'] ?? "N/A")),
+              DataCell(
+                IconButton(
+                  icon: const Icon(Icons.visibility, color: Colors.blue),
+                  onPressed: () => _showTracerDetails(data),
+                ),
+              ),
+            ],
+          );
         }).toList(),
       ),
     );
@@ -267,93 +359,139 @@ class _TracerDataPageState extends State<TracerDataPage> {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
-      child: Text(status,
-          style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 11)),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        status,
+        style: TextStyle(
+          color: color,
+          fontWeight: FontWeight.bold,
+          fontSize: 11,
+        ),
+      ),
+    );
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
     );
   }
 
   void _showTracerDetails(Map<String, dynamic> data) {
-  final isUnemployed = data['employment_status'] == "Unemployed";
-  final isNotRelated = data['job_related']?.toString().toLowerCase() == "no";
-  final isWantMoreHours = data['want_more_hours']?.toString().toLowerCase() == "yes";
+    final isUnemployed = data['employment_status'] == "Unemployed";
+    final isNotRelated = data['job_related']?.toString().toLowerCase() == "no";
+    final isWantMoreHours =
+        data['want_more_hours']?.toString().toLowerCase() == "yes";
 
-  showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: Text("Tracer Details: ${data['full_name'] ?? 'Unknown'}"),
-      content: SizedBox(
-        width: 500,
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _detailSection("Graduate Profile", [
-                _detailRow("Sex", data['sex']),
-                _detailRow("Age", data['age']),
-                _detailRow("Civil Status", data['civil_status']),
-                _detailRow("Contact", data['contact_number']),
-                _detailRow("Address", data['address']),
-                _detailRow("Year Graduated", data['year_graduated']),
-                _detailRow("Honors / Awards", data['honors']),
-                _detailRow("Pre-graduation Experience", data['pre_grad_experience']),
-                _detailRow("Study Mode", data['study_mode']),
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("Tracer Details: ${data['full_name'] ?? 'Unknown'}"),
+        content: SizedBox(
+          width: 500,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _detailSection("Graduate Profile", [
+                  _detailRow("Sex", data['sex']),
+                  _detailRow("Age", data['age']),
+                  _detailRow("Civil Status", data['civil_status']),
+                  _detailRow("Contact", data['contact_number']),
+                  _detailRow("Address", data['address']),
+                  _detailRow("Year Graduated", data['year_graduated']),
+                  _detailRow("Honors / Awards", data['honors']),
+                  _detailRow(
+                    "Pre-graduation Experience",
+                    data['pre_grad_experience'],
+                  ),
+                  _detailRow("Study Mode", data['study_mode']),
+                ]),
 
+                const Divider(height: 32),
 
-              ]),
+                _detailSection("Employment Info", [
+                  _detailRow("Status", data['employment_status']),
 
-              const Divider(height: 32),
+                  if (!isUnemployed) ...[
+                    _detailRow(
+                      "Time to First Employment",
+                      data['first_job_timing'],
+                    ),
+                    _detailRow(
+                      "First Job Related to Degree",
+                      data['first_job_related'],
+                    ),
+                    _detailRow("Employment Type", data['employment_type']),
+                    _detailRow("Job Title", data['job_title']),
+                    _detailRow("Company/Organization", data['company_name']),
+                    _detailRow("Sector", data['sector']),
+                    _detailRow("Country of Work", data['country']),
+                    _detailRow("Income", data['income_range']),
+                    _detailRow("Related to Degree", data['job_related']),
+                    if (isNotRelated)
+                      _detailRow(
+                        "Reason for working outside field",
+                        data['not_related_reason'],
+                      ),
+                    _detailRow(
+                      "How long in current position?",
+                      data['job_duration'],
+                    ),
+                    _detailRow("Promoted since first job?", data['promotion']),
+                    _detailRow(
+                      "Would you like to work more hours?",
+                      data['want_more_hours'],
+                    ),
 
-              _detailSection("Employment Info", [
-                _detailRow("Status", data['employment_status']),
+                    if (isWantMoreHours)
+                      _detailRow(
+                        "Reason for seeking more hours",
+                        data['more_hours_reason'],
+                      ),
 
-                if (!isUnemployed) ...[
-                  _detailRow("Time to First Employment", data['first_job_timing']),
-                  _detailRow("First Job Related to Degree", data['first_job_related']),
-                  _detailRow("Employment Type", data['employment_type']),
-                  _detailRow("Job Title", data['job_title']),
-                  _detailRow("Company/Organization", data['company_name']),
-                  _detailRow("Sector", data['sector']),
-                  _detailRow("Country of Work", data['country']),
-                  _detailRow("Income", data['income_range']),
-                  _detailRow("Related to Degree", data['job_related']),
-                  if (isNotRelated)
-                    _detailRow("Reason for working outside field", data['not_related_reason']),
-                  _detailRow("How long in current position?", data['job_duration']),
-                  _detailRow("Promoted since first job?", data['promotion']),
-                  _detailRow("Would you like to work more hours?", data['want_more_hours']),
+                    _detailRow(
+                      "Employment Classification",
+                      data['classification'],
+                    ),
+                    _detailRow("Job Satisfaction", data['satisfaction']),
+                  ],
 
-                  if (isWantMoreHours)
-                    _detailRow("Reason for seeking more hours", data['more_hours_reason']),
-                  
-                  _detailRow("Employment Classification", data['classification']),
-                  _detailRow("Job Satisfaction", data['satisfaction']),
-                ],
+                  if (isUnemployed)
+                    _detailRow("Reason", data['unemployment_reason']),
+                ]),
 
-                if (isUnemployed)
-                  _detailRow("Reason", data['unemployment_reason']),
-              ]),
-
-              const Divider(height: 32),
-              _detailRow("Submitted On", data['submitted_at']),
-            ],
+                const Divider(height: 32),
+                _detailRow("Submitted On", data['submitted_at']),
+              ],
+            ),
           ),
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Close"),
+          ),
+        ],
       ),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text("Close"))
-      ],
-    ),
-  );
-}
-
+    );
+  }
 
   Widget _detailSection(String title, List<Widget> children) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title,
-            style: TextStyle(fontWeight: FontWeight.bold, color: primaryMaroon, fontSize: 16)),
+        Text(
+          title,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: primaryMaroon,
+            fontSize: 16,
+          ),
+        ),
         const SizedBox(height: 8),
         ...children,
       ],
@@ -368,8 +506,11 @@ class _TracerDataPageState extends State<TracerDataPage> {
         children: [
           Text("$label: ", style: const TextStyle(fontWeight: FontWeight.w600)),
           Expanded(
-              child: Text(value?.toString() ?? "N/A",
-                  style: TextStyle(color: Colors.grey.shade800))),
+            child: Text(
+              value?.toString() ?? "N/A",
+              style: TextStyle(color: Colors.grey.shade800),
+            ),
+          ),
         ],
       ),
     );

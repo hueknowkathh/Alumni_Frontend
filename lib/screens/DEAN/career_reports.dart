@@ -24,7 +24,10 @@ class _CareerReportsPageState extends State<CareerReportsPage> {
     return Scaffold(
       backgroundColor: bgLight,
       appBar: AppBar(
-        title: const Text("Career Reports", style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          "Career Reports",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0,
@@ -56,11 +59,21 @@ class _CareerReportsPageState extends State<CareerReportsPage> {
             /// 2. SUMMARY CARDS
             Row(
               children: [
-                _buildSummaryCard("Graduates", "120", Icons.people, Colors.blue),
+                _buildSummaryCard(
+                  "Graduates",
+                  "120",
+                  Icons.people,
+                  Colors.blue,
+                ),
                 const SizedBox(width: 12),
                 _buildSummaryCard("Employed", "95", Icons.work, Colors.green),
                 const SizedBox(width: 12),
-                _buildSummaryCard("Unemployed", "15", Icons.person_off, Colors.red),
+                _buildSummaryCard(
+                  "Unemployed",
+                  "15",
+                  Icons.person_off,
+                  Colors.red,
+                ),
                 const SizedBox(width: 12),
                 _buildSummaryCard("Rate", "79%", Icons.trending_up, accentGold),
               ],
@@ -135,46 +148,82 @@ class _CareerReportsPageState extends State<CareerReportsPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+          ),
+        ],
       ),
       child: Row(
         children: [
           const Icon(Icons.filter_alt_outlined, color: Colors.grey),
           const SizedBox(width: 16),
-          _buildDropdown("Program", selectedProgram, ["BSIT", "BSCS", "BSHM"], (v) => setState(() => selectedProgram = v!)),
+          _buildDropdown("Program", selectedProgram, [
+            "BSIT",
+            "BSCS",
+            "BSHM",
+          ], (v) => setState(() => selectedProgram = v!)),
           const SizedBox(width: 24),
-          _buildDropdown("Batch", selectedBatch, ["2020", "2021", "2022"], (v) => setState(() => selectedBatch = v!)),
+          _buildDropdown("Batch", selectedBatch, [
+            "2020",
+            "2021",
+            "2022",
+          ], (v) => setState(() => selectedBatch = v!)),
           const SizedBox(width: 24),
-          _buildDropdown("Status", selectedStatus, ["All Status", "Employed", "Unemployed"], (v) => setState(() => selectedStatus = v!)),
+          _buildDropdown("Status", selectedStatus, [
+            "All Status",
+            "Employed",
+            "Unemployed",
+          ], (v) => setState(() => selectedStatus = v!)),
           const Spacer(),
           TextButton.icon(
             onPressed: () {},
             icon: const Icon(Icons.refresh),
             label: const Text("Refresh Data"),
             style: TextButton.styleFrom(foregroundColor: primaryMaroon),
-          )
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildDropdown(String label, String value, List<String> items, ValueChanged<String?> onChanged) {
+  Widget _buildDropdown(
+    String label,
+    String value,
+    List<String> items,
+    ValueChanged<String?> onChanged,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            color: Colors.grey,
+          ),
+        ),
         DropdownButton<String>(
           value: value,
           isDense: true,
           underline: const SizedBox(),
-          items: items.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+          items: items
+              .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+              .toList(),
           onChanged: onChanged,
         ),
       ],
     );
   }
 
-  Widget _buildSummaryCard(String label, String value, IconData icon, Color color) {
+  Widget _buildSummaryCard(
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(20),
@@ -186,15 +235,25 @@ class _CareerReportsPageState extends State<CareerReportsPage> {
           children: [
             Icon(icon, color: color, size: 28),
             const SizedBox(height: 8),
-            Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-            Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+            Text(
+              value,
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
+            Text(
+              label,
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildChartContainer({required String title, required Widget child, required double height}) {
+  Widget _buildChartContainer({
+    required String title,
+    required Widget child,
+    required double height,
+  }) {
     return Container(
       height: height,
       padding: const EdgeInsets.all(20),
@@ -205,7 +264,10 @@ class _CareerReportsPageState extends State<CareerReportsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 20),
           Expanded(child: child),
         ],
@@ -220,9 +282,20 @@ class _CareerReportsPageState extends State<CareerReportsPage> {
       BarChartData(
         backgroundColor: Colors.transparent,
         barGroups: [
-          BarChartGroupData(x: 2020, barRods: [BarChartRodData(toY: 75, color: accentGold, width: 20)]),
-          BarChartGroupData(x: 2021, barRods: [BarChartRodData(toY: 80, color: accentGold, width: 20)]),
-          BarChartGroupData(x: 2022, barRods: [BarChartRodData(toY: 85, color: primaryMaroon, width: 20)]),
+          BarChartGroupData(
+            x: 2020,
+            barRods: [BarChartRodData(toY: 75, color: accentGold, width: 20)],
+          ),
+          BarChartGroupData(
+            x: 2021,
+            barRods: [BarChartRodData(toY: 80, color: accentGold, width: 20)],
+          ),
+          BarChartGroupData(
+            x: 2022,
+            barRods: [
+              BarChartRodData(toY: 85, color: primaryMaroon, width: 20),
+            ],
+          ),
         ],
         borderData: FlBorderData(show: false),
         gridData: const FlGridData(show: false),
@@ -233,17 +306,53 @@ class _CareerReportsPageState extends State<CareerReportsPage> {
   Widget _buildPieChart({required bool isIndustry}) {
     return PieChart(
       PieChartData(
-        sections: isIndustry 
-        ? [
-            PieChartSectionData(value: 40, color: primaryMaroon, title: 'IT', radius: 50, titleStyle: const TextStyle(color: Colors.white, fontSize: 10)),
-            PieChartSectionData(value: 20, color: accentGold, title: 'Biz', radius: 50),
-            PieChartSectionData(value: 15, color: Colors.blue, title: 'Edu', radius: 50),
-            PieChartSectionData(value: 25, color: Colors.grey, title: 'Other', radius: 50),
-          ]
-        : [
-            PieChartSectionData(value: 70, color: Colors.green, title: 'Related', radius: 50, titleStyle: const TextStyle(color: Colors.white)),
-            PieChartSectionData(value: 30, color: Colors.red, title: 'Not Related', radius: 50, titleStyle: const TextStyle(color: Colors.white)),
-          ],
+        sections: isIndustry
+            ? [
+                PieChartSectionData(
+                  value: 40,
+                  color: primaryMaroon,
+                  title: 'IT',
+                  radius: 50,
+                  titleStyle: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                  ),
+                ),
+                PieChartSectionData(
+                  value: 20,
+                  color: accentGold,
+                  title: 'Biz',
+                  radius: 50,
+                ),
+                PieChartSectionData(
+                  value: 15,
+                  color: Colors.blue,
+                  title: 'Edu',
+                  radius: 50,
+                ),
+                PieChartSectionData(
+                  value: 25,
+                  color: Colors.grey,
+                  title: 'Other',
+                  radius: 50,
+                ),
+              ]
+            : [
+                PieChartSectionData(
+                  value: 70,
+                  color: Colors.green,
+                  title: 'Related',
+                  radius: 50,
+                  titleStyle: const TextStyle(color: Colors.white),
+                ),
+                PieChartSectionData(
+                  value: 30,
+                  color: Colors.red,
+                  title: 'Not Related',
+                  radius: 50,
+                  titleStyle: const TextStyle(color: Colors.white),
+                ),
+              ],
       ),
     );
   }
@@ -252,10 +361,22 @@ class _CareerReportsPageState extends State<CareerReportsPage> {
     return BarChart(
       BarChartData(
         barGroups: [
-          BarChartGroupData(x: 0, barRods: [BarChartRodData(toY: 10, color: Colors.grey)]),
-          BarChartGroupData(x: 1, barRods: [BarChartRodData(toY: 30, color: Colors.grey)]),
-          BarChartGroupData(x: 2, barRods: [BarChartRodData(toY: 35, color: primaryMaroon)]),
-          BarChartGroupData(x: 3, barRods: [BarChartRodData(toY: 25, color: accentGold)]),
+          BarChartGroupData(
+            x: 0,
+            barRods: [BarChartRodData(toY: 10, color: Colors.grey)],
+          ),
+          BarChartGroupData(
+            x: 1,
+            barRods: [BarChartRodData(toY: 30, color: Colors.grey)],
+          ),
+          BarChartGroupData(
+            x: 2,
+            barRods: [BarChartRodData(toY: 35, color: primaryMaroon)],
+          ),
+          BarChartGroupData(
+            x: 3,
+            barRods: [BarChartRodData(toY: 25, color: accentGold)],
+          ),
         ],
         borderData: FlBorderData(show: false),
       ),
@@ -266,9 +387,18 @@ class _CareerReportsPageState extends State<CareerReportsPage> {
     return BarChart(
       BarChartData(
         barGroups: [
-          BarChartGroupData(x: 0, barRods: [BarChartRodData(toY: 50, color: primaryMaroon)]), // Rank & File
-          BarChartGroupData(x: 1, barRods: [BarChartRodData(toY: 20, color: Colors.blue)]),    // Supervisor
-          BarChartGroupData(x: 2, barRods: [BarChartRodData(toY: 10, color: accentGold)]),    // Manager
+          BarChartGroupData(
+            x: 0,
+            barRods: [BarChartRodData(toY: 50, color: primaryMaroon)],
+          ), // Rank & File
+          BarChartGroupData(
+            x: 1,
+            barRods: [BarChartRodData(toY: 20, color: Colors.blue)],
+          ), // Supervisor
+          BarChartGroupData(
+            x: 2,
+            barRods: [BarChartRodData(toY: 10, color: accentGold)],
+          ), // Manager
         ],
         borderData: FlBorderData(show: false),
       ),

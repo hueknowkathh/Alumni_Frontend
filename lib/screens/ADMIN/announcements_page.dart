@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import '../../services/api_service.dart';
 
 class AnnouncementsPage extends StatefulWidget {
   const AnnouncementsPage({super.key});
@@ -42,12 +43,15 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
   Future<void> fetchAnnouncements() async {
     setState(() => isLoading = true);
     try {
-      var url = Uri.parse("http://localhost/alumni_php/get_announcements.php");
+      var url = ApiService.uri('get_announcements.php');
       var response = await http.get(url);
 
       if (response.statusCode == 200) {
+        final decoded = json.decode(response.body);
         setState(() {
-          announcements = json.decode(response.body);
+          announcements = decoded is List
+              ? decoded
+              : (decoded is Map ? decoded['announcements'] ?? [] : []);
         });
       }
     } catch (e) {
@@ -63,8 +67,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
     String category, {
     String? id,
   }) async {
-    final url =
-        Uri.parse("http://localhost/alumni_php/add_announcement.php");
+    final url = ApiService.uri('add_announcement.php');
 
     setState(() => isSaving = true);
 
@@ -119,63 +122,64 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
 
   void _showError(String msg) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), backgroundColor: Colors.red),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.red));
   }
 
   /// DELETE
   Future<void> deleteAnnouncement(String id) async {
-  try {
-    final url = Uri.parse("http://localhost/alumni_php/delete_announcement.php?id=1");
+    try {
+      final url = ApiService.uri(
+        'delete_announcement.php',
+        queryParameters: {'id': id},
+      );
 
-    final response = await http.post(
-      url,
-      body: {
-        "id": id,
-      },
-    );
+      final response = await http.post(url, body: {"id": id});
 
-    debugPrint("DELETE RESPONSE: ${response.body}");
+      debugPrint("DELETE RESPONSE: ${response.body}");
 
-    final result = jsonDecode(response.body);
+      final result = jsonDecode(response.body);
 
-    if (result['status'] == 'success') {
-      await fetchAnnouncements();
+      if (result['status'] == 'success') {
+        await fetchAnnouncements();
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("🗑️ Announcement deleted"),
-            backgroundColor: Colors.red,
-          ),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("🗑️ Announcement deleted"),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } else {
+        _showError(result['message'] ?? "Delete failed");
       }
-    } else {
-      _showError(result['message'] ?? "Delete failed");
+    } catch (e) {
+      debugPrint("Delete error: $e");
+      _showError("Failed to delete announcement");
     }
-  } catch (e) {
-    debugPrint("Delete error: $e");
-    _showError("Failed to delete announcement");
   }
-}
+
   /// DIALOG (UNCHANGED UI)
   void _showAnnouncementDialog({Map<String, dynamic>? announcement}) {
     final isEditing = announcement != null;
 
-    final titleController =
-        TextEditingController(text: isEditing ? announcement['title'] : "");
+    final titleController = TextEditingController(
+      text: isEditing ? announcement['title'] : "",
+    );
     final descController = TextEditingController(
-        text: isEditing ? announcement['description'] : "");
+      text: isEditing ? announcement['description'] : "",
+    );
 
-    String selectedCategory =
-        isEditing ? (announcement['category'] ?? "Events") : "Events";
+    String selectedCategory = isEditing
+        ? (announcement['category'] ?? "Events")
+        : "Events";
 
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title:
-            Text(isEditing ? "Edit Announcement" : "Create Announcement"),
+        title: Text(isEditing ? "Edit Announcement" : "Create Announcement"),
         content: SizedBox(
           width: 400,
           child: Column(
@@ -183,31 +187,24 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
             children: [
               TextField(
                 controller: titleController,
-                decoration:
-                    const InputDecoration(labelText: "Title"),
+                decoration: const InputDecoration(labelText: "Title"),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: descController,
                 maxLines: 3,
-                decoration:
-                    const InputDecoration(labelText: "Description"),
+                decoration: const InputDecoration(labelText: "Description"),
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 initialValue: selectedCategory,
-                items: [
-                  "Events",
-                  "Reminders",
-                  "Job Opportunities",
-                  "GENERAL"
-                ]
-                    .map((cat) =>
-                        DropdownMenuItem(value: cat, child: Text(cat)))
+                items: ["Events", "Reminders", "Job Opportunities", "GENERAL"]
+                    .map(
+                      (cat) => DropdownMenuItem(value: cat, child: Text(cat)),
+                    )
                     .toList(),
                 onChanged: (value) => selectedCategory = value!,
-                decoration:
-                    const InputDecoration(labelText: "Category"),
+                decoration: const InputDecoration(labelText: "Category"),
               ),
             ],
           ),
@@ -222,9 +219,9 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
               backgroundColor: primaryMaroon,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30)),
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 24, vertical: 12),
+                borderRadius: BorderRadius.circular(30),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
             onPressed: isSaving
                 ? null
@@ -265,15 +262,15 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
         content: const Text("This action cannot be undone."),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel")),
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
               await deleteAnnouncement(id);
             },
-            child: const Text("Delete",
-                style: TextStyle(color: Colors.red)),
+            child: const Text("Delete", style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -295,17 +292,22 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text("Manage Announcements",
-                        style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: primaryMaroon)),
+                    Text(
+                      "Manage Announcements",
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: primaryMaroon,
+                      ),
+                    ),
                     const SizedBox(height: 4),
                     Text(
-                        "Create and oversee public updates for the alumni portal.",
-                        style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontSize: 14)),
+                      "Create and oversee public updates for the alumni portal.",
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 14,
+                      ),
+                    ),
                   ],
                 ),
                 Row(
@@ -317,8 +319,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                     ),
                     const SizedBox(width: 12),
                     ElevatedButton.icon(
-                      onPressed: () =>
-                          _showAnnouncementDialog(),
+                      onPressed: () => _showAnnouncementDialog(),
                       icon: const Icon(Icons.add, size: 18),
                       label: const Text("Create New"),
                       style: ElevatedButton.styleFrom(
@@ -327,7 +328,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                       ),
                     ),
                   ],
-                )
+                ),
               ],
             ),
           ),
@@ -335,156 +336,130 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
 
           Expanded(
             child: isLoading
-                ? Center(
-                    child: CircularProgressIndicator(
-                        color: primaryMaroon))
+                ? Center(child: CircularProgressIndicator(color: primaryMaroon))
                 : announcements.isEmpty
-                    ? Center(
-                        child: Text("No announcements yet.",
-                            style: TextStyle(
-                                color: Colors.grey.shade500)))
-                    : ListView.builder(
-                        padding: const EdgeInsets.fromLTRB(
-                            32, 16, 32, 32),
-                        itemCount: announcements.length,
-                        itemBuilder: (context, index) {
-                          var ann = announcements[index];
-                          Color catColor =
-                              getCategoryColor(
-                                  ann['category'] ?? "");
+                ? Center(
+                    child: Text(
+                      "No announcements yet.",
+                      style: TextStyle(color: Colors.grey.shade500),
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(32, 16, 32, 32),
+                    itemCount: announcements.length,
+                    itemBuilder: (context, index) {
+                      var ann = announcements[index];
+                      Color catColor = getCategoryColor(ann['category'] ?? "");
 
-                          return Container(
-                            margin:
-                                const EdgeInsets.only(bottom: 16),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius:
-                                  BorderRadius.circular(12),
-                              border:
-                                  Border.all(color: borderColor),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black
-                                      .withOpacity(0.02),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
-                                )
-                              ],
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: borderColor),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.02),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
                             ),
-                            child: Padding(
-                              padding:
-                                  const EdgeInsets.all(20),
-                              child: Row(
-                                crossAxisAlignment:
-                                    CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    width: 4,
-                                    height: 60,
-                                    decoration: BoxDecoration(
-                                      color: catColor,
-                                      borderRadius:
-                                          BorderRadius.circular(2),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 20),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                          ],
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                width: 4,
+                                height: 60,
+                                decoration: BoxDecoration(
+                                  color: catColor,
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                              ),
+                              const SizedBox(width: 20),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
                                       children: [
-                                        Row(
-                                          children: [
-                                            Container(
-                                              padding:
-                                                  const EdgeInsets
-                                                      .symmetric(
-                                                          horizontal:
-                                                              8,
-                                                          vertical:
-                                                              2),
-                                              decoration:
-                                                  BoxDecoration(
-                                                color: catColor
-                                                    .withOpacity(
-                                                        0.1),
-                                                borderRadius:
-                                                    BorderRadius
-                                                        .circular(
-                                                            4),
-                                              ),
-                                              child: Text(
-                                                ann['category']
-                                                        ?.toUpperCase() ??
-                                                    "GENERAL",
-                                                style: TextStyle(
-                                                  color: catColor,
-                                                  fontSize: 10,
-                                                  fontWeight:
-                                                      FontWeight
-                                                          .bold,
-                                                  letterSpacing:
-                                                      0.5,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          ann['title'] ??
-                                              "No Title",
-                                          style: const TextStyle(
-                                            fontWeight:
-                                                FontWeight.bold,
-                                            fontSize: 18,
-                                            color:
-                                                Color(0xFF2D3436),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 2,
                                           ),
-                                        ),
-                                        const SizedBox(height: 6),
-                                        Text(
-                                          ann['description'] ??
-                                              "",
-                                          style: TextStyle(
-                                            color: Colors
-                                                .grey.shade700,
-                                            height: 1.5,
+                                          decoration: BoxDecoration(
+                                            color: catColor.withValues(
+                                              alpha: 0.1,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              4,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            ann['category']?.toUpperCase() ??
+                                                "GENERAL",
+                                            style: TextStyle(
+                                              color: catColor,
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                              letterSpacing: 0.5,
+                                            ),
                                           ),
                                         ),
                                       ],
                                     ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      ann['title'] ?? "No Title",
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 18,
+                                        color: Color(0xFF2D3436),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      ann['description'] ?? "",
+                                      style: TextStyle(
+                                        color: Colors.grey.shade700,
+                                        height: 1.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Column(
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.edit_outlined,
+                                      color: Colors.blue,
+                                      size: 20,
+                                    ),
+                                    onPressed: () => _showAnnouncementDialog(
+                                      announcement: ann,
+                                    ),
                                   ),
-                                  Column(
-                                    children: [
-                                      IconButton(
-                                        icon: const Icon(
-                                            Icons.edit_outlined,
-                                            color: Colors.blue,
-                                            size: 20),
-                                        onPressed: () =>
-                                            _showAnnouncementDialog(
-                                                announcement:
-                                                    ann),
-                                      ),
-                                      IconButton(
-                                        icon: const Icon(
-                                            Icons.delete_outline,
-                                            color: Colors.red,
-                                            size: 20),
-                                        onPressed: () =>
-                                            _confirmDelete(
-                                                ann['id']
-                                                    .toString()),
-                                      ),
-                                    ],
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.delete_outline,
+                                      color: Colors.red,
+                                      size: 20,
+                                    ),
+                                    onPressed: () =>
+                                        _confirmDelete(ann['id'].toString()),
                                   ),
                                 ],
                               ),
-                            ),
-                          );
-                        },
-                      ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
           ),
         ],
       ),

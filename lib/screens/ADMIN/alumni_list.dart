@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:async';
+import '../../services/api_service.dart';
 
 class AlumniList extends StatefulWidget {
   const AlumniList({super.key});
@@ -17,6 +19,7 @@ class _AlumniListState extends State<AlumniList> {
   List<dynamic> allAlumni = [];
   List<dynamic> filteredAlumni = [];
   bool isLoading = true;
+  Timer? _autoRefreshTimer;
 
   String searchQuery = "";
   String selectedProgram = "All Programs";
@@ -26,13 +29,19 @@ class _AlumniListState extends State<AlumniList> {
   void initState() {
     super.initState();
     fetchAlumni();
+    _autoRefreshTimer = Timer.periodic(
+      const Duration(seconds: 20),
+      (_) => fetchAlumni(showLoader: false),
+    );
   }
 
   // ✅ FETCH: Get all verified alumni
-  Future<void> fetchAlumni() async {
-    setState(() => isLoading = true);
+  Future<void> fetchAlumni({bool showLoader = true}) async {
+    if (showLoader) setState(() => isLoading = true);
     try {
-      final response = await http.get(Uri.parse("http://localhost/alumni_php/get_alumni_list.php"));
+      final response = await http.get(
+        ApiService.uri('get_alumni_list.php'),
+      );
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
         setState(() {
@@ -48,14 +57,25 @@ class _AlumniListState extends State<AlumniList> {
   }
 
   // ✅ DELETE: Remove user from DB
+  @override
+  void dispose() {
+    _autoRefreshTimer?.cancel();
+    super.dispose();
+  }
+
   Future<void> _deleteAlumni(String id, String name) async {
     bool? confirm = await showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text("Confirm Delete"),
-        content: Text("Are you sure you want to remove $name? This action cannot be undone."),
+        content: Text(
+          "Are you sure you want to remove $name? This action cannot be undone.",
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancel")),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
@@ -68,10 +88,8 @@ class _AlumniListState extends State<AlumniList> {
     if (confirm == true) {
       try {
         final response = await http.post(
-          Uri.parse("http://localhost/alumni_php/delete_alumni.php"),
-          body: {
-          "id": id.toString(),
-          }
+          ApiService.uri('delete_alumni.php'),
+          body: {"id": id.toString()},
         );
         final result = json.decode(response.body);
         if (result['success']) {
@@ -82,69 +100,6 @@ class _AlumniListState extends State<AlumniList> {
         _showSnackBar("Failed to delete.", Colors.red);
       }
     }
-  }
-
-  // ✅ EDIT: Update Status or Program
-  void _showEditDialog(Map<String, dynamic> user) {
-  // Define allowed statuses
-  List<String> statusOptions = ["Employed", "Unemployed", "Self-Employed", "approved"];
-
-  // Safety check: If the status isn't in our list, default to "Unemployed"
-  String editStatus = statusOptions.contains(user['status']) 
-      ? user['status'] 
-      : "Unemployed"; 
-  
-  String editProgram = user['program'] ?? 'BSIT';
-
-  showDialog(
-    context: context,
-    builder: (context) => StatefulBuilder(
-      builder: (context, setModalState) => AlertDialog(
-        title: Text("Edit ${user['name']}"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            DropdownButtonFormField<String>(
-              initialValue: editProgram, // Changed 'initialValue' to 'value' for better state sync
-              decoration: const InputDecoration(labelText: "Program"),
-              items: ["BSIT", "BSCS", "BSECE"].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
-              onChanged: (val) => setModalState(() => editProgram = val!),
-            ),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
-              initialValue: editStatus, // This matches our safety-checked variable
-              decoration: const InputDecoration(labelText: "Employment Status"),
-              // Include "approved" in the items list to prevent the assertion crash
-              items: statusOptions.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
-              onChanged: (val) => setModalState(() => editStatus = val!),
-            ),
-          ],
-        ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
-            ElevatedButton(
-              onPressed: () async {
-                final response = await http.post(
-                  Uri.parse("http://localhost/alumni_php/update_alumni.php"),
-                  body: {
-                    "id": user['id'].toString(),
-                    "status": editStatus,
-                    "program": editProgram,
-                  },
-                );
-                if (response.statusCode == 200) {
-                  Navigator.pop(context);
-                  _showSnackBar("Updated successfully", Colors.green);
-                  fetchAlumni();
-                }
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: primaryMaroon),
-              child: const Text("Save Changes", style: TextStyle(color: Colors.white)),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   // ✅ VIEW: Show Detail Popup
@@ -172,7 +127,10 @@ class _AlumniListState extends State<AlumniList> {
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Close")),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Close"),
+          ),
         ],
       ),
     );
@@ -183,16 +141,28 @@ class _AlumniListState extends State<AlumniList> {
       filteredAlumni = allAlumni.where((alumni) {
         final name = (alumni['name'] ?? "").toString().toLowerCase();
         final email = (alumni['email'] ?? "").toString().toLowerCase();
-        final matchesSearch = name.contains(searchQuery.toLowerCase()) || email.contains(searchQuery.toLowerCase());
-        final matchesProgram = selectedProgram == "All Programs" || alumni['program'] == selectedProgram;
-        final matchesYear = selectedYear == "All Years" || alumni['year'].toString() == selectedYear;
+        final matchesSearch =
+            name.contains(searchQuery.toLowerCase()) ||
+            email.contains(searchQuery.toLowerCase());
+        final matchesProgram =
+            selectedProgram == "All Programs" ||
+            alumni['program'] == selectedProgram;
+        final matchesYear =
+            selectedYear == "All Years" ||
+            alumni['year'].toString() == selectedYear;
         return matchesSearch && matchesProgram && matchesYear;
       }).toList();
     });
   }
 
   void _showSnackBar(String msg, Color color) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), backgroundColor: color, behavior: SnackBarBehavior.floating));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   Widget _detailRow(String label, String? value) {
@@ -202,7 +172,10 @@ class _AlumniListState extends State<AlumniList> {
         text: TextSpan(
           style: const TextStyle(color: Colors.black, fontSize: 14),
           children: [
-            TextSpan(text: "$label: ", style: const TextStyle(fontWeight: FontWeight.bold)),
+            TextSpan(
+              text: "$label: ",
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
             TextSpan(text: value ?? "N/A"),
           ],
         ),
@@ -214,7 +187,7 @@ class _AlumniListState extends State<AlumniList> {
   Widget build(BuildContext context) {
     return Container(
       color: bgLight,
-      child: isLoading 
+      child: isLoading
           ? Center(child: CircularProgressIndicator(color: primaryMaroon))
           : SingleChildScrollView(
               padding: const EdgeInsets.all(32),
@@ -239,15 +212,28 @@ class _AlumniListState extends State<AlumniList> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("Alumni List", style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: primaryMaroon)),
-            Text("Manage verified graduates in the system.", style: TextStyle(color: Colors.grey.shade600)),
+            Text(
+              "Alumni List",
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: primaryMaroon,
+              ),
+            ),
+            Text(
+              "Manage verified graduates in the system.",
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
           ],
         ),
         OutlinedButton.icon(
           onPressed: fetchAlumni,
           icon: const Icon(Icons.refresh),
           label: const Text("Refresh List"),
-          style: OutlinedButton.styleFrom(foregroundColor: primaryMaroon, side: BorderSide(color: borderColor)),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: primaryMaroon,
+            side: BorderSide(color: borderColor),
+          ),
         ),
       ],
     );
@@ -259,35 +245,72 @@ class _AlumniListState extends State<AlumniList> {
         Expanded(
           flex: 3,
           child: TextField(
-            onChanged: (val) { searchQuery = val; _applyFilters(); },
+            onChanged: (val) {
+              searchQuery = val;
+              _applyFilters();
+            },
             decoration: InputDecoration(
               hintText: "Search name or email...",
               prefixIcon: const Icon(Icons.search),
               filled: true,
               fillColor: Colors.white,
-              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderColor)),
-              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: primaryMaroon)),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: borderColor),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: primaryMaroon),
+              ),
             ),
           ),
         ),
         const SizedBox(width: 16),
-        _buildDropdown(selectedProgram, ["All Programs", "BSIT", "BSCS", "BSECE"], (val) {
-          setState(() { selectedProgram = val!; _applyFilters(); });
-        }),
+        _buildDropdown(
+          selectedProgram,
+          ["All Programs", "BSIT", "BSCS", "BSECE"],
+          (val) {
+            setState(() {
+              selectedProgram = val!;
+              _applyFilters();
+            });
+          },
+        ),
         const SizedBox(width: 16),
-        _buildDropdown(selectedYear, ["All Years", "2021", "2022", "2023", "2024"], (val) {
-          setState(() { selectedYear = val!; _applyFilters(); });
-        }),
+        _buildDropdown(
+          selectedYear,
+          ["All Years", "2021", "2022", "2023", "2024"],
+          (val) {
+            setState(() {
+              selectedYear = val!;
+              _applyFilters();
+            });
+          },
+        ),
       ],
     );
   }
 
-  Widget _buildDropdown(String val, List<String> items, ValueChanged<String?> onChanged) {
+  Widget _buildDropdown(
+    String val,
+    List<String> items,
+    ValueChanged<String?> onChanged,
+  ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: borderColor)),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: borderColor),
+      ),
       child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(value: val, items: items.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(), onChanged: onChanged),
+        child: DropdownButton<String>(
+          value: val,
+          items: items
+              .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+              .toList(),
+          onChanged: onChanged,
+        ),
       ),
     );
   }
@@ -295,7 +318,11 @@ class _AlumniListState extends State<AlumniList> {
   Widget _buildTableContainer() {
     return Container(
       width: double.infinity,
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: borderColor)),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderColor),
+      ),
       child: DataTable(
         headingRowColor: WidgetStateProperty.all(bgLight),
         columns: const [
@@ -305,35 +332,81 @@ class _AlumniListState extends State<AlumniList> {
           DataColumn(label: Text("STATUS")),
           DataColumn(label: Text("ACTIONS")),
         ],
-        rows: filteredAlumni.map((user) => DataRow(cells: [
-          DataCell(Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(user['name'] ?? 'N/A', style: const TextStyle(fontWeight: FontWeight.bold)),
-              Text(user['email'] ?? 'N/A', style: const TextStyle(fontSize: 12, color: Colors.grey)),
-            ],
-          )),
-          DataCell(Text(user['program'] ?? 'N/A')),
-          DataCell(Text(user['year']?.toString() ?? 'N/A')),
-          DataCell(_statusBadge(user['status'] ?? 'N/A')),
-          DataCell(Row(
-            children: [
-              IconButton(icon: const Icon(Icons.visibility_outlined, color: Colors.blue), onPressed: () => _viewAlumni(user)),
-              IconButton(icon: const Icon(Icons.delete_outline, color: Colors.red), onPressed: () => _deleteAlumni(user['id'].toString(), user['name'])),
-            ],
-          )),
-        ])).toList(),
+        rows: filteredAlumni
+            .map(
+              (user) => DataRow(
+                cells: [
+                  DataCell(
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          user['name'] ?? 'N/A',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          user['email'] ?? 'N/A',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  DataCell(Text(user['program'] ?? 'N/A')),
+                  DataCell(Text(user['year']?.toString() ?? 'N/A')),
+                  DataCell(_statusBadge(user['status'] ?? 'N/A')),
+                  DataCell(
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(
+                            Icons.visibility_outlined,
+                            color: Colors.blue,
+                          ),
+                          onPressed: () => _viewAlumni(user),
+                        ),
+                        IconButton(
+                          icon: const Icon(
+                            Icons.delete_outline,
+                            color: Colors.red,
+                          ),
+                          onPressed: () => _deleteAlumni(
+                            user['id'].toString(),
+                            user['name'],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            )
+            .toList(),
       ),
     );
   }
 
   Widget _statusBadge(String status) {
-    Color color = status == "Employed" ? Colors.green : (status == "Unemployed" ? Colors.red : Colors.orange);
+    Color color = status == "Employed"
+        ? Colors.green
+        : (status == "Unemployed" ? Colors.red : Colors.orange);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
-      child: Text(status, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        status,
+        style: TextStyle(
+          color: color,
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
     );
   }
 }
