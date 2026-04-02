@@ -277,7 +277,7 @@ class _CareerOverviewPageState extends State<CareerOverviewPage> {
                             runSpacing: 16,
                             children: [
                               _buildSummaryCard(
-                                'Total Submissions',
+                                'Registered Graduates',
                                 '${_summary['total_alumni'] ?? 0}',
                                 Icons.groups,
                                 Colors.blue,
@@ -460,19 +460,19 @@ class _CareerOverviewPageState extends State<CareerOverviewPage> {
   }
 
   Widget _buildRefreshButton({bool expanded = false}) {
-    final button = OutlinedButton.icon(
+    final button = OutlinedButton(
       onPressed: _fetchOverview,
-      icon: const Icon(Icons.refresh_rounded),
-      label: const Text('Refresh'),
       style: OutlinedButton.styleFrom(
         backgroundColor: Colors.white,
         foregroundColor: primaryMaroon,
-        minimumSize: const Size(0, 52),
+        minimumSize: const Size(52, 52),
+        padding: EdgeInsets.zero,
         side: BorderSide(color: borderColor),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        shape: const CircleBorder(),
       ),
+      child: const Icon(Icons.refresh_rounded),
     );
-    return expanded ? SizedBox(width: double.infinity, child: button) : button;
+    return expanded ? Align(alignment: Alignment.center, child: button) : button;
   }
 
   Widget _buildSectionCard(String title, Widget child) {

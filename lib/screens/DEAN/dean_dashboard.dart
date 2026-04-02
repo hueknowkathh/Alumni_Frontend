@@ -7,8 +7,9 @@ import 'dean_analytics_data.dart';
 
 class DeanDashboard extends StatefulWidget {
   final Map<String, dynamic> user;
+  final ValueChanged<int>? onModuleSelected;
 
-  const DeanDashboard({super.key, required this.user});
+  const DeanDashboard({super.key, required this.user, this.onModuleSelected});
 
   @override
   State<DeanDashboard> createState() => _DeanDashboardState();
@@ -67,8 +68,6 @@ class _DeanDashboardState extends State<DeanDashboard> {
     }
     return null;
   }
-
-  String get _programLabel => _assignedProgram ?? 'All Programs';
 
   String get _roleLabel => _assignedProgram == null
       ? 'Department Dean'
@@ -130,6 +129,8 @@ class _DeanDashboardState extends State<DeanDashboard> {
               builder: (context, constraints) {
                 final isWide = constraints.maxWidth > 1100;
                 final isNarrow = constraints.maxWidth < 860;
+                final pagePadding = constraints.maxWidth < 600 ? 16.0 : 32.0;
+                final contentWidth = constraints.maxWidth - (pagePadding * 2);
 
                 return Container(
                   decoration: const BoxDecoration(
@@ -153,32 +154,32 @@ class _DeanDashboardState extends State<DeanDashboard> {
                           runSpacing: 20,
                           children: [
                             _buildStatCard(
-                              "Total Submissions",
+                              "Registered Graduates",
                               "${_summary['total_alumni'] ?? 0}",
                               Icons.people_alt_outlined,
                               Colors.blue,
-                              constraints.maxWidth,
+                              contentWidth,
                             ),
                             _buildStatCard(
                               "Employment Rate",
                               "${_summary['employment_rate'] ?? 0}%",
                               Icons.trending_up,
                               Colors.green,
-                              constraints.maxWidth,
+                              contentWidth,
                             ),
                             _buildStatCard(
                               "Unemployment",
                               "${_summary['unemployment_rate'] ?? 0}%",
                               Icons.trending_down,
                               Colors.redAccent,
-                              constraints.maxWidth,
+                              contentWidth,
                             ),
                             _buildStatCard(
                               "Tracer Submissions",
                               "${_summary['submissions'] ?? 0}",
                               Icons.assignment_turned_in_outlined,
                               accentGold,
-                              constraints.maxWidth,
+                              contentWidth,
                             ),
                           ],
                         ),
@@ -397,29 +398,31 @@ class _DeanDashboardState extends State<DeanDashboard> {
           ),
         ],
       ),
-      child: Wrap(
-        spacing: 18,
-        runSpacing: 18,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: [
-          Container(
-            width: 72,
-            height: 72,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(22),
-            ),
-            child: Icon(
-              Icons.query_stats_outlined,
-              color: accentGold,
-              size: 34,
-            ),
-          ),
-          SizedBox(
-            width: isNarrow ? double.infinity : 460,
-            child: Column(
+      child: isNarrow
+          ? Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 72,
+                      height: 72,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.10),
+                        borderRadius: BorderRadius.circular(22),
+                      ),
+                      child: Icon(
+                        Icons.query_stats_outlined,
+                        color: accentGold,
+                        size: 34,
+                      ),
+                    ),
+                    const Spacer(),
+                    _buildRefreshButton(),
+                  ],
+                ),
+                const SizedBox(height: 18),
                 Text(
                   "Welcome, ${widget.user['name'] ?? _roleLabel}!",
                   style: const TextStyle(
@@ -439,81 +442,132 @@ class _DeanDashboardState extends State<DeanDashboard> {
                     fontSize: 14,
                   ),
                 ),
+                const SizedBox(height: 18),
+                _buildProgramBadge(expanded: true),
+              ],
+            )
+          : Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(22),
+                  ),
+                  child: Icon(
+                    Icons.query_stats_outlined,
+                    color: accentGold,
+                    size: 34,
+                  ),
+                ),
+                const SizedBox(width: 18),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Welcome, ${widget.user['name'] ?? _roleLabel}!",
+                        style: const TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _assignedProgram == null
+                            ? "Review live tracer analytics, industry trends, and graduate outcomes across the academic programs."
+                            : "Review live tracer analytics, industry trends, and graduate outcomes for $_assignedProgram.",
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.82),
+                          height: 1.5,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 18),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  alignment: WrapAlignment.end,
+                  children: [
+                    _buildProgramBadge(),
+                    _buildRefreshButton(),
+                  ],
+                ),
               ],
             ),
-          ),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.14),
-                  ),
-                ),
-                child: _assignedProgram == null
-                    ? DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          dropdownColor: primaryMaroon,
-                          value: _selectedProgram,
-                          style: const TextStyle(color: Colors.white),
-                          iconEnabledColor: Colors.white,
-                          items: _programOptions
-                              .map(
-                                (program) => DropdownMenuItem(
-                                  value: program,
-                                  child: Text(
-                                    program == 'All' ? 'All Programs' : program,
-                                  ),
-                                ),
-                              )
-                              .toList(),
-                          onChanged: (value) {
-                            if (value == null) return;
-                            setState(() => _selectedProgram = value);
-                            _fetchDashboardData();
-                          },
-                        ),
-                      )
-                    : Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.lock_outline, color: accentGold, size: 18),
-                          const SizedBox(width: 10),
-                          Text(
-                            _assignedProgram,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-              ),
-              OutlinedButton.icon(
-                onPressed: _fetchDashboardData,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  side: BorderSide(color: Colors.white.withValues(alpha: 0.30)),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 18,
-                    vertical: 14,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                icon: const Icon(Icons.refresh_rounded, size: 18),
-                label: Text('Refresh $_programLabel'),
-              ),
-            ],
-          ),
-        ],
+    );
+  }
+
+  Widget _buildProgramBadge({bool expanded = false}) {
+    final badge = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.14),
+        ),
       ),
+      child: _assignedProgram == null
+          ? DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                dropdownColor: primaryMaroon,
+                value: _selectedProgram,
+                style: const TextStyle(color: Colors.white),
+                iconEnabledColor: Colors.white,
+                items: _programOptions
+                    .map(
+                      (program) => DropdownMenuItem(
+                        value: program,
+                        child: Text(
+                          program == 'All' ? 'All Programs' : program,
+                        ),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  if (value == null) return;
+                  setState(() => _selectedProgram = value);
+                  _fetchDashboardData();
+                },
+              ),
+            )
+          : Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                  Icon(Icons.lock_outline, color: accentGold, size: 18),
+                  const SizedBox(width: 10),
+                  Text(
+                    _assignedProgram,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+              ),
+      );
+
+    return expanded ? SizedBox(width: double.infinity, child: badge) : badge;
+  }
+
+  Widget _buildRefreshButton() {
+    return OutlinedButton(
+      onPressed: _fetchDashboardData,
+      style: OutlinedButton.styleFrom(
+        foregroundColor: Colors.white,
+        side: BorderSide(color: Colors.white.withValues(alpha: 0.30)),
+        minimumSize: const Size(52, 52),
+        padding: EdgeInsets.zero,
+        shape: const CircleBorder(),
+      ),
+      child: const Icon(Icons.refresh_rounded, size: 18),
     );
   }
 
@@ -687,11 +741,15 @@ class _DeanDashboardState extends State<DeanDashboard> {
     String value,
     IconData icon,
     Color color,
-    double totalWidth,
+    double availableWidth,
   ) {
-    double cardWidth = (totalWidth - (20 * 3)) / 4;
-    if (totalWidth < 1100) cardWidth = (totalWidth - 20) / 2;
-    if (totalWidth < 600) cardWidth = totalWidth;
+    double cardWidth = (availableWidth - (20 * 3)) / 4;
+    if (availableWidth < 1100) {
+      cardWidth = (availableWidth - 20) / 2;
+    }
+    if (availableWidth < 600) {
+      cardWidth = availableWidth;
+    }
 
     return Container(
       width: cardWidth,

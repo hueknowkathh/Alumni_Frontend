@@ -150,85 +150,68 @@ class _SidebarState extends State<Sidebar> {
                             child: _buildLogo(size: 42),
                           ),
                         ),
-                        const SizedBox(height: 12),
-                        Align(
-                          alignment: Alignment.center,
-                          child: GestureDetector(
-                            onTap: () {
-                              if (widget.isInDrawer) {
-                                Navigator.of(context).pop();
-                                return;
-                              }
-                              setState(() => _isCollapsed = !_isCollapsed);
-                              widget.onToggleSidebar?.call();
-                            },
-                            child: SizedBox(
-                              width: 34,
-                              height: 34,
-                              child: Icon(
-                                widget.isInDrawer
-                                    ? Icons.close
-                                    : Icons.menu_open_rounded,
-                                color: Colors.white70,
-                                size: 18,
+                        if (!widget.isInDrawer) const SizedBox(height: 12),
+                        if (!widget.isInDrawer)
+                          Align(
+                            alignment: Alignment.center,
+                            child: GestureDetector(
+                              onTap: () {
+                                setState(() => _isCollapsed = !_isCollapsed);
+                                widget.onToggleSidebar?.call();
+                              },
+                              child: const SizedBox(
+                                width: 34,
+                                height: 34,
+                                child: Icon(
+                                  Icons.menu_open_rounded,
+                                  color: Colors.white70,
+                                  size: 18,
+                                ),
                               ),
                             ),
                           ),
-                        ),
                       ],
                     )
                   : useCompactExpandedHeader
                   ? Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: _buildLogo(size: 44),
+                        Row(
+                          children: [
+                            _buildLogo(size: 42),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                _getRoleHeader(widget.role),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.35,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 10),
-                        GestureDetector(
-                          onTap: () {
-                            if (widget.isInDrawer) {
-                              Navigator.of(context).pop();
-                              return;
-                            }
-                            setState(() => _isCollapsed = !_isCollapsed);
-                            widget.onToggleSidebar?.call();
-                          },
-                          child: const SizedBox(
-                            width: 34,
-                            height: 34,
-                            child: Icon(
-                              Icons.menu_rounded,
-                              color: Colors.white70,
-                              size: 18,
+                        if (!widget.isInDrawer) const SizedBox(height: 10),
+                        if (!widget.isInDrawer)
+                          GestureDetector(
+                            onTap: () {
+                              setState(() => _isCollapsed = !_isCollapsed);
+                              widget.onToggleSidebar?.call();
+                            },
+                            child: const SizedBox(
+                              width: 34,
+                              height: 34,
+                              child: Icon(
+                                Icons.menu_rounded,
+                                color: Colors.white70,
+                                size: 18,
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          _getRoleHeader(widget.role),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.2,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          _getRoleSubheader(widget.role),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.76),
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w500,
-                            height: 1.3,
-                          ),
-                        ),
                       ],
                     )
                   : Row(
@@ -236,66 +219,43 @@ class _SidebarState extends State<Sidebar> {
                       children: [
                         Expanded(
                           child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
                               _buildLogo(size: 54),
                               const SizedBox(width: 14),
                               Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      _getRoleHeader(widget.role),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w700,
-                                        letterSpacing: 0.2,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      _getRoleSubheader(widget.role),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        color: Colors.white.withValues(
-                                          alpha: 0.76,
-                                        ),
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                        height: 1.3,
-                                      ),
-                                    ),
-                                  ],
+                                child: Text(
+                                  _getRoleHeader(widget.role),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.35,
+                                  ),
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        GestureDetector(
-                          onTap: () {
-                            if (widget.isInDrawer) {
-                              Navigator.of(context).pop();
-                              return;
-                            }
-                            setState(() => _isCollapsed = !_isCollapsed);
-                            widget.onToggleSidebar?.call();
-                          },
-                          child: SizedBox(
-                            width: 34,
-                            height: 34,
-                            child: Icon(
-                              widget.isInDrawer
-                                  ? Icons.close
-                                  : Icons.menu_rounded,
-                              color: Colors.white70,
-                              size: 18,
+                        if (!widget.isInDrawer) const SizedBox(width: 8),
+                        if (!widget.isInDrawer)
+                          GestureDetector(
+                            onTap: () {
+                              setState(() => _isCollapsed = !_isCollapsed);
+                              widget.onToggleSidebar?.call();
+                            },
+                            child: const SizedBox(
+                              width: 34,
+                              height: 34,
+                              child: Icon(
+                                Icons.menu_rounded,
+                                color: Colors.white70,
+                                size: 18,
+                              ),
                             ),
                           ),
-                        ),
                       ],
                     ),
               SizedBox(height: _isCollapsed ? 14 : 18),
@@ -457,22 +417,9 @@ class _SidebarState extends State<Sidebar> {
       case 'dean':
         return 'Department Head';
       case 'alumni':
-        return 'ALUMNI PORTAL';
+        return 'ALUMNI';
       default:
         return 'Welcome';
-    }
-  }
-
-  String _getRoleSubheader(String role) {
-    switch (role.toLowerCase()) {
-      case 'admin':
-        return 'Data governance and oversight';
-      case 'dean':
-        return 'Live program analytics';
-      case 'alumni':
-        return 'Career and tracer access';
-      default:
-        return 'Portal Navigation';
     }
   }
 

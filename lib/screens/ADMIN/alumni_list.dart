@@ -358,24 +358,20 @@ class _AlumniListState extends State<AlumniList> {
                     spacing: 12,
                     runSpacing: 12,
                     children: [
-                      OutlinedButton.icon(
+                      OutlinedButton(
                         onPressed: fetchAlumni,
-                        icon: const Icon(Icons.refresh_rounded),
-                        label: const Text("Refresh List"),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.white,
-                          minimumSize: const Size(0, 52),
+                          minimumSize: const Size(52, 52),
+                          padding: EdgeInsets.zero,
                           side: BorderSide(
                             color: Colors.white.withValues(alpha: 0.30),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 18,
-                            vertical: 14,
                           ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
                           ),
                         ),
+                        child: const Icon(Icons.refresh_rounded),
                       ),
                       OutlinedButton.icon(
                         onPressed: filteredAlumni.isEmpty ? null : _exportCsv,
@@ -446,24 +442,20 @@ class _AlumniListState extends State<AlumniList> {
                   spacing: 12,
                   runSpacing: 12,
                   children: [
-                    OutlinedButton.icon(
+                    OutlinedButton(
                       onPressed: fetchAlumni,
-                      icon: const Icon(Icons.refresh_rounded),
-                      label: const Text("Refresh List"),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.white,
-                        minimumSize: const Size(0, 52),
+                        minimumSize: const Size(52, 52),
+                        padding: EdgeInsets.zero,
                         side: BorderSide(
                           color: Colors.white.withValues(alpha: 0.30),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 18,
-                          vertical: 14,
                         ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
                         ),
                       ),
+                      child: const Icon(Icons.refresh_rounded),
                     ),
                     OutlinedButton.icon(
                       onPressed: filteredAlumni.isEmpty ? null : _exportCsv,

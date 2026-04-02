@@ -42,6 +42,7 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
   final Color accentGold = const Color(0xFFC5A046);
   final Color bgLight = const Color(0xFFF8F9FA);
   final Color borderColor = const Color(0xFFE0E0E0);
+  late final List<Widget?> _pageCache;
 
   List<dynamic> get _adminNotifications {
     return _allActivities.where((activity) {
@@ -65,6 +66,7 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
   void initState() {
     super.initState();
     if (UserStore.value == null) UserStore.set(widget.user);
+    _pageCache = List<Widget?>.filled(9, null);
     fetchFullActivity();
     fetchAllUsers();
     _dashboardRealtimeTimer = Timer.periodic(const Duration(seconds: 10), (_) {
@@ -136,99 +138,168 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
         _notificationKey.currentContext!.findRenderObject() as RenderBox;
     final buttonPosition = button.localToGlobal(Offset.zero, ancestor: overlay);
     final buttonSize = button.size;
+    final screenSize = overlay.size;
+    final panelWidth = screenSize.width < 420 ? screenSize.width - 32 : 360.0;
+    final left = (buttonPosition.dx + buttonSize.width - panelWidth)
+        .clamp(16.0, screenSize.width - panelWidth - 16.0)
+        .toDouble();
+    final top = (buttonPosition.dy + buttonSize.height + 10)
+        .clamp(16.0, screenSize.height - 420.0)
+        .toDouble();
 
-    await showMenu(
+    await showGeneralDialog(
       context: context,
-      position: RelativeRect.fromRect(
-        Rect.fromLTWH(
-          buttonPosition.dx,
-          buttonPosition.dy + buttonSize.height,
-          buttonSize.width,
-          buttonSize.height,
-        ),
-        Offset.zero & overlay.size,
-      ),
-      items: [
-        PopupMenuItem(
-          enabled: false,
-          child: Container(
-            width: MediaQuery.of(context).size.width < 420
-                ? MediaQuery.of(context).size.width - 48
-                : 330,
-            height: 360,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.18),
-                  blurRadius: 12,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      barrierLabel: 'Notifications',
+      barrierDismissible: true,
+      barrierColor: Colors.black.withValues(alpha: 0.18),
+      transitionDuration: const Duration(milliseconds: 180),
+      pageBuilder: (dialogContext, animation, secondaryAnimation) {
+        return Stack(
+          children: [
+            Positioned(
+              left: left,
+              top: top,
+              child: Material(
+                color: Colors.transparent,
+                child: Container(
+                  width: panelWidth,
+                  constraints: BoxConstraints(
+                    maxHeight: screenSize.height * 0.62,
+                    minHeight: 220,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: const Color(0xFFE8DADF)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.18),
+                        blurRadius: 22,
+                        offset: const Offset(0, 12),
+                      ),
+                    ],
+                  ),
+                  child: Column(
                     children: [
-                      const Text(
-                        'Notifications',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(18, 16, 10, 12),
+                        child: Row(
+                          children: [
+                            const Expanded(
+                              child: Text(
+                                'Notifications',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 16,
+                                  color: Color(0xFF4A152C),
+                                ),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.of(dialogContext).pop(),
+                              child: const Text('Close'),
+                            ),
+                          ],
                         ),
                       ),
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text('Close'),
+                      const Divider(height: 1),
+                      Expanded(
+                        child: _adminNotifications.isEmpty
+                            ? const Center(
+                                child: Text(
+                                  'No recent activity',
+                                  style: TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              )
+                            : ListView.separated(
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                itemCount: _adminNotifications.length,
+                                separatorBuilder: (_, _) =>
+                                    const Divider(height: 1),
+                                itemBuilder: (context, index) {
+                                  final act = _adminNotifications[index];
+                                  final title =
+                                      act['title']?.toString() ?? 'Update';
+                                  final time =
+                                      act['time']?.toString() ?? 'Just now';
+
+                                  return ListTile(
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 10,
+                                    ),
+                                    minVerticalPadding: 12,
+                                    isThreeLine: true,
+                                    leading: Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                        color: primaryMaroon.withValues(
+                                          alpha: 0.9,
+                                        ),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.notifications_outlined,
+                                        size: 20,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    title: Text(
+                                      title,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFF4A152C),
+                                        height: 1.3,
+                                      ),
+                                    ),
+                                    subtitle: Padding(
+                                      padding: const EdgeInsets.only(top: 8),
+                                      child: Text(
+                                        time,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: Color(0xFF6B7280),
+                                          height: 1.25,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
                       ),
                     ],
                   ),
                 ),
-                const Divider(height: 1),
-                Expanded(
-                  child: _adminNotifications.isEmpty
-                      ? const Center(child: Text('No recent activity'))
-                      : ListView.separated(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          itemCount: _adminNotifications.length,
-                          separatorBuilder: (_, _) => const Divider(height: 1),
-                          itemBuilder: (context, index) {
-                            final act = _adminNotifications[index];
-                            return ListTile(
-                              dense: true,
-                              leading: CircleAvatar(
-                                radius: 16,
-                                backgroundColor: accentGold.withValues(
-                                  alpha: 0.2,
-                                ),
-                                child: Icon(
-                                  Icons.notifications,
-                                  size: 18,
-                                  color: primaryMaroon,
-                                ),
-                              ),
-                              title: Text(
-                                act['title'] ?? 'Update',
-                                style: const TextStyle(fontSize: 14),
-                              ),
-                              subtitle: Text(
-                                act['time'] ?? 'Just now',
-                                style: const TextStyle(fontSize: 12),
-                              ),
-                            );
-                          },
-                        ),
-                ),
-              ],
+              ),
             ),
+          ],
+        );
+      },
+      transitionBuilder: (context, animation, _, child) {
+        final curved = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+        );
+        return FadeTransition(
+          opacity: curved,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0, -0.04),
+              end: Offset.zero,
+            ).animate(curved),
+            child: child,
           ),
-        ),
-      ],
+        );
+      },
     );
   }
 
@@ -242,33 +313,6 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
       _isSidebarCollapsed = isTablet;
       _hasInitializedLayout = true;
     }
-
-    final List<Widget> pages = [
-      AdminDashboard(
-        user: widget.user,
-        onActionSelected: (index) => setState(() => _selectedIndex = index),
-        onOpenRecentActivity: _openRecentActivityPage,
-        onOpenLatestUsers: () => setState(() => _selectedIndex = 8),
-      ),
-      const AlumniList(),
-      const TracerDataPage(),
-      const PendingUsersPage(),
-      const AnnouncementsPage(),
-      const JobsPage(),
-      const AdminSettings(),
-      RecentActivityPage(
-        activities: _allActivities,
-        isLoading: _isLoadingActivity,
-        onBack: () => setState(() => _selectedIndex = dashboard),
-        onRefresh: fetchFullActivity,
-      ),
-      UserRegistrationsPage(
-        users: _allUsers,
-        isLoading: _isLoadingUsers,
-        onBack: () => setState(() => _selectedIndex = dashboard),
-        onRefresh: fetchAllUsers,
-      ),
-    ];
 
     return Scaffold(
       backgroundColor: bgLight,
@@ -301,7 +345,17 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
               children: [
                 _buildHeader(isMobile),
                 Expanded(
-                  child: IndexedStack(index: _selectedIndex, children: pages),
+                  child: IndexedStack(
+                    index: _selectedIndex,
+                    children: List.generate(
+                      _pageCache.length,
+                      (index) =>
+                          _pageCache[index] ??
+                          (index == _selectedIndex
+                              ? _pageCache[index] = _buildPage(index)
+                              : const SizedBox.shrink()),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -309,6 +363,46 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
         ],
       ),
     );
+  }
+
+  Widget _buildPage(int index) {
+    switch (index) {
+      case 0:
+        return AdminDashboard(
+          user: widget.user,
+          onActionSelected: (target) => setState(() => _selectedIndex = target),
+          onOpenRecentActivity: _openRecentActivityPage,
+          onOpenLatestUsers: () => setState(() => _selectedIndex = 8),
+        );
+      case 1:
+        return const AlumniList();
+      case 2:
+        return const TracerDataPage();
+      case 3:
+        return const PendingUsersPage();
+      case 4:
+        return const AnnouncementsPage();
+      case 5:
+        return const JobsPage();
+      case 6:
+        return const AdminSettings();
+      case 7:
+        return RecentActivityPage(
+          activities: _allActivities,
+          isLoading: _isLoadingActivity,
+          onBack: () => setState(() => _selectedIndex = dashboard),
+          onRefresh: fetchFullActivity,
+        );
+      case 8:
+        return UserRegistrationsPage(
+          users: _allUsers,
+          isLoading: _isLoadingUsers,
+          onBack: () => setState(() => _selectedIndex = dashboard),
+          onRefresh: fetchAllUsers,
+        );
+      default:
+        return const SizedBox.shrink();
+    }
   }
 
   Widget _buildHeader(bool isMobile) {

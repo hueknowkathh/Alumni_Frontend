@@ -34,6 +34,7 @@ class _CareerReportsPageState extends State<CareerReportsPage> {
 
   List<Map<String, dynamic>> _allRows = [];
   List<Map<String, dynamic>> _rows = [];
+  List<Map<String, dynamic>> _departmentAlumni = [];
   Map<String, dynamic> _report = {};
 
   @override
@@ -58,11 +59,15 @@ class _CareerReportsPageState extends State<CareerReportsPage> {
 
   Future<void> _loadFilterOptions() async {
     try {
-      final options = await FilterOptionsService.fetch(program: selectedProgram);
+      final options = await FilterOptionsService.fetch(
+        program: selectedProgram,
+      );
       if (!mounted) return;
       setState(() {
         _programOptions = _assignedProgram == null
-            ? (options.programs.isEmpty ? const ['BSIT', 'BSSW'] : options.programs)
+            ? (options.programs.isEmpty
+                  ? const ['BSIT', 'BSSW']
+                  : options.programs)
             : [_assignedProgram];
         _batchOptions = ['All Batches', ...options.years];
         _statusOptions = ['All Status', ...options.statuses];
@@ -101,14 +106,27 @@ class _CareerReportsPageState extends State<CareerReportsPage> {
         ),
         headers: ApiService.authHeaders(),
       );
+      final departmentResponse = await http.get(
+        ApiService.uri(
+          'get_department_alumni.php',
+          queryParameters: {
+            'program': selectedProgram,
+            'batch': '',
+            'status': 'All Status',
+          },
+        ),
+        headers: ApiService.authHeaders(),
+      );
 
       if (tracerResponse.statusCode != 200 ||
-          reportResponse.statusCode != 200) {
+          reportResponse.statusCode != 200 ||
+          departmentResponse.statusCode != 200) {
         throw Exception('Failed to load report data');
       }
 
       final tracerDecoded = jsonDecode(tracerResponse.body);
       final reportDecoded = jsonDecode(reportResponse.body);
+      final departmentDecoded = jsonDecode(departmentResponse.body);
       final rawRows = tracerDecoded is Map ? tracerDecoded['alumni'] ?? [] : [];
       final signedRecords = tracerDecoded is Map
           ? ((tracerDecoded['signed_records'] ?? []) as List)
@@ -123,19 +141,27 @@ class _CareerReportsPageState extends State<CareerReportsPage> {
             .toList(),
         signedRecords: signedRecords,
       );
+      final departmentRows = departmentDecoded is Map
+          ? ((departmentDecoded['alumni'] ?? []) as List)
+                .whereType<Map>()
+                .map((item) => Map<String, dynamic>.from(item))
+                .toList()
+          : <Map<String, dynamic>>[];
 
       if (!mounted) return;
       setState(() {
         _allRows = rows;
+        _departmentAlumni = departmentRows;
         _report = reportDecoded is Map
             ? Map<String, dynamic>.from(reportDecoded['report'] ?? const {})
             : <String, dynamic>{};
-        final dynamicBatches = _allRows
-            .map((row) => (row['year_graduated'] ?? '').toString())
-            .where((value) => value.isNotEmpty && value != 'null')
-            .toSet()
-            .toList()
-          ..sort();
+        final dynamicBatches =
+            _allRows
+                .map((row) => (row['year_graduated'] ?? '').toString())
+                .where((value) => value.isNotEmpty && value != 'null')
+                .toSet()
+                .toList()
+              ..sort();
         _batchOptions = ['All Batches', ...dynamicBatches];
         if (!_batchOptions.contains(selectedBatch)) {
           selectedBatch = _batchOptions.first;
@@ -183,7 +209,7 @@ class _CareerReportsPageState extends State<CareerReportsPage> {
     final width = MediaQuery.of(context).size.width;
     final isNarrow = width < 900;
     final isCompact = width < 640;
-    final total = _rows.length;
+    final total = _departmentAlumni.length;
     final employed = _rows.where((row) {
       final status = (row['employment_status'] ?? '').toString().toLowerCase();
       return status == 'employed' ||
@@ -285,7 +311,7 @@ class _CareerReportsPageState extends State<CareerReportsPage> {
                             runSpacing: 16,
                             children: [
                               _buildSummaryCard(
-                                'Graduates',
+                                'Registered Graduates',
                                 '$total',
                                 Icons.people,
                                 Colors.blue,
@@ -446,20 +472,17 @@ class _CareerReportsPageState extends State<CareerReportsPage> {
               _applyFilters();
             });
           }),
-          _buildDropdown(
-            'Status',
-            selectedStatus,
-            _statusOptions,
-            (v) {
-              if (v == null) return;
-              setState(() {
-                selectedStatus = v;
-                _applyFilters();
-              });
-            },
-          ),
+          _buildDropdown('Status', selectedStatus, _statusOptions, (v) {
+            if (v == null) return;
+            setState(() {
+              selectedStatus = v;
+              _applyFilters();
+            });
+          }),
           FilledButton.icon(
-            onPressed: _rows.isEmpty ? null : _exportCsv,
+            onPressed: (_rows.isEmpty && _departmentAlumni.isEmpty)
+                ? null
+                : _exportCsv,
             icon: const Icon(Icons.table_view_outlined),
             label: const Text('Export CSV'),
             style: FilledButton.styleFrom(
@@ -793,15 +816,7 @@ class _CareerReportsPageState extends State<CareerReportsPage> {
         '',
         '',
       ],
-      [
-        'Filtered Rows',
-        _rows.length.toString(),
-        '',
-        '',
-        '',
-        '',
-        '',
-      ],
+      ['Filtered Rows', _rows.length.toString(), '', '', '', '', ''],
       ['', '', '', '', '', '', ''],
     ];
 
@@ -819,14 +834,31 @@ class _CareerReportsPageState extends State<CareerReportsPage> {
         )
         .toList();
 
-    return [...summaryRows, ...dataRows];
+    final fallbackRows = _rows.isEmpty
+        ? _departmentAlumni
+              .map(
+                (row) => [
+                  (row['name'] ?? 'N/A').toString(),
+                  selectedProgram,
+                  (row['year'] ?? row['year_graduated'] ?? 'N/A').toString(),
+                  (row['status'] ?? 'Not Submitted').toString(),
+                  'N/A',
+                  'N/A',
+                  row['alignment'] == true ? 'Yes' : 'No',
+                ],
+              )
+              .toList()
+        : const <List<String>>[];
+
+    final exportRows = _rows.isEmpty ? fallbackRows : dataRows;
+
+    return [...summaryRows, ...exportRows];
   }
 
   Future<void> _exportCsv() async {
     try {
       final path = await CsvExportService.exportRows(
-        filename:
-            'career_reports_${DateTime.now().millisecondsSinceEpoch}.csv',
+        filename: 'career_reports_${DateTime.now().millisecondsSinceEpoch}.csv',
         headers: const [
           'Name',
           'Program',

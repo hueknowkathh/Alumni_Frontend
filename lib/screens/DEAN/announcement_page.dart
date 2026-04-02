@@ -22,6 +22,16 @@ class _AnnouncementPageState extends State<AnnouncementPage> {
   String searchQuery = "";
   bool isLoading = false;
 
+  List<String> get _categoryOptions {
+    final categories = announcements
+        .map((ann) => (ann['category'] ?? 'General').toString().trim())
+        .where((value) => value.isNotEmpty)
+        .toSet()
+        .toList()
+      ..sort();
+    return ['All Categories', ...categories];
+  }
+
   @override
   void initState() {
     super.initState();
@@ -50,11 +60,11 @@ class _AnnouncementPageState extends State<AnnouncementPage> {
     setState(() {
       filteredAnnouncements = announcements.where((ann) {
         final title = (ann['title'] ?? "").toString().toLowerCase();
-        final category = (ann['category'] ?? "General").toString();
+        final category = (ann['category'] ?? "General").toString().trim();
         final matchesSearch = title.contains(searchQuery.toLowerCase());
         final matchesCategory = selectedCategory == "All Categories"
             ? true
-            : category == selectedCategory;
+            : category.toLowerCase() == selectedCategory.toLowerCase();
         return matchesSearch && matchesCategory;
       }).toList();
     });
@@ -149,18 +159,37 @@ class _AnnouncementPageState extends State<AnnouncementPage> {
           ? Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(22),
-                  ),
-                  child: Icon(
-                    Icons.campaign_outlined,
-                    color: accentGold,
-                    size: 34,
-                  ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 72,
+                      height: 72,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.10),
+                        borderRadius: BorderRadius.circular(22),
+                      ),
+                      child: Icon(
+                        Icons.campaign_outlined,
+                        color: accentGold,
+                        size: 34,
+                      ),
+                    ),
+                    const Spacer(),
+                    OutlinedButton(
+                      onPressed: fetchAnnouncements,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size(52, 52),
+                        padding: EdgeInsets.zero,
+                        side: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.30),
+                        ),
+                        shape: const CircleBorder(),
+                      ),
+                      child: const Icon(Icons.refresh_rounded, size: 18),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 16),
                 const Text(
@@ -178,28 +207,6 @@ class _AnnouncementPageState extends State<AnnouncementPage> {
                     color: Colors.white.withValues(alpha: 0.82),
                     height: 1.5,
                     fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: fetchAnnouncements,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      side: BorderSide(
-                        color: Colors.white.withValues(alpha: 0.30),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 18,
-                        vertical: 14,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
-                    icon: const Icon(Icons.refresh_rounded, size: 18),
-                    label: const Text("Refresh"),
                   ),
                 ),
               ],
@@ -245,23 +252,18 @@ class _AnnouncementPageState extends State<AnnouncementPage> {
                   ),
                 ),
                 const SizedBox(width: 16),
-                OutlinedButton.icon(
+                OutlinedButton(
                   onPressed: fetchAnnouncements,
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.white,
+                    minimumSize: const Size(52, 52),
+                    padding: EdgeInsets.zero,
                     side: BorderSide(
                       color: Colors.white.withValues(alpha: 0.30),
                     ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 18,
-                      vertical: 14,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
+                    shape: const CircleBorder(),
                   ),
-                  icon: const Icon(Icons.refresh_rounded, size: 18),
-                  label: const Text("Refresh"),
+                  child: const Icon(Icons.refresh_rounded, size: 18),
                 ),
               ],
             ),
@@ -270,41 +272,82 @@ class _AnnouncementPageState extends State<AnnouncementPage> {
 
   Widget _buildQuickStats() {
     final events = announcements
-        .where((ann) => (ann['category'] ?? '') == 'Events')
+        .where(
+          (ann) =>
+              (ann['category'] ?? '').toString().trim().toLowerCase() ==
+              'events',
+        )
+        .length;
+    final jobOpportunities = announcements
+        .where(
+          (ann) =>
+              (ann['category'] ?? '').toString().trim().toLowerCase() ==
+              'job opportunities',
+        )
         .length;
     final reminders = announcements
-        .where((ann) => (ann['category'] ?? '') == 'Reminders')
+        .where(
+          (ann) =>
+              (ann['category'] ?? '').toString().trim().toLowerCase() ==
+              'reminders',
+        )
         .length;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final availableWidth = constraints.maxWidth;
+        final cardWidth = availableWidth >= 1180
+            ? (availableWidth - 48) / 4
+            : availableWidth >= 760
+            ? (availableWidth - 16) / 2
+            : double.infinity;
 
-    return Wrap(
-      spacing: 16,
-      runSpacing: 16,
-      children: [
-        _statCard(
-          "Total Posts",
-          announcements.length.toString(),
-          Icons.feed_outlined,
-          primaryMaroon,
-        ),
-        _statCard(
-          "Events",
-          events.toString(),
-          Icons.event_available_outlined,
-          accentGold,
-        ),
-        _statCard(
-          "Reminders",
-          reminders.toString(),
-          Icons.notifications_active_outlined,
-          Colors.teal,
-        ),
-      ],
+        return Wrap(
+          spacing: 16,
+          runSpacing: 16,
+          children: [
+            _statCard(
+              "Total Posts",
+              announcements.length.toString(),
+              Icons.feed_outlined,
+              primaryMaroon,
+              cardWidth,
+            ),
+            _statCard(
+              "Events",
+              events.toString(),
+              Icons.event_available_outlined,
+              accentGold,
+              cardWidth,
+            ),
+            _statCard(
+              "Job Opportunities",
+              jobOpportunities.toString(),
+              Icons.work_outline,
+              Colors.green,
+              cardWidth,
+            ),
+            _statCard(
+              "Reminders",
+              reminders.toString(),
+              Icons.notifications_active_outlined,
+              Colors.teal,
+              cardWidth,
+            ),
+          ],
+        );
+      },
     );
   }
 
-  Widget _statCard(String label, String value, IconData icon, Color color) {
+  Widget _statCard(
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+    double width,
+  ) {
     return Container(
-      width: MediaQuery.of(context).size.width < 700 ? double.infinity : 220,
+      width: width,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -395,13 +438,12 @@ class _AnnouncementPageState extends State<AnnouncementPage> {
 
   Widget _categoryDropdown() {
     return DropdownButtonFormField<String>(
-      initialValue: selectedCategory,
-      items: [
-        "All Categories",
-        "Events",
-        "Reminders",
-        "Job Opportunities",
-      ].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+      initialValue: _categoryOptions.contains(selectedCategory)
+          ? selectedCategory
+          : _categoryOptions.first,
+      items: _categoryOptions
+          .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+          .toList(),
       onChanged: (value) {
         if (value != null) {
           selectedCategory = value;
@@ -608,9 +650,12 @@ class _AnnouncementPageState extends State<AnnouncementPage> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: primaryMaroon,
                 foregroundColor: Colors.white,
+                minimumSize: const Size(52, 52),
+                padding: EdgeInsets.zero,
+                shape: const CircleBorder(),
               ),
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text("Refresh Announcements"),
+              label: const SizedBox.shrink(),
             ),
           ],
         ),

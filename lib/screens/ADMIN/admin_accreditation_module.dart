@@ -5,6 +5,7 @@ class AdminAccreditationModule extends StatelessWidget {
   const AdminAccreditationModule({
     super.key,
     required this.reportData,
+    required this.signedRows,
     required this.onGenerateReport,
     required this.totalResponses,
     required this.employedCount,
@@ -13,6 +14,7 @@ class AdminAccreditationModule extends StatelessWidget {
   });
 
   final Map<String, dynamic>? reportData;
+  final List<Map<String, dynamic>> signedRows;
   final VoidCallback onGenerateReport;
   final int totalResponses;
   final int employedCount;
@@ -22,6 +24,7 @@ class AdminAccreditationModule extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final report = _AccreditationReport.from(reportData);
+    final comparisonFallback = _ProgramComparisonFallback.fromRows(signedRows);
     final screenWidth = MediaQuery.of(context).size.width;
     final isNarrow = screenWidth < 700;
 
@@ -83,7 +86,7 @@ class AdminAccreditationModule extends StatelessWidget {
           builder: (context, constraints) {
             final summaryCardWidth = _cardWidth(
               constraints.maxWidth,
-              minWidth: 250,
+              minWidth: 220,
               spacing: 16,
               maxColumns: 4,
             );
@@ -220,7 +223,7 @@ class AdminAccreditationModule extends StatelessWidget {
                 _chartCard(
                   context,
                   "BSIT vs BSSW",
-                  _comparison(report),
+                  _comparison(report, comparisonFallback),
                   chartCardWidth,
                 ),
               ],
@@ -335,18 +338,27 @@ class AdminAccreditationModule extends StatelessWidget {
             child: Icon(icon, color: color),
           ),
           const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-              Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-            ],
+                const SizedBox(height: 2),
+                Text(
+                  title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -422,24 +434,38 @@ class AdminAccreditationModule extends StatelessWidget {
     );
   }
 
-  Widget _comparison(_AccreditationReport report) {
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          _comparisonRow("Metric", const ["BSIT", "BSSW"], header: true),
-          _comparisonRow("Employment", [
-            report.bsitEmployment,
-            report.bsswEmployment,
-          ]),
-          _comparisonRow("Relevance", [
-            report.bsitRelevance,
-            report.bsswRelevance,
-          ]),
-          _comparisonRow("Skills", [report.bsitSkills, report.bsswSkills]),
-          _comparisonRow("PEO", [report.bsitPeo, report.bsswPeo]),
-          _comparisonRow("Growth", [report.bsitGrowth, report.bsswGrowth]),
-        ],
-      ),
+  Widget _comparison(
+    _AccreditationReport report,
+    _ProgramComparisonFallback fallback,
+  ) {
+    final usesPlaceholderComparison =
+        report.bsitEmployment == 'Signed-only view' &&
+        report.bsswEmployment == 'Signed-only view' &&
+        report.bsitRelevance == 'Signed-only view' &&
+        report.bsswRelevance == 'Signed-only view';
+
+    final rows = usesPlaceholderComparison
+        ? <List<String>>[
+            const ['Metric', 'BSIT', 'BSSW'],
+            ['Signed Responses', fallback.bsitSigned, fallback.bsswSigned],
+            ['Employment', fallback.bsitEmployment, fallback.bsswEmployment],
+            ['Relevance', fallback.bsitRelevance, fallback.bsswRelevance],
+            ['Scope', 'Signed-only', 'Signed-only'],
+          ]
+        : <List<String>>[
+            const ['Metric', 'BSIT', 'BSSW'],
+            ['Employment', report.bsitEmployment, report.bsswEmployment],
+            ['Relevance', report.bsitRelevance, report.bsswRelevance],
+            ['Skills', report.bsitSkills, report.bsswSkills],
+            ['PEO', report.bsitPeo, report.bsswPeo],
+            ['Growth', report.bsitGrowth, report.bsswGrowth],
+          ];
+
+    return Column(
+      children: rows.asMap().entries.map((entry) {
+        final row = entry.value;
+        return _comparisonRow(row[0], [row[1], row[2]], header: entry.key == 0);
+      }).toList(),
     );
   }
 
@@ -451,11 +477,13 @@ class AdminAccreditationModule extends StatelessWidget {
     final style = TextStyle(
       fontWeight: header ? FontWeight.w700 : FontWeight.w500,
       color: header ? const Color(0xFF4A152C) : Colors.black87,
-      fontSize: 12,
+      fontSize: header ? 12 : 11.5,
+      height: 1.35,
     );
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
             flex: 2,
@@ -471,7 +499,7 @@ class AdminAccreditationModule extends StatelessWidget {
               values[0],
               style: style,
               textAlign: TextAlign.center,
-              maxLines: 2,
+              maxLines: 3,
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -480,7 +508,7 @@ class AdminAccreditationModule extends StatelessWidget {
               values[1],
               style: style,
               textAlign: TextAlign.center,
-              maxLines: 2,
+              maxLines: 3,
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -681,4 +709,80 @@ class _BarPoint {
 
   final String label;
   final double value;
+}
+
+class _ProgramComparisonFallback {
+  const _ProgramComparisonFallback({
+    required this.bsitSigned,
+    required this.bsswSigned,
+    required this.bsitEmployment,
+    required this.bsswEmployment,
+    required this.bsitRelevance,
+    required this.bsswRelevance,
+  });
+
+  final String bsitSigned;
+  final String bsswSigned;
+  final String bsitEmployment;
+  final String bsswEmployment;
+  final String bsitRelevance;
+  final String bsswRelevance;
+
+  static _ProgramComparisonFallback fromRows(List<Map<String, dynamic>> rows) {
+    String signedCount(String program) {
+      final count = rows.where((row) {
+        return (row['program'] ?? '').toString().toUpperCase() == program;
+      }).length;
+      return count.toString();
+    }
+
+    String employment(String program) {
+      final programRows = rows.where((row) {
+        return (row['program'] ?? '').toString().toUpperCase() == program;
+      }).toList();
+      if (programRows.isEmpty) {
+        return 'No signed data';
+      }
+      final employed = programRows.where((row) {
+        final status = (row['employment_status'] ?? '').toString();
+        return status == 'Employed' || status == 'Self-Employed';
+      }).length;
+      final rate = ((employed / programRows.length) * 100).round();
+      return '$rate%';
+    }
+
+    String relevance(String program) {
+      final programRows = rows.where((row) {
+        return (row['program'] ?? '').toString().toUpperCase() == program;
+      }).toList();
+      if (programRows.isEmpty) {
+        return 'No signed data';
+      }
+      final ratedRows = programRows.where((row) {
+        final value = (row['job_related'] ?? '')
+            .toString()
+            .trim()
+            .toLowerCase();
+        return value == 'yes' || value == 'no';
+      }).toList();
+      if (ratedRows.isEmpty) {
+        return 'N/A';
+      }
+      final related = ratedRows.where((row) {
+        return (row['job_related'] ?? '').toString().trim().toLowerCase() ==
+            'yes';
+      }).length;
+      final rate = ((related / ratedRows.length) * 100).round();
+      return '$rate%';
+    }
+
+    return _ProgramComparisonFallback(
+      bsitSigned: signedCount('BSIT'),
+      bsswSigned: signedCount('BSSW'),
+      bsitEmployment: employment('BSIT'),
+      bsswEmployment: employment('BSSW'),
+      bsitRelevance: relevance('BSIT'),
+      bsswRelevance: relevance('BSSW'),
+    );
+  }
 }

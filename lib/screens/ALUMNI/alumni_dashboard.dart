@@ -26,7 +26,6 @@ class _AlumniDashboardState extends State<AlumniDashboard> {
   bool isLoading = true;
   List<Map<String, dynamic>> announcements = [];
   Map<String, dynamic>? tracerInfo;
-  List<Map<String, dynamic>> recentActivities = [];
 
   @override
   void initState() {
@@ -44,25 +43,6 @@ class _AlumniDashboardState extends State<AlumniDashboard> {
 
       // Fetch announcements
       final annData = await ContentService.fetchAnnouncements();
-
-      // Fetch recent dashboard activity
-      List<Map<String, dynamic>> activityData = const [];
-      final activityRes = await http.get(
-        ApiService.uri(
-          'get_full_activity.php',
-          queryParameters: {'role': 'alumni'},
-        ),
-      );
-
-      if (activityRes.statusCode == 200) {
-        final decoded = jsonDecode(activityRes.body);
-        if (decoded is List) {
-          activityData = decoded
-              .whereType<Map>()
-              .map((item) => item.map((key, value) => MapEntry('$key', value)))
-              .toList();
-        }
-      }
 
       // Fetch tracer submission status
       Map<String, dynamic> tracerData = const {"submitted": false};
@@ -107,7 +87,6 @@ class _AlumniDashboardState extends State<AlumniDashboard> {
         announcements = annData
             .map((e) => e.map((key, value) => MapEntry(key.toString(), value)))
             .toList();
-        recentActivities = activityData;
 
         final submitted = tracerData['submitted'] == true;
         final draftSaved = tracerData['draft_saved'] == true;
@@ -138,12 +117,6 @@ class _AlumniDashboardState extends State<AlumniDashboard> {
               builder: (context, constraints) {
                 final contentWidth = constraints.maxWidth;
                 final isNarrow = contentWidth < 900;
-                final quickAccessWidth = _cardWidth(
-                  contentWidth,
-                  minWidth: 220,
-                  spacing: 16,
-                  maxColumns: 4,
-                );
 
                 return Container(
                   decoration: const BoxDecoration(
@@ -179,92 +152,7 @@ class _AlumniDashboardState extends State<AlumniDashboard> {
                             ],
                           ),
                         const SizedBox(height: 32),
-                        Container(
-                          padding: const EdgeInsets.all(22),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(24),
-                            border: Border.all(color: cardBorder),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.04),
-                                blurRadius: 18,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "Quick Access",
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w800,
-                                  color: primaryMaroon,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                "Move through your most important alumni tools with a cleaner, faster dashboard layout.",
-                                style: TextStyle(
-                                  color: Colors.grey.shade600,
-                                  height: 1.5,
-                                ),
-                              ),
-                              const SizedBox(height: 18),
-                              Wrap(
-                                spacing: 16,
-                                runSpacing: 16,
-                                children: [
-                                  _quickAccess(
-                                    Icons.person_outline,
-                                    "Profile",
-                                    _openProfileModule,
-                                    width: quickAccessWidth,
-                                  ),
-                                  _quickAccess(
-                                    Icons.campaign_outlined,
-                                    "Announcements",
-                                    _openAnnouncementsModule,
-                                    width: quickAccessWidth,
-                                  ),
-                                  _quickAccess(
-                                    Icons.work_outline,
-                                    "Jobs",
-                                    _openJobsModule,
-                                    width: quickAccessWidth,
-                                  ),
-                                  _quickAccess(
-                                    Icons.settings_outlined,
-                                    "Settings",
-                                    _openSettingsModule,
-                                    width: quickAccessWidth,
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 32),
-                        if (isNarrow)
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _announcementsCard(),
-                              const SizedBox(height: 24),
-                              _recentUpdatesCard(),
-                            ],
-                          )
-                        else
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(flex: 2, child: _announcementsCard()),
-                              const SizedBox(width: 24),
-                              Expanded(flex: 1, child: _recentUpdatesCard()),
-                            ],
-                          ),
+                        _announcementsCard(),
                       ],
                     ),
                   ),
@@ -272,21 +160,6 @@ class _AlumniDashboardState extends State<AlumniDashboard> {
               },
             ),
     );
-  }
-
-  double _cardWidth(
-    double availableWidth, {
-    required double minWidth,
-    required double spacing,
-    required int maxColumns,
-  }) {
-    for (int columns = maxColumns; columns >= 1; columns--) {
-      final width = (availableWidth - (spacing * (columns - 1))) / columns;
-      if (width >= minWidth) {
-        return width;
-      }
-    }
-    return availableWidth;
   }
 
   Widget _buildHeroHeader(bool isStacked) {
@@ -398,66 +271,6 @@ class _AlumniDashboardState extends State<AlumniDashboard> {
     );
   }
 
-  Widget _quickAccess(
-    IconData icon,
-    String label,
-    VoidCallback onTap, {
-    required double width,
-  }) {
-    return SizedBox(
-      width: width,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
-          decoration: BoxDecoration(
-            color: softRose,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: cardBorder),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      primaryMaroon,
-                      primaryMaroon.withValues(alpha: 0.82),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Icon(icon, color: accentGold, size: 24),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
-                    color: primaryMaroon,
-                  ),
-                ),
-              ),
-              Icon(Icons.arrow_forward_rounded, color: primaryMaroon),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
   Widget _tracerCard(BuildContext context) {
     final isSubmitted = tracerInfo != null && tracerInfo!['submitted'] == "Yes";
@@ -538,20 +351,17 @@ class _AlumniDashboardState extends State<AlumniDashboard> {
       "Latest Announcements",
       Icons.campaign_outlined,
       Column(
-        children: announcements
-            .map(
-              (a) => Column(
-                children: [
-                  _announcement(
-                    (a['title'] ?? '').toString(),
-                    (a['description'] ?? '').toString(),
-                    (a['created_at'] ?? '').toString(),
-                  ),
-                  const Divider(),
-                ],
-              ),
-            )
-            .toList(),
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (int index = 0; index < announcements.length; index++) ...[
+            _announcement(
+              (announcements[index]['title'] ?? '').toString(),
+              (announcements[index]['description'] ?? '').toString(),
+              (announcements[index]['created_at'] ?? '').toString(),
+            ),
+            if (index != announcements.length - 1) const Divider(height: 24),
+          ],
+        ],
       ),
     );
   }
@@ -575,59 +385,6 @@ class _AlumniDashboardState extends State<AlumniDashboard> {
           Text(
             date,
             style: const TextStyle(fontSize: 11, color: Colors.blueGrey),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _recentUpdatesCard() {
-    if (recentActivities.isEmpty) {
-      return _cardBase(
-        "Recent Updates",
-        Icons.access_time,
-        const Text(
-          "No recent updates available.",
-          style: TextStyle(color: Colors.grey, fontSize: 13),
-        ),
-      );
-    }
-
-    return _cardBase(
-      "Recent Updates",
-      Icons.access_time,
-      Column(
-        children: recentActivities
-            .take(4)
-            .map(
-              (activity) => _update(
-                (activity['title'] ?? 'Update').toString(),
-                (activity['time'] ?? 'Just now').toString(),
-              ),
-            )
-            .toList(),
-      ),
-    );
-  }
-
-  Widget _update(String text, String time) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          const Icon(Icons.circle, size: 8, color: Colors.blue),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(text, style: const TextStyle(fontSize: 13)),
-                Text(
-                  time,
-                  style: const TextStyle(fontSize: 11, color: Colors.grey),
-                ),
-              ],
-            ),
           ),
         ],
       ),
@@ -910,12 +667,6 @@ class _AlumniDashboardState extends State<AlumniDashboard> {
   }
 
   void _openProfileModule() => widget.onModuleSelected?.call(1);
-
-  void _openAnnouncementsModule() => widget.onModuleSelected?.call(2);
-
-  void _openJobsModule() => widget.onModuleSelected?.call(3);
-
-  void _openSettingsModule() => widget.onModuleSelected?.call(4);
 
   String _normalizeProgram(dynamic rawProgram) {
     final value = rawProgram?.toString().trim() ?? '';

@@ -1,0 +1,38 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        API_BASE_URL: http://localhost:8080/alumni_php
+    ports:
+      - "8081:80"
+    depends_on:
+      - backend
+
+  backend:
+    image: php:8.2-apache
+    ports:
+      - "8080:80"
+    volumes:
+      - ${ALUMNI_PHP_PATH:-../alumni_php}:/var/www/html/alumni_php
+    depends_on:
+      - db
+
+  db:
+    image: mysql:8.0
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_DATABASE: alumni_tracer
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: alumni_user
+      MYSQL_PASSWORD: alumni_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./create_users_table.sql:/docker-entrypoint-initdb.d/01-create_users_table.sql:ro
+      - ./create_jobs_tables.sql:/docker-entrypoint-initdb.d/02-create_jobs_tables.sql:ro
+
+volumes:
+  mysql_data:

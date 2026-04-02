@@ -282,6 +282,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         direction: stackPasswords
                             ? Axis.vertical
                             : Axis.horizontal,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(
                             flex: stackPasswords ? 0 : 1,
@@ -314,6 +315,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         direction: stackPasswords
                             ? Axis.vertical
                             : Axis.horizontal,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(
                             flex: stackPasswords ? 0 : 1,
@@ -435,6 +437,16 @@ class _RegisterPageState extends State<RegisterPage> {
         ),
         filled: true,
         fillColor: readOnly ? Colors.white12 : Colors.white10,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 18,
+        ),
+        errorMaxLines: 3,
+        errorStyle: const TextStyle(
+          color: Colors.redAccent,
+          fontSize: 12,
+          height: 1.3,
+        ),
       ),
       validator: (val) {
         final value = val ?? '';
@@ -477,6 +489,16 @@ class _RegisterPageState extends State<RegisterPage> {
         ),
         filled: true,
         fillColor: Colors.white10,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 18,
+        ),
+        errorMaxLines: 3,
+        errorStyle: const TextStyle(
+          color: Colors.redAccent,
+          fontSize: 12,
+          height: 1.3,
+        ),
       ),
       items: items
           .map((e) => DropdownMenuItem(value: e, child: Text(e)))

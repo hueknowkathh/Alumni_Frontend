@@ -40,7 +40,13 @@ class _DeanMainLayoutState extends State<DeanMainLayout> {
     super.initState();
     if (UserStore.value == null) UserStore.set(widget.user);
     _pages = [
-      DeanDashboard(user: widget.user),
+      DeanDashboard(
+        user: widget.user,
+        onModuleSelected: (index) {
+          if (!mounted) return;
+          setState(() => _selectedIndex = index);
+        },
+      ),
       const DepartmentAlumniPage(),
       const CareerReportsPage(),
       const CareerOverviewPage(),
@@ -84,101 +90,172 @@ class _DeanMainLayoutState extends State<DeanMainLayout> {
         _notificationKey.currentContext!.findRenderObject() as RenderBox;
     final buttonPosition = button.localToGlobal(Offset.zero, ancestor: overlay);
     final buttonSize = button.size;
+    final screenSize = overlay.size;
+    final panelWidth = screenSize.width < 420 ? screenSize.width - 32 : 360.0;
+    final left = (buttonPosition.dx + buttonSize.width - panelWidth)
+        .clamp(16.0, screenSize.width - panelWidth - 16.0)
+        .toDouble();
+    final top = (buttonPosition.dy + buttonSize.height + 10)
+        .clamp(16.0, screenSize.height - 420.0)
+        .toDouble();
 
-    await showMenu(
+    await showGeneralDialog(
       context: context,
-      position: RelativeRect.fromRect(
-        Rect.fromLTWH(
-          buttonPosition.dx,
-          buttonPosition.dy + buttonSize.height,
-          buttonSize.width,
-          buttonSize.height,
-        ),
-        Offset.zero & overlay.size,
-      ),
-      items: [
-        PopupMenuItem(
-          enabled: false,
-          child: Container(
-            width: MediaQuery.of(context).size.width < 420
-                ? MediaQuery.of(context).size.width - 48
-                : 320,
-            height: 220,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.18),
-                  blurRadius: 12,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      barrierLabel: 'Notifications',
+      barrierDismissible: true,
+      barrierColor: Colors.black.withValues(alpha: 0.18),
+      transitionDuration: const Duration(milliseconds: 180),
+      pageBuilder: (dialogContext, animation, secondaryAnimation) {
+        return Stack(
+          children: [
+            Positioned(
+              left: left,
+              top: top,
+              child: Material(
+                color: Colors.transparent,
+                child: Container(
+                  width: panelWidth,
+                  constraints: BoxConstraints(
+                    maxHeight: screenSize.height * 0.62,
+                    minHeight: 220,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: const Color(0xFFE8DADF)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.18),
+                        blurRadius: 22,
+                        offset: const Offset(0, 12),
+                      ),
+                    ],
+                  ),
+                  child: Column(
                     children: [
-                      const Text(
-                        'Notifications',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(18, 16, 10, 12),
+                        child: Row(
+                          children: [
+                            const Expanded(
+                              child: Text(
+                                'Notifications',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 16,
+                                  color: Color(0xFF4A152C),
+                                ),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.of(dialogContext).pop(),
+                              child: const Text('Close'),
+                            ),
+                          ],
                         ),
                       ),
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text('Close'),
+                      const Divider(height: 1),
+                      Expanded(
+                        child: _notifications.isEmpty
+                            ? const Center(
+                                child: Text(
+                                  'No notifications yet',
+                                  style: TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              )
+                            : ListView.separated(
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                itemCount: _notifications.length,
+                                separatorBuilder: (_, _) =>
+                                    const Divider(height: 1),
+                                itemBuilder: (context, index) {
+                                  final note = _notifications[index];
+                                  final type = note['type']?.toString() ?? '';
+                                  final time =
+                                      note['time']?.toString() ?? 'Just now';
+
+                                  return ListTile(
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 8,
+                                    ),
+                                    minVerticalPadding: 10,
+                                    leading: Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                        color: primaryMaroon.withValues(
+                                          alpha: 0.9,
+                                        ),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.announcement_outlined,
+                                        size: 20,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    title: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          note['title']?.toString() ?? 'Update',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w700,
+                                            color: Color(0xFF4A152C),
+                                            height: 1.25,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          type.isNotEmpty
+                                              ? '$type - $time'
+                                              : time,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: Color(0xFF6B7280),
+                                            height: 1.25,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
                       ),
                     ],
                   ),
                 ),
-                const Divider(height: 1),
-                Expanded(
-                  child: _notifications.isEmpty
-                      ? const Center(child: Text('No notifications yet'))
-                      : ListView.separated(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          itemCount: _notifications.length,
-                          separatorBuilder: (_, _) => const Divider(height: 1),
-                          itemBuilder: (context, index) {
-                            final note = _notifications[index];
-                            return ListTile(
-                              dense: true,
-                              leading: CircleAvatar(
-                                radius: 16,
-                                backgroundColor: accentGold.withValues(
-                                  alpha: 0.2,
-                                ),
-                                child: const Icon(
-                                  Icons.announcement_outlined,
-                                  size: 18,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              title: Text(
-                                note['title']?.toString() ?? 'Update',
-                                style: const TextStyle(fontSize: 14),
-                              ),
-                              subtitle: Text(
-                                note['type']?.toString().isNotEmpty == true
-                                    ? '${note['type']} • ${note['time'] ?? 'Just now'}'
-                                    : note['time']?.toString() ?? 'Just now',
-                                style: const TextStyle(fontSize: 12),
-                              ),
-                            );
-                          },
-                        ),
-                ),
-              ],
+              ),
             ),
+          ],
+        );
+      },
+      transitionBuilder: (context, animation, _, child) {
+        final curved = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+        );
+        return FadeTransition(
+          opacity: curved,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0, -0.04),
+              end: Offset.zero,
+            ).animate(curved),
+            child: child,
           ),
-        ),
-      ],
+        );
+      },
     );
   }
 

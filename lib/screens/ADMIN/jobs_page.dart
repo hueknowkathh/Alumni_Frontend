@@ -22,11 +22,47 @@ class _JobsPageState extends State<JobsPage> {
   bool isLoading = false;
   bool isSaving = false;
   List jobs = [];
+  final TextEditingController _searchController = TextEditingController();
+  String _selectedLocation = 'All Locations';
+
+  List<String> get _locationOptions {
+    final locations =
+        jobs
+            .map((job) => (job['location'] ?? '').toString().trim())
+            .where((location) => location.isNotEmpty)
+            .toSet()
+            .toList()
+          ..sort();
+    return ['All Locations', ...locations];
+  }
+
+  List get _filteredJobs {
+    final query = _searchController.text.trim().toLowerCase();
+    return jobs.where((job) {
+      final title = (job['title'] ?? '').toString().toLowerCase();
+      final company = (job['company'] ?? '').toString().toLowerCase();
+      final location = (job['location'] ?? '').toString().trim();
+
+      final matchesSearch =
+          query.isEmpty || title.contains(query) || company.contains(query);
+      final matchesLocation = _selectedLocation == 'All Locations'
+          ? true
+          : location == _selectedLocation;
+
+      return matchesSearch && matchesLocation;
+    }).toList();
+  }
 
   @override
   void initState() {
     super.initState();
     fetchJobs();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> fetchJobs() async {
@@ -184,6 +220,8 @@ class _JobsPageState extends State<JobsPage> {
             const SizedBox(height: 24),
             _buildQuickStats(),
             const SizedBox(height: 24),
+            _buildFilterBar(),
+            const SizedBox(height: 24),
             if (isLoading)
               Center(child: CircularProgressIndicator(color: primaryMaroon))
             else
@@ -253,23 +291,20 @@ class _JobsPageState extends State<JobsPage> {
                   spacing: 12,
                   runSpacing: 12,
                   children: [
-                    OutlinedButton.icon(
+                    OutlinedButton(
                       onPressed: fetchJobs,
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.white,
+                        minimumSize: const Size(52, 52),
+                        padding: EdgeInsets.zero,
                         side: BorderSide(
                           color: Colors.white.withValues(alpha: 0.30),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 18,
-                          vertical: 14,
                         ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
                         ),
                       ),
-                      icon: const Icon(Icons.refresh_rounded, size: 18),
-                      label: const Text("Refresh"),
+                      child: const Icon(Icons.refresh_rounded, size: 18),
                     ),
                     ElevatedButton.icon(
                       onPressed: () => _showJobDialog(),
@@ -336,23 +371,20 @@ class _JobsPageState extends State<JobsPage> {
                   spacing: 12,
                   runSpacing: 12,
                   children: [
-                    OutlinedButton.icon(
+                    OutlinedButton(
                       onPressed: fetchJobs,
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.white,
+                        minimumSize: const Size(52, 52),
+                        padding: EdgeInsets.zero,
                         side: BorderSide(
                           color: Colors.white.withValues(alpha: 0.30),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 18,
-                          vertical: 14,
                         ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
                         ),
                       ),
-                      icon: const Icon(Icons.refresh_rounded, size: 18),
-                      label: const Text("Refresh"),
+                      child: const Icon(Icons.refresh_rounded, size: 18),
                     ),
                     ElevatedButton.icon(
                       onPressed: () => _showJobDialog(),
@@ -384,36 +416,68 @@ class _JobsPageState extends State<JobsPage> {
     final withLocation = jobs
         .where((job) => (job['location'] ?? '').toString().trim().isNotEmpty)
         .length;
+    final withContact = jobs
+        .where(
+          (job) => (job['contact_email'] ?? '').toString().trim().isNotEmpty,
+        )
+        .length;
 
-    return Wrap(
-      spacing: 16,
-      runSpacing: 16,
-      children: [
-        _statCard(
-          "Open Roles",
-          jobs.length.toString(),
-          Icons.work_outline,
-          primaryMaroon,
-        ),
-        _statCard(
-          "With Salary Info",
-          withSalary.toString(),
-          Icons.payments_outlined,
-          accentGold,
-        ),
-        _statCard(
-          "With Location",
-          withLocation.toString(),
-          Icons.location_on_outlined,
-          Colors.teal,
-        ),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final availableWidth = constraints.maxWidth;
+        final cardWidth = availableWidth >= 1180
+            ? (availableWidth - 48) / 4
+            : availableWidth >= 760
+            ? (availableWidth - 16) / 2
+            : double.infinity;
+
+        return Wrap(
+          spacing: 16,
+          runSpacing: 16,
+          children: [
+            _statCard(
+              "Open Roles",
+              jobs.length.toString(),
+              Icons.work_outline,
+              primaryMaroon,
+              cardWidth,
+            ),
+            _statCard(
+              "With Salary Info",
+              withSalary.toString(),
+              Icons.payments_outlined,
+              accentGold,
+              cardWidth,
+            ),
+            _statCard(
+              "With Location",
+              withLocation.toString(),
+              Icons.location_on_outlined,
+              Colors.teal,
+              cardWidth,
+            ),
+            _statCard(
+              "With Contact",
+              withContact.toString(),
+              Icons.mail_outline,
+              Colors.indigo,
+              cardWidth,
+            ),
+          ],
+        );
+      },
     );
   }
 
-  Widget _statCard(String label, String value, IconData icon, Color color) {
+  Widget _statCard(
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+    double width,
+  ) {
     return Container(
-      width: MediaQuery.of(context).size.width < 700 ? double.infinity : 220,
+      width: width,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -452,13 +516,84 @@ class _JobsPageState extends State<JobsPage> {
     );
   }
 
+  Widget _buildFilterBar() {
+    final isNarrow = MediaQuery.of(context).size.width < 900;
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: borderColor),
+      ),
+      child: isNarrow
+          ? Column(
+              children: [
+                _buildSearchField(),
+                const SizedBox(height: 12),
+                _buildLocationDropdown(),
+              ],
+            )
+          : Row(
+              children: [
+                Expanded(flex: 3, child: _buildSearchField()),
+                const SizedBox(width: 16),
+                Expanded(flex: 2, child: _buildLocationDropdown()),
+              ],
+            ),
+    );
+  }
+
+  Widget _buildSearchField() {
+    return TextField(
+      controller: _searchController,
+      onChanged: (_) => setState(() {}),
+      decoration: InputDecoration(
+        hintText: 'Search title or company...',
+        prefixIcon: const Icon(Icons.search),
+        filled: true,
+        fillColor: bgLight,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide.none,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLocationDropdown() {
+    final items = _locationOptions;
+    final value = items.contains(_selectedLocation)
+        ? _selectedLocation
+        : items.first;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: bgLight,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: DropdownButton<String>(
+        value: value,
+        isExpanded: true,
+        underline: const SizedBox(),
+        items: items
+            .map((item) => DropdownMenuItem(value: item, child: Text(item)))
+            .toList(),
+        onChanged: (value) {
+          if (value == null) return;
+          setState(() => _selectedLocation = value);
+        },
+      ),
+    );
+  }
+
   Widget _buildJobsList() {
-    if (jobs.isEmpty) {
+    if (_filteredJobs.isEmpty) {
       return _buildEmptyState();
     }
 
     return Column(
-      children: jobs.asMap().entries.map((entry) {
+      children: _filteredJobs.asMap().entries.map((entry) {
         return Padding(
           padding: const EdgeInsets.only(bottom: 18),
           child: _buildJobCard(entry.value, entry.key),
@@ -650,6 +785,9 @@ class _JobsPageState extends State<JobsPage> {
   }
 
   Widget _buildEmptyState() {
+    final hasFilters =
+        _searchController.text.trim().isNotEmpty ||
+        _selectedLocation != 'All Locations';
     return Center(
       child: Container(
         width: MediaQuery.of(context).size.width < 500
@@ -679,7 +817,7 @@ class _JobsPageState extends State<JobsPage> {
             ),
             const SizedBox(height: 18),
             Text(
-              "No jobs posted yet",
+              hasFilters ? "No jobs found" : "No jobs posted yet",
               style: TextStyle(
                 color: primaryMaroon,
                 fontSize: 20,
@@ -688,7 +826,9 @@ class _JobsPageState extends State<JobsPage> {
             ),
             const SizedBox(height: 8),
             Text(
-              "Create your first posting and it will appear here in the updated jobs layout.",
+              hasFilters
+                  ? "Try changing the search term or location filter to see more job postings."
+                  : "Create your first posting and it will appear here in the updated jobs layout.",
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey.shade600, height: 1.5),
             ),

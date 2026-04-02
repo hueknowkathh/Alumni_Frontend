@@ -1,0 +1,67 @@
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: alumni_nginx
+    depends_on:
+      - frontend
+      - backend
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/deploy.conf:/etc/nginx/conf.d/default.conf:ro
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        API_BASE_URL: http://localhost/alumni_php
+    image: alumni-frontend:latest
+    container_name: alumni_frontend
+    restart: unless-stopped
+
+  backend:
+    image: php:8.2-apache
+    container_name: alumni_backend
+    restart: unless-stopped
+    depends_on:
+      - db
+      - redis
+    environment:
+      APP_ENV: production
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: alumni_tracer
+      DB_USER: alumni_user
+      DB_PASSWORD: alumni_pass
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    volumes:
+      - ${ALUMNI_PHP_PATH:-../alumni_php}:/var/www/html/alumni_php
+
+  redis:
+    image: redis:7-alpine
+    container_name: alumni_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+
+  db:
+    image: mysql:8.0
+    container_name: alumni_db
+    restart: unless-stopped
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_DATABASE: alumni_tracer
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: alumni_user
+      MYSQL_PASSWORD: alumni_pass
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./create_users_table.sql:/docker-entrypoint-initdb.d/01-create_users_table.sql:ro
+      - ./create_jobs_tables.sql:/docker-entrypoint-initdb.d/02-create_jobs_tables.sql:ro
+
+volumes:
+  mysql_data:
+  redis_data:

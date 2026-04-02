@@ -176,6 +176,7 @@ class _TracerDataPageState extends State<TracerDataPage> {
     final screenWidth = MediaQuery.of(context).size.width;
     final horizontalPadding = screenWidth < 600 ? 16.0 : 32.0;
     final isCompact = screenWidth < 700;
+    final isNarrow = screenWidth < 960;
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -215,15 +216,8 @@ class _TracerDataPageState extends State<TracerDataPage> {
                         ),
                       ],
                     ),
-                    child: Wrap(
-                      spacing: 18,
-                      runSpacing: 18,
-                      alignment: WrapAlignment.spaceBetween,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        SizedBox(
-                          width: isCompact ? double.infinity : 620,
-                          child: Column(
+                    child: isNarrow
+                        ? Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Container(
@@ -245,12 +239,13 @@ class _TracerDataPageState extends State<TracerDataPage> {
                                 ),
                               ),
                               const SizedBox(height: 16),
-                              const Text(
+                              Text(
                                 'Tracer Governance & Report Oversight',
                                 style: TextStyle(
                                   color: Colors.white,
-                                  fontSize: 30,
+                                  fontSize: isCompact ? 26 : 30,
                                   fontWeight: FontWeight.w800,
+                                  height: 1.15,
                                 ),
                               ),
                               const SizedBox(height: 10),
@@ -261,65 +256,185 @@ class _TracerDataPageState extends State<TracerDataPage> {
                                   height: 1.5,
                                 ),
                               ),
+                              const SizedBox(height: 16),
+                              Wrap(
+                                spacing: 12,
+                                runSpacing: 12,
+                                children: [
+                                  _buildHeroChip(
+                                    Icons.fact_check_outlined,
+                                    '${_signedRecords.length} signed records',
+                                  ),
+                                  _buildHeroChip(
+                                    Icons.assignment_turned_in_outlined,
+                                    '${_allData.length} validated responses',
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              Wrap(
+                                spacing: 12,
+                                runSpacing: 12,
+                                children: [
+                                  FilledButton.icon(
+                                    onPressed: _isExportingPdf
+                                        ? null
+                                        : _downloadAccreditationReport,
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor: Colors.white,
+                                      foregroundColor: primaryMaroon,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 18,
+                                        vertical: 16,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                    ),
+                                    icon: const Icon(
+                                      Icons.picture_as_pdf_outlined,
+                                    ),
+                                    label: Text(
+                                      _isExportingPdf
+                                          ? 'Preparing PDF...'
+                                          : 'Generate Report',
+                                    ),
+                                  ),
+                                  FilledButton.icon(
+                                    onPressed: _filteredList.isEmpty
+                                        ? null
+                                        : _exportCsv,
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor: accentGold,
+                                      foregroundColor: primaryMaroon,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 18,
+                                        vertical: 16,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                    ),
+                                    icon: const Icon(Icons.table_view_outlined),
+                                    label: const Text('Export CSV'),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          )
+                        : Wrap(
+                            spacing: 18,
+                            runSpacing: 18,
+                            alignment: WrapAlignment.spaceBetween,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              SizedBox(
+                                width: 620,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 8,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.14,
+                                        ),
+                                        borderRadius: BorderRadius.circular(
+                                          999,
+                                        ),
+                                      ),
+                                      child: const Text(
+                                        'Admin Oversight',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    const Text(
+                                      'Tracer Governance & Report Oversight',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 30,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Text(
+                                      'Review signed tracer records, validate institutional data quality, and manage accreditation-ready reporting in one workspace.',
+                                      style: TextStyle(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.82,
+                                        ),
+                                        height: 1.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Wrap(
+                                spacing: 12,
+                                runSpacing: 12,
+                                children: [
+                                  _buildHeroChip(
+                                    Icons.fact_check_outlined,
+                                    '${_signedRecords.length} signed records',
+                                  ),
+                                  _buildHeroChip(
+                                    Icons.assignment_turned_in_outlined,
+                                    '${_allData.length} validated responses',
+                                  ),
+                                  FilledButton.icon(
+                                    onPressed: _isExportingPdf
+                                        ? null
+                                        : _downloadAccreditationReport,
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor: Colors.white,
+                                      foregroundColor: primaryMaroon,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 18,
+                                        vertical: 16,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                    ),
+                                    icon: const Icon(
+                                      Icons.picture_as_pdf_outlined,
+                                    ),
+                                    label: Text(
+                                      _isExportingPdf
+                                          ? 'Preparing PDF...'
+                                          : 'Generate Report',
+                                    ),
+                                  ),
+                                  FilledButton.icon(
+                                    onPressed: _filteredList.isEmpty
+                                        ? null
+                                        : _exportCsv,
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor: accentGold,
+                                      foregroundColor: primaryMaroon,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 18,
+                                        vertical: 16,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                    ),
+                                    icon: const Icon(Icons.table_view_outlined),
+                                    label: const Text('Export CSV'),
+                                  ),
+                                ],
+                              ),
                             ],
                           ),
-                        ),
-                        Wrap(
-                          spacing: 12,
-                          runSpacing: 12,
-                          children: [
-                            _buildHeroChip(
-                              Icons.fact_check_outlined,
-                              '${_signedRecords.length} signed records',
-                            ),
-                            _buildHeroChip(
-                              Icons.assignment_turned_in_outlined,
-                              '${_allData.length} validated responses',
-                            ),
-                            FilledButton.icon(
-                              onPressed: _isExportingPdf
-                                  ? null
-                                  : _downloadAccreditationReport,
-                              style: FilledButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                foregroundColor: primaryMaroon,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 18,
-                                  vertical: 16,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                              ),
-                              icon: const Icon(Icons.picture_as_pdf_outlined),
-                              label: Text(
-                                _isExportingPdf
-                                    ? 'Preparing PDF...'
-                                    : 'Generate Report',
-                              ),
-                            ),
-                            FilledButton.icon(
-                              onPressed: _filteredList.isEmpty
-                                  ? null
-                                  : _exportCsv,
-                              style: FilledButton.styleFrom(
-                                backgroundColor: accentGold,
-                                foregroundColor: primaryMaroon,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 18,
-                                  vertical: 16,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                              ),
-                              icon: const Icon(Icons.table_view_outlined),
-                              label: const Text('Export CSV'),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
                   ),
                   const SizedBox(height: 24),
                   _buildAnalyticsCards(),
@@ -358,25 +473,28 @@ class _TracerDataPageState extends State<TracerDataPage> {
                                 color: accentGold,
                               ),
                             ),
-                            const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Tracer Response Explorer',
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w800,
+                            SizedBox(
+                              width: isNarrow ? double.infinity : null,
+                              child: const Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Tracer Response Explorer',
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w800,
+                                    ),
                                   ),
-                                ),
-                                SizedBox(height: 4),
-                                Text(
-                                  'Search responses, review employment outcomes, and open complete tracer details.',
-                                  style: TextStyle(
-                                    color: Colors.black54,
-                                    height: 1.4,
+                                  SizedBox(height: 4),
+                                  Text(
+                                    'Search responses, review employment outcomes, and open complete tracer details.',
+                                    style: TextStyle(
+                                      color: Colors.black54,
+                                      height: 1.4,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ],
                         ),
@@ -388,11 +506,12 @@ class _TracerDataPageState extends State<TracerDataPage> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  AdminAccreditationModule(
-                    reportData: _reportData,
-                    onGenerateReport: _downloadAccreditationReport,
-                    totalResponses: _allData.length,
-                    employedCount: _employmentCount("Employed"),
+                    AdminAccreditationModule(
+                      reportData: _reportData,
+                      signedRows: _allData,
+                      onGenerateReport: _downloadAccreditationReport,
+                      totalResponses: _allData.length,
+                      employedCount: _employmentCount("Employed"),
                     selfEmployedCount: _employmentCount("Self-Employed"),
                     unemployedCount: _employmentCount("Unemployed"),
                   ),
@@ -424,31 +543,69 @@ class _TracerDataPageState extends State<TracerDataPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Wrap(
-            spacing: 12,
-            runSpacing: 12,
+            spacing: 16,
+            runSpacing: 16,
+            alignment: WrapAlignment.spaceBetween,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
+              SizedBox(
+                width: MediaQuery.of(context).size.width < 760
+                    ? double.infinity
+                    : null,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: primaryMaroon.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Icon(
+                        Icons.fact_check_outlined,
+                        color: primaryMaroon,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Signed Tracer Submission Records',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Separate signed submissions are preserved here for admin review and PDF download.',
+                            style: TextStyle(color: Colors.black54, height: 1.4),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: primaryMaroon.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(999),
                 ),
-                child: Icon(Icons.fact_check_outlined, color: primaryMaroon),
-              ),
-              const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Signed Tracer Submission Records',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+                child: Text(
+                  '${_signedRecords.length} record${_signedRecords.length == 1 ? '' : 's'}',
+                  style: TextStyle(
+                    color: primaryMaroon,
+                    fontWeight: FontWeight.w700,
                   ),
-                  SizedBox(height: 4),
-                  Text(
-                    'Separate signed submissions are preserved here for admin review and PDF download.',
-                    style: TextStyle(color: Colors.black54, height: 1.4),
-                  ),
-                ],
+                ),
               ),
             ],
           ),
@@ -511,79 +668,195 @@ class _TracerDataPageState extends State<TracerDataPage> {
     final agreementVersion = (record['agreement_version'] ?? 'N/A').toString();
     final pdfUrl = (record['pdf_download_url'] ?? '').toString();
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isCompact = constraints.maxWidth < 760;
-        return Container(
-          margin: const EdgeInsets.only(bottom: 14),
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: bgLight,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: borderColor),
-          ),
-          child: Wrap(
-            spacing: 16,
-            runSpacing: 16,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            alignment: WrapAlignment.spaceBetween,
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final isCompact = constraints.maxWidth < 760;
+          final detailsSection = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(
-                width: isCompact ? double.infinity : 420,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      fullName,
-                      style: const TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w800,
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  Text(
+                    fullName,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(
+                        color: primaryMaroon.withValues(alpha: 0.14),
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Reference ID: $referenceId',
+                    child: Text(
+                      'Signed Record',
                       style: TextStyle(
                         color: primaryMaroon,
+                        fontSize: 12,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Program: $program | Signed: $signedAt | Agreement: $agreementVersion',
-                      style: TextStyle(
-                        color: Colors.grey.shade700,
-                        height: 1.45,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: borderColor),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.tag_outlined, size: 18, color: primaryMaroon),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Reference ID: $referenceId',
+                        style: TextStyle(
+                          color: primaryMaroon,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
-              SizedBox(
-                width: isCompact ? double.infinity : null,
-                child: FilledButton.icon(
-                  onPressed: pdfUrl.isEmpty
-                      ? null
-                      : () => _openDownload(pdfUrl),
+              const SizedBox(height: 14),
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  _buildSignedMetaChip(
+                    Icons.school_outlined,
+                    'Program: $program',
+                  ),
+                  _buildSignedMetaChip(
+                    Icons.schedule_outlined,
+                    'Signed: $signedAt',
+                  ),
+                  _buildSignedMetaChip(
+                    Icons.description_outlined,
+                    'Agreement: $agreementVersion',
+                  ),
+                ],
+              ),
+            ],
+          );
+
+          final actionSection = SizedBox(
+            width: isCompact ? double.infinity : 220,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                FilledButton.icon(
+                  onPressed: pdfUrl.isEmpty ? null : () => _openDownload(pdfUrl),
                   style: FilledButton.styleFrom(
                     backgroundColor: primaryMaroon,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 18,
-                      vertical: 14,
+                      vertical: 16,
                     ),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(16),
                     ),
                   ),
                   icon: const Icon(Icons.picture_as_pdf_outlined),
                   label: const Text('Download PDF'),
                 ),
+                const SizedBox(height: 10),
+                Text(
+                  pdfUrl.isEmpty
+                      ? 'PDF archive is not available yet for this record.'
+                      : 'Ready for admin review and PDF archive download.',
+                  textAlign: isCompact ? TextAlign.left : TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.grey.shade700,
+                    height: 1.45,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          );
+
+          return Container(
+            margin: const EdgeInsets.only(bottom: 14),
+            padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: bgLight,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: borderColor),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.025),
+                blurRadius: 14,
+                offset: const Offset(0, 6),
               ),
-            ],
+              ],
+            ),
+            child: isCompact
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      detailsSection,
+                      const SizedBox(height: 18),
+                      actionSection,
+                    ],
+                  )
+                : Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(child: detailsSection),
+                      const SizedBox(width: 20),
+                      actionSection,
+                    ],
+                  ),
+          );
+        },
+      );
+  }
+
+  Widget _buildSignedMetaChip(IconData icon, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: borderColor),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: accentGold),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.grey.shade800,
+              fontWeight: FontWeight.w600,
+            ),
+            softWrap: true,
+            overflow: TextOverflow.visible,
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 
@@ -822,6 +1095,76 @@ class _TracerDataPageState extends State<TracerDataPage> {
   Widget _buildResponsiveTracerTable() {
     return LayoutBuilder(
       builder: (context, constraints) {
+        if (constraints.maxWidth < 700) {
+          if (_filteredList.isEmpty) {
+            return Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: borderColor),
+              ),
+              child: const Text('No tracer responses matched the current filters.'),
+            );
+          }
+
+          return Column(
+            children: _filteredList.map((data) {
+              final isUnemployed = data['employment_status'] == "Unemployed";
+              return Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: borderColor),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      (data['full_name'] ?? 'N/A').toString(),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: [
+                        _statusBadge(data['employment_status'] ?? "N/A"),
+                        _mobileMetaChip(
+                          Icons.work_outline,
+                          isUnemployed
+                              ? '-'
+                              : (data['job_title'] ?? 'N/A').toString(),
+                        ),
+                        _mobileMetaChip(
+                          Icons.school_outlined,
+                          (data['job_related'] ?? 'N/A').toString(),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton.icon(
+                        onPressed: () => _showTracerDetails(data),
+                        icon: const Icon(Icons.visibility_outlined),
+                        label: const Text('View details'),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          );
+        }
+
         final minTableWidth = constraints.maxWidth < 900
             ? 860.0
             : constraints.maxWidth;
@@ -914,6 +1257,35 @@ class _TracerDataPageState extends State<TracerDataPage> {
           fontWeight: FontWeight.bold,
           fontSize: 11,
         ),
+      ),
+    );
+  }
+
+  Widget _mobileMetaChip(IconData icon, String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: bgLight,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderColor),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: primaryMaroon),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              text,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: Colors.grey.shade800,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

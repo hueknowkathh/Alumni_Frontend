@@ -187,23 +187,18 @@ class _AnnouncementPageState extends State<AnnouncementPage> {
                 const SizedBox(height: 16),
                 SizedBox(
                   width: double.infinity,
-                  child: OutlinedButton.icon(
+                  child: OutlinedButton(
                     onPressed: fetchAnnouncements,
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.white,
+                      minimumSize: const Size(52, 52),
+                      padding: EdgeInsets.zero,
                       side: BorderSide(
                         color: Colors.white.withValues(alpha: 0.30),
                       ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 18,
-                        vertical: 14,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
+                      shape: const CircleBorder(),
                     ),
-                    icon: const Icon(Icons.refresh_rounded, size: 18),
-                    label: const Text("Refresh"),
+                    child: const Icon(Icons.refresh_rounded, size: 18),
                   ),
                 ),
               ],
@@ -237,23 +232,18 @@ class _AnnouncementPageState extends State<AnnouncementPage> {
                     ),
                   ),
                   const SizedBox(width: 16),
-                  OutlinedButton.icon(
+                  OutlinedButton(
                     onPressed: fetchAnnouncements,
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.white,
+                      minimumSize: const Size(52, 52),
+                      padding: EdgeInsets.zero,
                       side: BorderSide(
                         color: Colors.white.withValues(alpha: 0.30),
                       ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 18,
-                        vertical: 14,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
+                      shape: const CircleBorder(),
                     ),
-                    icon: const Icon(Icons.refresh_rounded, size: 18),
-                    label: const Text("Refresh"),
+                    child: const Icon(Icons.refresh_rounded, size: 18),
                   ),
                 ],
               ),
@@ -267,14 +257,17 @@ class _AnnouncementPageState extends State<AnnouncementPage> {
     final events = announcements
         .where((ann) => (ann['category'] ?? '') == 'Events')
         .length;
+    final jobOpportunities = announcements
+        .where((ann) => (ann['category'] ?? '') == 'Job Opportunities')
+        .length;
     final reminders = announcements
         .where((ann) => (ann['category'] ?? '') == 'Reminders')
         .length;
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final cardWidth = constraints.maxWidth >= 1080
-            ? (constraints.maxWidth - 32) / 3
+        final cardWidth = constraints.maxWidth >= 980
+            ? (constraints.maxWidth - 48) / 4
             : constraints.maxWidth >= 700
             ? (constraints.maxWidth - 16) / 2
             : constraints.maxWidth;
@@ -294,6 +287,13 @@ class _AnnouncementPageState extends State<AnnouncementPage> {
               events.toString(),
               Icons.event_available_outlined,
               accentGold,
+              cardWidth,
+            ),
+            _statCard(
+              "Job Opportunities",
+              jobOpportunities.toString(),
+              Icons.work_outline,
+              Colors.green,
               cardWidth,
             ),
             _statCard(
@@ -325,6 +325,7 @@ class _AnnouncementPageState extends State<AnnouncementPage> {
         border: Border.all(color: cardBorder),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           CircleAvatar(
             radius: 24,
@@ -332,24 +333,31 @@ class _AnnouncementPageState extends State<AnnouncementPage> {
             child: Icon(icon, color: color),
           ),
           const SizedBox(width: 14),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
-              ),
-              Text(
-                label,
-                style: TextStyle(
-                  color: Colors.grey.shade600,
-                  fontWeight: FontWeight.w500,
+                const SizedBox(height: 2),
+                Text(
+                  label,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w500,
+                    height: 1.2,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -625,9 +633,12 @@ class _AnnouncementPageState extends State<AnnouncementPage> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: primaryMaroon,
                 foregroundColor: Colors.white,
+                minimumSize: const Size(52, 52),
+                padding: EdgeInsets.zero,
+                shape: const CircleBorder(),
               ),
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text("Refresh Announcements"),
+              label: const SizedBox.shrink(),
             ),
           ],
         ),

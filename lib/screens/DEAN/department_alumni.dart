@@ -70,11 +70,15 @@ class _DepartmentAlumniPageState extends State<DepartmentAlumniPage> {
 
   Future<void> _loadFilterOptions() async {
     try {
-      final options = await FilterOptionsService.fetch(program: selectedProgram);
+      final options = await FilterOptionsService.fetch(
+        program: selectedProgram,
+      );
       if (!mounted) return;
       setState(() {
         _programOptions = _assignedProgram == null
-            ? (options.programs.isEmpty ? const ['BSIT', 'BSSW'] : options.programs)
+            ? (options.programs.isEmpty
+                  ? const ['BSIT', 'BSSW']
+                  : options.programs)
             : [_assignedProgram!];
         _batchOptions = ['All Batches', ...options.years];
         _statusOptions = ['All Status', ...options.statuses];
@@ -108,20 +112,26 @@ class _DepartmentAlumniPageState extends State<DepartmentAlumniPage> {
         headers: ApiService.authHeaders(),
       );
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (!mounted) return;
-        setState(() {
-          _filteredAlumni = data['alumni'];
-          _summary = data['summary'];
-          _isLoading = false;
-        });
+      if (response.statusCode != 200) {
+        throw Exception('Request failed: ${response.statusCode}');
       }
+
+      final data = json.decode(response.body);
+      if (data is! Map<String, dynamic>) {
+        throw Exception('Unexpected response format');
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _filteredAlumni = List<dynamic>.from(data['alumni'] ?? const []);
+        _summary = Map<String, dynamic>.from(data['summary'] ?? const {});
+        _isLoading = false;
+      });
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Failed to connect to server")),
+        SnackBar(content: Text("Failed to load department alumni data: $e")),
       );
     }
   }
@@ -138,7 +148,13 @@ class _DepartmentAlumniPageState extends State<DepartmentAlumniPage> {
       ['Program Filter', selectedProgram, '', '', ''],
       ['Batch Filter', selectedBatch, '', '', ''],
       ['Status Filter', selectedStatus, '', '', ''],
-      ['Total Graduates', '${_summary['total_graduates'] ?? 0}', '', '', ''],
+      [
+        'Registered Graduates',
+        '${_summary['total_graduates'] ?? 0}',
+        '',
+        '',
+        '',
+      ],
       ['Employment Rate', '${_summary['employment_rate'] ?? '0%'}', '', '', ''],
       ['Job Alignment', '${_summary['job_alignment'] ?? '0%'}', '', '', ''],
       ['', '', '', '', ''],
@@ -231,7 +247,7 @@ class _DepartmentAlumniPageState extends State<DepartmentAlumniPage> {
                 children: [
                   _pdfRow(['Metric', 'Value'], isHeader: true),
                   _pdfRow([
-                    'Total Graduates',
+                    'Registered Graduates',
                     '${_summary['total_graduates'] ?? 0}',
                   ]),
                   _pdfRow(['Employed', '${_summary['employed'] ?? 0}']),
@@ -466,6 +482,7 @@ class _DepartmentAlumniPageState extends State<DepartmentAlumniPage> {
           final isCompact = contentWidth < 640;
           final isHeroStacked = contentWidth < 900;
           final horizontalPadding = isCompact ? 16.0 : 32.0;
+          final summaryContentWidth = contentWidth - (horizontalPadding * 2);
           final tableHeight = isCompact ? 420.0 : 520.0;
 
           return ListView(
@@ -539,41 +556,20 @@ class _DepartmentAlumniPageState extends State<DepartmentAlumniPage> {
                               spacing: 12,
                               runSpacing: 12,
                               children: [
-                                OutlinedButton.icon(
+                                _buildHeroActionButton(
+                                  icon: Icons.picture_as_pdf,
+                                  label: _isExportingReport
+                                      ? "Preparing Report..."
+                                      : "Export Accreditation Report",
                                   onPressed: _isLoading || _isExportingReport
                                       ? null
                                       : _downloadAccreditationReport,
-                                  icon: const Icon(Icons.picture_as_pdf, size: 18),
-                                  label: Text(
-                                    _isExportingReport
-                                        ? "Preparing Report..."
-                                        : "Export Accreditation Report",
-                                  ),
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: Colors.white,
-                                    minimumSize: const Size(0, 52),
-                                    side: BorderSide(
-                                      color: Colors.white.withValues(alpha: 0.30),
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                  ),
+                                  isPrimary: true,
                                 ),
-                                OutlinedButton.icon(
-                                  onPressed: _filteredAlumni.isEmpty ? null : _exportCsv,
-                                  icon: const Icon(Icons.table_view_outlined, size: 18),
-                                  label: const Text("Export CSV"),
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: Colors.white,
-                                    minimumSize: const Size(0, 52),
-                                    side: BorderSide(
-                                      color: Colors.white.withValues(alpha: 0.30),
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                  ),
+                                _buildHeroActionButton(
+                                  icon: Icons.table_view_outlined,
+                                  label: "Export CSV",
+                                  onPressed: _isLoading ? null : _exportCsv,
                                 ),
                               ],
                             ),
@@ -630,41 +626,20 @@ class _DepartmentAlumniPageState extends State<DepartmentAlumniPage> {
                             spacing: 12,
                             runSpacing: 12,
                             children: [
-                              OutlinedButton.icon(
+                              _buildHeroActionButton(
+                                icon: Icons.picture_as_pdf,
+                                label: _isExportingReport
+                                    ? "Preparing Report..."
+                                    : "Export Accreditation Report",
                                 onPressed: _isLoading || _isExportingReport
                                     ? null
                                     : _downloadAccreditationReport,
-                                icon: const Icon(Icons.picture_as_pdf, size: 18),
-                                label: Text(
-                                  _isExportingReport
-                                      ? "Preparing Report..."
-                                      : "Export Accreditation Report",
-                                ),
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: Colors.white,
-                                  minimumSize: const Size(0, 52),
-                                  side: BorderSide(
-                                    color: Colors.white.withValues(alpha: 0.30),
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                ),
+                                isPrimary: true,
                               ),
-                              OutlinedButton.icon(
-                                onPressed: _filteredAlumni.isEmpty ? null : _exportCsv,
-                                icon: const Icon(Icons.table_view_outlined, size: 18),
-                                label: const Text("Export CSV"),
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: Colors.white,
-                                  minimumSize: const Size(0, 52),
-                                  side: BorderSide(
-                                    color: Colors.white.withValues(alpha: 0.30),
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                ),
+                              _buildHeroActionButton(
+                                icon: Icons.table_view_outlined,
+                                label: "Export CSV",
+                                onPressed: _isLoading ? null : _exportCsv,
                               ),
                             ],
                           ),
@@ -677,32 +652,32 @@ class _DepartmentAlumniPageState extends State<DepartmentAlumniPage> {
                 runSpacing: 16,
                 children: [
                   _buildMetricCard(
-                    "Total Graduates",
+                    "Registered Graduates",
                     "${_summary['total_graduates']}",
                     Icons.people,
                     Colors.blue,
-                    contentWidth,
+                    summaryContentWidth,
                   ),
                   _buildMetricCard(
                     "Employed",
                     "${_summary['employed']}",
                     Icons.work,
                     Colors.green,
-                    contentWidth,
+                    summaryContentWidth,
                   ),
                   _buildMetricCard(
                     "Employment Rate",
                     "${_summary['employment_rate']}",
                     Icons.trending_up,
                     accentGold,
-                    contentWidth,
+                    summaryContentWidth,
                   ),
                   _buildMetricCard(
                     "Job Alignment",
                     "${_summary['job_alignment']}",
                     Icons.check_circle_outline,
                     Colors.purple,
-                    contentWidth,
+                    summaryContentWidth,
                   ),
                 ],
               ),
@@ -919,13 +894,13 @@ class _DepartmentAlumniPageState extends State<DepartmentAlumniPage> {
     String value,
     IconData icon,
     Color color,
-    double contentWidth,
+    double availableWidth,
   ) {
-    final cardWidth = contentWidth >= 1180
-        ? (contentWidth - 48) / 4
-        : contentWidth >= 760
-        ? (contentWidth - 16) / 2
-        : double.infinity;
+    final cardWidth = availableWidth >= 1180
+        ? (availableWidth - 48) / 4
+        : availableWidth >= 760
+        ? (availableWidth - 16) / 2
+        : availableWidth;
     return SizedBox(
       width: cardWidth,
       child: Container(
@@ -969,6 +944,38 @@ class _DepartmentAlumniPageState extends State<DepartmentAlumniPage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildHeroActionButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback? onPressed,
+    bool isPrimary = false,
+  }) {
+    final backgroundColor = isPrimary
+        ? Colors.white
+        : Colors.white.withValues(alpha: 0.14);
+    final foregroundColor = isPrimary ? primaryMaroon : Colors.white;
+    final borderColor = isPrimary
+        ? Colors.white
+        : Colors.white.withValues(alpha: 0.34);
+
+    return OutlinedButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon, size: 18),
+      label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+      style: OutlinedButton.styleFrom(
+        backgroundColor: backgroundColor,
+        foregroundColor: foregroundColor,
+        disabledBackgroundColor: Colors.white.withValues(alpha: 0.14),
+        disabledForegroundColor: Colors.white.withValues(alpha: 0.72),
+        minimumSize: const Size(0, 52),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        side: BorderSide(color: borderColor),
+        textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
     );
   }

@@ -2327,7 +2327,7 @@ class _LandingPageState extends State<LandingPage>
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              "Quick access to your portal sections",
+                              "Quick Access",
                               style: TextStyle(
                                 color: Colors.white.withValues(alpha: 0.78),
                                 fontSize: 13,

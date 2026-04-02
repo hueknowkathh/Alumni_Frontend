@@ -678,6 +678,7 @@ class _AlumniJobsPageState extends State<AlumniJobsPage> {
   }
 
   Widget _buildHeroHeader() {
+    final isStacked = MediaQuery.of(context).size.width < 760;
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -695,28 +696,50 @@ class _AlumniJobsPageState extends State<AlumniJobsPage> {
           ),
         ],
       ),
-      child: Row(
-        children: [
-          Container(
-            width: 72,
-            height: 72,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(22),
-            ),
-            child: Icon(Icons.cases_outlined, color: accentGold, size: 34),
-          ),
-          const SizedBox(width: 18),
-          Expanded(
-            child: Column(
+      child: isStacked
+          ? Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 72,
+                      height: 72,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.10),
+                        borderRadius: BorderRadius.circular(22),
+                      ),
+                      child: Icon(
+                        Icons.cases_outlined,
+                        color: accentGold,
+                        size: 34,
+                      ),
+                    ),
+                    const Spacer(),
+                    OutlinedButton(
+                      onPressed: fetchJobs,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        side: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.30),
+                        ),
+                        minimumSize: const Size(52, 52),
+                        padding: EdgeInsets.zero,
+                        shape: const CircleBorder(),
+                      ),
+                      child: const Icon(Icons.refresh_rounded, size: 18),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
                 const Text(
                   "Job Opportunities",
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 28,
                     fontWeight: FontWeight.w800,
+                    height: 1.15,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -729,24 +752,57 @@ class _AlumniJobsPageState extends State<AlumniJobsPage> {
                   ),
                 ),
               ],
+            )
+          : Row(
+              children: [
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(22),
+                  ),
+                  child: Icon(Icons.cases_outlined, color: accentGold, size: 34),
+                ),
+                const SizedBox(width: 18),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Job Opportunities",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 28,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        "Explore curated job openings for alumni and apply directly through the portal.",
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.82),
+                          height: 1.5,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                OutlinedButton(
+                  onPressed: fetchJobs,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    side: BorderSide(color: Colors.white.withValues(alpha: 0.30)),
+                    minimumSize: const Size(52, 52),
+                    padding: EdgeInsets.zero,
+                    shape: const CircleBorder(),
+                  ),
+                  child: const Icon(Icons.refresh_rounded, size: 18),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(width: 16),
-          OutlinedButton.icon(
-            onPressed: fetchJobs,
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.white,
-              side: BorderSide(color: Colors.white.withValues(alpha: 0.30)),
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-            ),
-            icon: const Icon(Icons.refresh_rounded, size: 18),
-            label: const Text("Refresh"),
-          ),
-        ],
-      ),
     );
   }
 
@@ -758,47 +814,69 @@ class _AlumniJobsPageState extends State<AlumniJobsPage> {
         .where((job) => (job['location'] ?? '').toString().trim().isNotEmpty)
         .length;
 
-    return Wrap(
-      spacing: 16,
-      runSpacing: 16,
-      children: [
-        _statCard(
-          "Open Roles",
-          _filteredJobs.length.toString(),
-          Icons.work_outline,
-          primaryMaroon,
-        ),
-        _statCard(
-          "Saved Jobs",
-          _savedJobIds.length.toString(),
-          Icons.bookmark_border,
-          Colors.deepOrange,
-        ),
-        _statCard(
-          "Applications",
-          _applications.length.toString(),
-          Icons.fact_check_outlined,
-          Colors.indigo,
-        ),
-        _statCard(
-          "With Salary Info",
-          withSalary.toString(),
-          Icons.payments_outlined,
-          accentGold,
-        ),
-        _statCard(
-          "With Location",
-          withLocation.toString(),
-          Icons.location_on_outlined,
-          Colors.teal,
-        ),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final availableWidth = constraints.maxWidth;
+        final cardWidth = availableWidth >= 1180
+            ? (availableWidth - 64) / 5
+            : availableWidth >= 760
+            ? (availableWidth - 16) / 2
+            : double.infinity;
+
+        return Wrap(
+          spacing: 16,
+          runSpacing: 16,
+          children: [
+            _statCard(
+              "Open Roles",
+              _filteredJobs.length.toString(),
+              Icons.work_outline,
+              primaryMaroon,
+              cardWidth,
+            ),
+            _statCard(
+              "Saved Jobs",
+              _savedJobIds.length.toString(),
+              Icons.bookmark_border,
+              Colors.deepOrange,
+              cardWidth,
+            ),
+            _statCard(
+              "Applications",
+              _applications.length.toString(),
+              Icons.fact_check_outlined,
+              Colors.indigo,
+              cardWidth,
+            ),
+            _statCard(
+              "With Salary Info",
+              withSalary.toString(),
+              Icons.payments_outlined,
+              accentGold,
+              cardWidth,
+            ),
+            _statCard(
+              "With Location",
+              withLocation.toString(),
+              Icons.location_on_outlined,
+              Colors.teal,
+              cardWidth,
+            ),
+          ],
+        );
+      },
     );
   }
 
-  Widget _statCard(String label, String value, IconData icon, Color color) {
+  Widget _statCard(
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+    double width,
+  ) {
     return Container(
-      width: MediaQuery.of(context).size.width < 700 ? double.infinity : 220,
+      width: width,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -813,24 +891,31 @@ class _AlumniJobsPageState extends State<AlumniJobsPage> {
             child: Icon(icon, color: color),
           ),
           const SizedBox(width: 14),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
-              ),
-              Text(
-                label,
-                style: TextStyle(
-                  color: Colors.grey.shade600,
-                  fontWeight: FontWeight.w500,
+                const SizedBox(height: 2),
+                Text(
+                  label,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w500,
+                    height: 1.2,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -838,6 +923,7 @@ class _AlumniJobsPageState extends State<AlumniJobsPage> {
   }
 
   Widget _buildFilterBar() {
+    final isNarrow = MediaQuery.of(context).size.width < 860;
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -845,55 +931,95 @@ class _AlumniJobsPageState extends State<AlumniJobsPage> {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: cardBorder),
       ),
-      child: Wrap(
-        spacing: 16,
-        runSpacing: 12,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: [
-          SizedBox(
-            width: 280,
-            child: TextField(
-              controller: _searchController,
-              onChanged: (_) => setState(() {}),
-              decoration: InputDecoration(
-                hintText: 'Search title or company...',
-                prefixIcon: const Icon(Icons.search),
-                filled: true,
-                fillColor: bgLight,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide.none,
+      child: isNarrow
+          ? Column(
+              children: [
+                _buildSearchField(expanded: true),
+                const SizedBox(height: 12),
+                _buildDropdownControl(
+                  value: _selectedLocation,
+                  items: _locationOptions,
+                  expanded: true,
+                  onChanged: (value) {
+                    if (value == null) return;
+                    setState(() => _selectedLocation = value);
+                  },
                 ),
-              ),
+                const SizedBox(height: 12),
+                _buildDropdownControl(
+                  value: _selectedSort,
+                  items: const [
+                    'Newest',
+                    'Company',
+                    'Saved First',
+                    'Applied First',
+                  ],
+                  expanded: true,
+                  onChanged: (value) {
+                    if (value == null) return;
+                    setState(() => _selectedSort = value);
+                  },
+                ),
+              ],
+            )
+          : Wrap(
+              spacing: 16,
+              runSpacing: 12,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                _buildSearchField(),
+                _buildDropdownControl(
+                  value: _selectedLocation,
+                  items: _locationOptions,
+                  onChanged: (value) {
+                    if (value == null) return;
+                    setState(() => _selectedLocation = value);
+                  },
+                ),
+                _buildDropdownControl(
+                  value: _selectedSort,
+                  items: const [
+                    'Newest',
+                    'Company',
+                    'Saved First',
+                    'Applied First',
+                  ],
+                  onChanged: (value) {
+                    if (value == null) return;
+                    setState(() => _selectedSort = value);
+                  },
+                ),
+              ],
             ),
-          ),
-          _buildDropdownControl(
-            value: _selectedLocation,
-            items: _locationOptions,
-            onChanged: (value) {
-              if (value == null) return;
-              setState(() => _selectedLocation = value);
-            },
-          ),
-          _buildDropdownControl(
-            value: _selectedSort,
-            items: const ['Newest', 'Company', 'Saved First', 'Applied First'],
-            onChanged: (value) {
-              if (value == null) return;
-              setState(() => _selectedSort = value);
-            },
-          ),
-        ],
+    );
+  }
+
+  Widget _buildSearchField({bool expanded = false}) {
+    final field = TextField(
+      controller: _searchController,
+      onChanged: (_) => setState(() {}),
+      decoration: InputDecoration(
+        hintText: 'Search title or company...',
+        prefixIcon: const Icon(Icons.search),
+        filled: true,
+        fillColor: bgLight,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide.none,
+        ),
       ),
     );
+
+    return expanded ? field : SizedBox(width: 280, child: field);
   }
 
   Widget _buildDropdownControl({
     required String value,
     required List<String> items,
     required ValueChanged<String?> onChanged,
+    bool expanded = false,
   }) {
-    return Container(
+    final dropdown = Container(
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: bgLight,
@@ -901,6 +1027,7 @@ class _AlumniJobsPageState extends State<AlumniJobsPage> {
       ),
       child: DropdownButton<String>(
         value: items.contains(value) ? value : items.first,
+        isExpanded: expanded,
         underline: const SizedBox(),
         items: items
             .map((item) => DropdownMenuItem(value: item, child: Text(item)))
@@ -908,6 +1035,8 @@ class _AlumniJobsPageState extends State<AlumniJobsPage> {
         onChanged: onChanged,
       ),
     );
+
+    return expanded ? SizedBox(width: double.infinity, child: dropdown) : dropdown;
   }
 
   Widget _buildApplicationHistory() {
@@ -1282,9 +1411,12 @@ class _AlumniJobsPageState extends State<AlumniJobsPage> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: primaryMaroon,
                 foregroundColor: Colors.white,
+                minimumSize: const Size(52, 52),
+                padding: EdgeInsets.zero,
+                shape: const CircleBorder(),
               ),
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text("Refresh Jobs"),
+              label: const SizedBox.shrink(),
             ),
           ],
         ),

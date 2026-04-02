@@ -347,29 +347,6 @@ class _SettingsPageState extends State<SettingsPage> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 24),
-                      const Divider(),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: () {},
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFD32F2F),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 12,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                        child: const Text("Request Account Deletion"),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        "This will permanently delete your account and all associated data.",
-                        style: TextStyle(color: Colors.grey, fontSize: 11),
-                      ),
                     ],
                   ),
                 ),
@@ -837,3 +814,4 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 }
+

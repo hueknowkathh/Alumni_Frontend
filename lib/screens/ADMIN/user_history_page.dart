@@ -332,14 +332,15 @@ class _AdminUserHistoryDialogState extends State<AdminUserHistoryDialog> {
         Wrap(
           spacing: 12,
           children: [
-            OutlinedButton.icon(
+            OutlinedButton(
               onPressed: _loadHistory,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Refresh'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: _maroon,
+                minimumSize: const Size(44, 44),
+                padding: EdgeInsets.zero,
                 side: const BorderSide(color: _border),
               ),
+              child: const Icon(Icons.refresh),
             ),
             IconButton(
               onPressed: () => Navigator.pop(context),

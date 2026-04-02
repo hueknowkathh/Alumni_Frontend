@@ -22,6 +22,9 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
   bool isLoading = false;
   bool isSaving = false;
   List announcements = [];
+  List filteredAnnouncements = [];
+  String selectedCategory = "All Categories";
+  String searchQuery = "";
 
   Color getCategoryColor(String category) {
     switch (category) {
@@ -54,12 +57,25 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
           announcements = decoded is List
               ? decoded
               : (decoded is Map ? decoded['announcements'] ?? [] : []);
+          _applyFilters();
         });
       }
     } catch (e) {
       debugPrint("Error fetching announcements: $e");
     }
     setState(() => isLoading = false);
+  }
+
+  void _applyFilters() {
+    filteredAnnouncements = announcements.where((ann) {
+      final title = (ann['title'] ?? "").toString().toLowerCase();
+      final category = (ann['category'] ?? "General").toString();
+      final matchesSearch = title.contains(searchQuery.toLowerCase());
+      final matchesCategory = selectedCategory == "All Categories"
+          ? true
+          : category == selectedCategory;
+      return matchesSearch && matchesCategory;
+    }).toList();
   }
 
   Future<bool> saveAnnouncement(
@@ -292,10 +308,12 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                   const SizedBox(height: 24),
                   _buildQuickStats(),
                   const SizedBox(height: 24),
-                  if (announcements.isEmpty)
+                  _buildFilterBar(),
+                  const SizedBox(height: 24),
+                  if (filteredAnnouncements.isEmpty)
                     _buildEmptyState()
                   else
-                    ...announcements.asMap().entries.map((entry) {
+                    ...filteredAnnouncements.asMap().entries.map((entry) {
                       final ann = entry.value;
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 18),
@@ -367,23 +385,20 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                   spacing: 12,
                   runSpacing: 12,
                   children: [
-                    OutlinedButton.icon(
+                    OutlinedButton(
                       onPressed: fetchAnnouncements,
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.white,
+                        minimumSize: const Size(52, 52),
+                        padding: EdgeInsets.zero,
                         side: BorderSide(
                           color: Colors.white.withValues(alpha: 0.30),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 18,
-                          vertical: 14,
                         ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
                         ),
                       ),
-                      icon: const Icon(Icons.refresh_rounded, size: 18),
-                      label: const Text("Refresh"),
+                      child: const Icon(Icons.refresh_rounded, size: 18),
                     ),
                     ElevatedButton.icon(
                       onPressed: () => _showAnnouncementDialog(),
@@ -450,23 +465,20 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                   spacing: 12,
                   runSpacing: 12,
                   children: [
-                    OutlinedButton.icon(
+                    OutlinedButton(
                       onPressed: fetchAnnouncements,
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.white,
+                        minimumSize: const Size(52, 52),
+                        padding: EdgeInsets.zero,
                         side: BorderSide(
                           color: Colors.white.withValues(alpha: 0.30),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 18,
-                          vertical: 14,
                         ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
                         ),
                       ),
-                      icon: const Icon(Icons.refresh_rounded, size: 18),
-                      label: const Text("Refresh"),
+                      child: const Icon(Icons.refresh_rounded, size: 18),
                     ),
                     ElevatedButton.icon(
                       onPressed: () => _showAnnouncementDialog(),
@@ -495,39 +507,69 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
     final events = announcements
         .where((ann) => (ann['category'] ?? '') == 'Events')
         .length;
+    final jobOpportunities = announcements
+        .where((ann) => (ann['category'] ?? '') == 'Job Opportunities')
+        .length;
     final reminders = announcements
         .where((ann) => (ann['category'] ?? '') == 'Reminders')
         .length;
 
-    return Wrap(
-      spacing: 16,
-      runSpacing: 16,
-      children: [
-        _statCard(
-          "Total Posts",
-          announcements.length.toString(),
-          Icons.feed_outlined,
-          primaryMaroon,
-        ),
-        _statCard(
-          "Events",
-          events.toString(),
-          Icons.event_available_outlined,
-          accentGold,
-        ),
-        _statCard(
-          "Reminders",
-          reminders.toString(),
-          Icons.notifications_active_outlined,
-          Colors.teal,
-        ),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final availableWidth = constraints.maxWidth;
+        final cardWidth = availableWidth >= 980
+            ? (availableWidth - 48) / 4
+            : availableWidth >= 760
+            ? (availableWidth - 16) / 2
+            : double.infinity;
+
+        return Wrap(
+          spacing: 16,
+          runSpacing: 16,
+          children: [
+            _statCard(
+              "Total Posts",
+              announcements.length.toString(),
+              Icons.feed_outlined,
+              primaryMaroon,
+              cardWidth,
+            ),
+            _statCard(
+              "Events",
+              events.toString(),
+              Icons.event_available_outlined,
+              accentGold,
+              cardWidth,
+            ),
+            _statCard(
+              "Job Opportunities",
+              jobOpportunities.toString(),
+              Icons.work_outline,
+              Colors.green,
+              cardWidth,
+            ),
+            _statCard(
+              "Reminders",
+              reminders.toString(),
+              Icons.notifications_active_outlined,
+              Colors.teal,
+              cardWidth,
+            ),
+          ],
+        );
+      },
     );
   }
 
-  Widget _statCard(String label, String value, IconData icon, Color color) {
+  Widget _statCard(
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+    double width,
+  ) {
     return Container(
-      width: MediaQuery.of(context).size.width < 700 ? double.infinity : 220,
+      width: width,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -535,6 +577,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
         border: Border.all(color: borderColor),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           CircleAvatar(
             radius: 24,
@@ -542,26 +585,117 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
             child: Icon(icon, color: color),
           ),
           const SizedBox(width: 14),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
-              ),
-              Text(
-                label,
-                style: TextStyle(
-                  color: Colors.grey.shade600,
-                  fontWeight: FontWeight.w500,
+                const SizedBox(height: 2),
+                Text(
+                  label,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w500,
+                    height: 1.2,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildFilterBar() {
+    final isNarrow = MediaQuery.of(context).size.width < 900;
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: borderColor),
+      ),
+      child: isNarrow
+          ? Column(
+              children: [
+                _searchField(),
+                const SizedBox(height: 12),
+                _categoryDropdown(),
+              ],
+            )
+          : Row(
+              children: [
+                Expanded(flex: 3, child: _searchField()),
+                const SizedBox(width: 16),
+                Expanded(flex: 2, child: _categoryDropdown()),
+              ],
+            ),
+    );
+  }
+
+  Widget _searchField() {
+    return TextField(
+      onChanged: (value) {
+        setState(() {
+          searchQuery = value;
+          _applyFilters();
+        });
+      },
+      decoration: InputDecoration(
+        hintText: "Search announcements...",
+        prefixIcon: const Icon(Icons.search),
+        filled: true,
+        fillColor: const Color(0xFFF8F9FA),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: borderColor),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: borderColor),
+        ),
+      ),
+    );
+  }
+
+  Widget _categoryDropdown() {
+    return DropdownButtonFormField<String>(
+      initialValue: selectedCategory,
+      items: [
+        "All Categories",
+        "Events",
+        "Reminders",
+        "Job Opportunities",
+        "GENERAL",
+      ].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+      onChanged: (value) {
+        if (value == null) return;
+        setState(() {
+          selectedCategory = value;
+          _applyFilters();
+        });
+      },
+      decoration: InputDecoration(
+        filled: true,
+        fillColor: const Color(0xFFF8F9FA),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: borderColor),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: borderColor),
+        ),
       ),
     );
   }
@@ -719,6 +853,8 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
   }
 
   Widget _buildEmptyState() {
+    final hasFilters =
+        searchQuery.trim().isNotEmpty || selectedCategory != "All Categories";
     return Center(
       child: Container(
         width: MediaQuery.of(context).size.width < 500
@@ -748,7 +884,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
             ),
             const SizedBox(height: 18),
             Text(
-              "No announcements yet",
+              hasFilters ? "No announcements found" : "No announcements yet",
               style: TextStyle(
                 color: primaryMaroon,
                 fontSize: 20,
@@ -757,7 +893,9 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
             ),
             const SizedBox(height: 8),
             Text(
-              "Create your first update for alumni and it will appear here in the new card layout.",
+              hasFilters
+                  ? "Try changing the search term or category filter to see more announcements."
+                  : "Create your first update for alumni and it will appear here in the new card layout.",
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey.shade600, height: 1.5),
             ),

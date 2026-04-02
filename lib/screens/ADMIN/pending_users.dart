@@ -398,24 +398,20 @@ class _PendingUsersPageState extends State<PendingUsersPage> {
                 const SizedBox(height: 16),
                 SizedBox(
                   width: double.infinity,
-                  child: OutlinedButton.icon(
+                  child: OutlinedButton(
                     onPressed: fetchPendingUsers,
-                    icon: const Icon(Icons.refresh_rounded),
-                    label: const Text("Refresh"),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.white,
-                      minimumSize: const Size(0, 52),
+                      minimumSize: const Size(52, 52),
+                      padding: EdgeInsets.zero,
                       side: BorderSide(
                         color: Colors.white.withValues(alpha: 0.30),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 18,
-                        vertical: 14,
                       ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
                     ),
+                    child: const Icon(Icons.refresh_rounded),
                   ),
                 ),
               ],
@@ -461,24 +457,20 @@ class _PendingUsersPageState extends State<PendingUsersPage> {
                   ),
                 ),
                 const SizedBox(width: 16),
-                OutlinedButton.icon(
+                OutlinedButton(
                   onPressed: fetchPendingUsers,
-                  icon: const Icon(Icons.refresh_rounded),
-                  label: const Text("Refresh"),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.white,
-                    minimumSize: const Size(0, 52),
+                    minimumSize: const Size(52, 52),
+                    padding: EdgeInsets.zero,
                     side: BorderSide(
                       color: Colors.white.withValues(alpha: 0.30),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 18,
-                      vertical: 14,
                     ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
+                  child: const Icon(Icons.refresh_rounded),
                 ),
               ],
             ),
@@ -491,6 +483,7 @@ class _PendingUsersPageState extends State<PendingUsersPage> {
         .where((id) => id.isNotEmpty)
         .toList();
     final hasSelection = _selectedUserIds.isNotEmpty;
+    final hasBulkSelection = _selectedUserIds.length > 1;
     final areAllSelected =
         selectableIds.isNotEmpty &&
         _selectedUserIds.length == selectableIds.length;
@@ -524,41 +517,30 @@ class _PendingUsersPageState extends State<PendingUsersPage> {
                   "Pending Users List",
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                 ),
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: [
-                    OutlinedButton.icon(
-                      onPressed: hasSelection
-                          ? () => _handleBulkAction(false)
-                          : null,
-                      icon: const Icon(Icons.close_rounded),
-                      label: Text(
-                        hasSelection
-                            ? 'Reject (${_selectedUserIds.length})'
-                            : 'Reject Selected',
+                if (hasBulkSelection)
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: () => _handleBulkAction(false),
+                        icon: const Icon(Icons.close_rounded),
+                        label: Text('Reject (${_selectedUserIds.length})'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.red,
+                        ),
                       ),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.red,
+                      ElevatedButton.icon(
+                        onPressed: () => _handleBulkAction(true),
+                        icon: const Icon(Icons.done_rounded),
+                        label: Text('Approve (${_selectedUserIds.length})'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF0D0D1D),
+                          foregroundColor: Colors.white,
+                        ),
                       ),
-                    ),
-                    ElevatedButton.icon(
-                      onPressed: hasSelection
-                          ? () => _handleBulkAction(true)
-                          : null,
-                      icon: const Icon(Icons.done_rounded),
-                      label: Text(
-                        hasSelection
-                            ? 'Approve (${_selectedUserIds.length})'
-                            : 'Approve Selected',
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF0D0D1D),
-                        foregroundColor: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
               ],
             ),
           ),

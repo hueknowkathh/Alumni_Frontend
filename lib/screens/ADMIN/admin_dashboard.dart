@@ -32,6 +32,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
   final Color accentGold = const Color(0xFFC5A046);
   final Color bgLight = const Color(0xFFF8F9FA);
   final Color borderColor = const Color(0xFFE0E0E0);
+  final Color softRose = const Color(0xFFF8F1F4);
 
   String _currentDate = "";
   late Timer _clockTimer;
@@ -152,79 +153,24 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  Widget _buildDashboardContent(double contentWidth) {
+    Widget _buildDashboardContent(double contentWidth) {
     final isNarrow = contentWidth < 900;
+    final horizontalPadding = contentWidth < 600 ? 32.0 : 64.0;
+    final availableWidth = contentWidth - horizontalPadding;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ✅ UPDATED HEADER WITH REFRESH BUTTON & DYNAMIC NAME
-        Wrap(
-          spacing: 16,
-          runSpacing: 16,
-          alignment: WrapAlignment.spaceBetween,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            SizedBox(
-              width: isNarrow ? double.infinity : 520,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ValueListenableBuilder<Map<String, dynamic>?>(
-                    valueListenable: UserStore.currentUser,
-                    builder: (context, liveUser, _) {
-                      final name =
-                          (liveUser?['name'] ?? widget.user['name'] ?? 'Admin')
-                              .toString()
-                              .trim();
-                      return Text(
-                        "Welcome back, ${name.isEmpty ? 'Admin' : name}!",
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: primaryMaroon,
-                        ),
-                      );
-                    },
-                  ),
-                  Text(
-                    "Here's what's happening with the alumni portal today.",
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
-                  ),
-                ],
-              ),
-            ),
-
-            Wrap(
-              spacing: 16,
-              runSpacing: 12,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                Text(
-                  _currentDate,
-                  style: TextStyle(
-                    color: Colors.grey.shade500,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(width: 16),
-
-                // 🔥 REFRESH BUTTON
-                IconButton(
-                  onPressed: () {
-                    fetchDashboardData();
-                  },
-                  icon: const Icon(Icons.refresh_rounded),
-                  color: primaryMaroon,
-                  tooltip: "Refresh Dashboard",
-                  style: IconButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    shadowColor: Colors.black.withValues(alpha: 0.1),
-                    elevation: 2,
-                  ),
-                ),
-              ],
-            ),
-          ],
+        ValueListenableBuilder<Map<String, dynamic>?>(
+          valueListenable: UserStore.currentUser,
+          builder: (context, liveUser, _) {
+            final name = (liveUser?['name'] ?? widget.user['name'] ?? 'Admin')
+                .toString()
+                .trim();
+            return _buildHeroHeader(
+              name: name.isEmpty ? 'Admin' : name,
+              isNarrow: isNarrow,
+            );
+          },
         ),
 
         const SizedBox(height: 32),
@@ -238,48 +184,29 @@ class _AdminDashboardState extends State<AdminDashboard> {
               liveStats['total_alumni'].toString(),
               Icons.people_outline,
               Colors.blue,
-              contentWidth,
+              availableWidth,
             ),
             _buildStatCard(
               "Pending Verification",
               liveStats['pending_users'].toString(),
               Icons.hourglass_top,
               Colors.red,
-              contentWidth,
+              availableWidth,
             ),
             _buildStatCard(
               "Tracer Submissions",
               liveStats['tracer_submissions'].toString(),
               Icons.assignment_outlined,
               Colors.green,
-              contentWidth,
+              availableWidth,
             ),
             _buildStatCard(
               "Employment Rate",
               "${liveStats['employment_rate']}%",
               Icons.trending_up,
               accentGold,
-              contentWidth,
+              availableWidth,
             ),
-          ],
-        ),
-
-        const SizedBox(height: 32),
-
-        const Text(
-          "Quick Actions",
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 16),
-
-        Wrap(
-          spacing: 16,
-          runSpacing: 16,
-          children: [
-            _actionButton("View Pending Users", Icons.verified_user, 3),
-            _actionButton("Tracer Governance", Icons.analytics, 2),
-            _actionButton("Manage Announcements", Icons.campaign, 4),
-            _actionButton("Generate Reports", Icons.picture_as_pdf, 2),
           ],
         ),
 
@@ -447,22 +374,167 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  // 🔽 KEEP ALL YOUR EXISTING WIDGETS BELOW (UNCHANGED)
+  Widget _buildHeroHeader({
+    required String name,
+    required bool isNarrow,
+  }) {
+    final actions = Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.10),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.calendar_today_outlined, color: accentGold, size: 18),
+              const SizedBox(width: 10),
+              Text(
+                _currentDate,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+        OutlinedButton(
+          onPressed: fetchDashboardData,
+          style: OutlinedButton.styleFrom(
+            foregroundColor: Colors.white,
+            side: BorderSide(color: Colors.white.withValues(alpha: 0.30)),
+            minimumSize: const Size(52, 52),
+            padding: EdgeInsets.zero,
+            shape: const CircleBorder(),
+          ),
+          child: const Icon(Icons.refresh_rounded, size: 18),
+        ),
+      ],
+    );
 
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [primaryMaroon, primaryMaroon.withValues(alpha: 0.88)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: primaryMaroon.withValues(alpha: 0.18),
+            blurRadius: 24,
+            offset: const Offset(0, 14),
+          ),
+        ],
+      ),
+      child: isNarrow
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(22),
+                  ),
+                  child: Icon(
+                    Icons.admin_panel_settings_outlined,
+                    color: accentGold,
+                    size: 34,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  "Welcome back, $name!",
+                  style: const TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  "Monitor registrations, tracer activity, and system-wide updates from one polished workspace.",
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.82),
+                    height: 1.5,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                actions,
+              ],
+            )
+          : Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(22),
+                  ),
+                  child: Icon(
+                    Icons.admin_panel_settings_outlined,
+                    color: accentGold,
+                    size: 34,
+                  ),
+                ),
+                const SizedBox(width: 18),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Welcome back, $name!",
+                        style: const TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        "Monitor registrations, tracer activity, and system-wide updates from one polished workspace.",
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.82),
+                          height: 1.5,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 18),
+                actions,
+              ],
+            ),
+    );
+  }
   Widget _buildStatCard(
     String label,
     String value,
     IconData icon,
     Color color,
-    double contentWidth,
+    double availableWidth,
   ) {
     return SizedBox(
-      width: contentWidth < 700
+      width: availableWidth < 700
           ? double.infinity
-          : contentWidth >= 1180
-          ? (contentWidth - 48) / 4
-          : contentWidth >= 760
-          ? (contentWidth - 16) / 2
+          : availableWidth >= 1180
+          ? (availableWidth - 48) / 4
+          : availableWidth >= 760
+          ? (availableWidth - 16) / 2
           : double.infinity,
       child: Container(
         padding: const EdgeInsets.all(24),
@@ -517,20 +589,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
             Text(label, style: TextStyle(color: Colors.grey.shade600)),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _actionButton(String title, IconData icon, int targetIndex) {
-    return ElevatedButton.icon(
-      onPressed: () {
-        widget.onActionSelected.call(targetIndex);
-      },
-      icon: Icon(icon, size: 18, color: Colors.white),
-      label: Text(title, style: const TextStyle(color: Colors.white)),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: primaryMaroon,
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 22),
       ),
     );
   }
@@ -1006,20 +1064,18 @@ class _RecentActivityPageState extends State<RecentActivityPage> {
                 const SizedBox(height: 12),
                 SizedBox(
                   width: double.infinity,
-                  child: OutlinedButton.icon(
+                  child: OutlinedButton(
                     onPressed: widget.onRefresh,
-                    icon: const Icon(Icons.refresh_rounded),
-                    label: const Text("Refresh Log"),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: primaryMaroon,
-                      minimumSize: const Size(0, 48),
+                      minimumSize: const Size(48, 48),
+                      padding: EdgeInsets.zero,
                       side: BorderSide(
                         color: primaryMaroon.withValues(alpha: 0.18),
                       ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
+                      shape: const CircleBorder(),
                     ),
+                    child: const Icon(Icons.refresh_rounded),
                   ),
                 ),
               ],
@@ -1045,20 +1101,18 @@ class _RecentActivityPageState extends State<RecentActivityPage> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                OutlinedButton.icon(
+                OutlinedButton(
                   onPressed: widget.onRefresh,
-                  icon: const Icon(Icons.refresh_rounded),
-                  label: const Text("Refresh Log"),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: primaryMaroon,
-                    minimumSize: const Size(0, 48),
+                    minimumSize: const Size(48, 48),
+                    padding: EdgeInsets.zero,
                     side: BorderSide(
                       color: primaryMaroon.withValues(alpha: 0.18),
                     ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
+                    shape: const CircleBorder(),
                   ),
+                  child: const Icon(Icons.refresh_rounded),
                 ),
               ],
             ),

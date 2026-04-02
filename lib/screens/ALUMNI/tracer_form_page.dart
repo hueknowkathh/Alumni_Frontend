@@ -232,10 +232,11 @@ class _TracerFormPageState extends State<TracerFormPage> {
   static const Color _rose = Color(0xFF8C3A57);
   static const Color _cream = Color(0xFFF8F3F1);
   static const Color _ink = Color(0xFF1F2937);
-  static const String _agreementVersion = 'JMC-TRACER-2026.1';
+  static const String _agreementVersion =
+      'Jose Maria College Foundation,Inc.-TRACER-2026.1';
   static const String _agreementText =
       'Privacy and Data Use Agreement\n\n'
-      'By signing and submitting this tracer form, I confirm that the information I provided is true, complete, and voluntarily given. I understand that JMC may collect, process, store, and review my tracer responses for alumni engagement, institutional quality assurance, program review, accreditation, graduate outcome reporting, and related academic or administrative purposes.\n\n'
+      'By signing and submitting this tracer form, I confirm that the information I provided is true, complete, and voluntarily given. I understand that Jose Maria College Foundation,Inc.may collect, process, store, and review my tracer responses for alumni engagement, institutional quality assurance, program review, accreditation, graduate outcome reporting, and related academic or administrative purposes.\n\n'
       'I understand that my submission may include personal data, employment history, educational information, and my digital signature. I agree that these records may be retained as an official tracer submission record together with the exact agreement text shown at the time of signing, a submission timestamp, and a unique submission reference number.\n\n'
       'I understand that this signed submission may be converted into a PDF record and securely stored by the institution. I also understand that my information will be handled in accordance with the Data Privacy Act of 2012 and institutional data governance procedures. By checking the agreement box and providing my digital signature, I confirm my consent to this processing and record retention.';
 
@@ -2456,7 +2457,10 @@ class _TracerFormPageState extends State<TracerFormPage> {
   }
 
   int _countNumberedVisible(List<_QuestionDef> questions) {
-    return questions.where(_shouldShowQuestion).where(_isNumberedQuestion).length;
+    return questions
+        .where(_shouldShowQuestion)
+        .where(_isNumberedQuestion)
+        .length;
   }
 
   int get _peoStartNumber =>
@@ -2471,7 +2475,8 @@ class _TracerFormPageState extends State<TracerFormPage> {
       RegExp(r'^\s*\d+[A-Za-z]?\.\s*'),
       '',
     );
-    final number = question.numberLabel ?? _questionNumber(question)?.toString();
+    final number =
+        question.numberLabel ?? _questionNumber(question)?.toString();
     return number == null ? stripped : '$number. $stripped';
   }
 
