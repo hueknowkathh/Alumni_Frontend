@@ -207,46 +207,15 @@ class _SidebarState extends State<Sidebar> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
+              SizedBox(
                 width: double.infinity,
-                padding: EdgeInsets.symmetric(
-                  horizontal: useCompactExpandedHeader ? 14 : 16,
-                  vertical: useCompactExpandedHeader ? 14 : 16,
-                ),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(26),
-                  gradient: const LinearGradient(
-                    colors: [_panelPlum, _panelRose, Color(0xFF5E233A)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  border: Border.all(color: Colors.white24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.16),
-                      blurRadius: 20,
-                      offset: const Offset(0, 12),
-                    ),
-                  ],
-                ),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        _buildLogo(size: useCompactExpandedHeader ? 56 : 66),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Align(
-                            alignment: Alignment.centerLeft,
-                            child: _buildRoleHeaderText(
-                              _getRoleHeader(widget.role),
-                              compact: useCompactExpandedHeader,
-                            ),
-                          ),
-                        ),
-                      ],
+                    _buildLogo(size: useCompactExpandedHeader ? 78 : 96),
+                    const SizedBox(height: 14),
+                    _buildRoleHeaderText(
+                      _getRoleHeader(widget.role),
+                      compact: useCompactExpandedHeader,
                     ),
                   ],
                 ),
