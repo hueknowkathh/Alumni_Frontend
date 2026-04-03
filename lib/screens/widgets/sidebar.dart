@@ -32,6 +32,9 @@ class _SidebarState extends State<Sidebar> {
   static const Color _sidebarBg = Color(0xFF4A152C);
   static const Color _sidebarDeep = Color(0xFF32111F);
   static const Color _activeGold = Color(0xFFC5A046);
+  static const Color _panelRose = Color(0xFF6A2A43);
+  static const Color _panelPlum = Color(0xFF7A3751);
+  static const Color _softText = Color(0xFFE9D8DF);
 
   @override
   void initState() {
@@ -55,9 +58,15 @@ class _SidebarState extends State<Sidebar> {
       width: sidebarWidth,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [_sidebarBg, Color(0xFF5B1E37), _sidebarDeep],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF5A1832),
+            Color(0xFF4A152C),
+            Color(0xFF431226),
+            Color(0xFF35101E),
+          ],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          stops: [0.0, 0.28, 0.68, 1.0],
         ),
         boxShadow: [
           BoxShadow(
@@ -120,18 +129,19 @@ class _SidebarState extends State<Sidebar> {
       width: double.infinity,
       padding: EdgeInsets.fromLTRB(
         _isCollapsed ? 10 : 16,
-        24,
+        22,
         _isCollapsed ? 10 : 16,
-        16,
+        18,
       ),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           colors: [
-            Colors.white.withValues(alpha: 0.10),
-            Colors.white.withValues(alpha: 0.02),
+            Color(0xFF6E203E),
+            Color(0xFF5A1832),
+            Color(0xFF461426),
           ],
           begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+          end: Alignment.bottomCenter,
         ),
       ),
       child: LayoutBuilder(
@@ -139,132 +149,113 @@ class _SidebarState extends State<Sidebar> {
           final useCompactExpandedHeader =
               !_isCollapsed && constraints.maxWidth < 210;
 
+          if (_isCollapsed) {
+            return Column(
+              children: [
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 14,
+                  ),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(24),
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.white.withValues(alpha: 0.10),
+                        Colors.white.withValues(alpha: 0.04),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.10),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.14),
+                        blurRadius: 18,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Tooltip(
+                        message: _getRoleHeader(widget.role),
+                        child: _buildLogo(size: 50),
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        width: 34,
+                        height: 1,
+                        color: Colors.white.withValues(alpha: 0.16),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Container(
+                  height: 1,
+                  width: double.infinity,
+                  color: Colors.white.withValues(alpha: 0.10),
+                ),
+              ],
+            );
+          }
+
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _isCollapsed
-                  ? Column(
+              Container(
+                width: double.infinity,
+                padding: EdgeInsets.symmetric(
+                  horizontal: useCompactExpandedHeader ? 14 : 16,
+                  vertical: useCompactExpandedHeader ? 14 : 16,
+                ),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(26),
+                  gradient: const LinearGradient(
+                    colors: [_panelPlum, _panelRose, Color(0xFF5E233A)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  border: Border.all(color: Colors.white24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.16),
+                      blurRadius: 20,
+                      offset: const Offset(0, 12),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Tooltip(
-                          message: _getRoleHeader(widget.role),
-                          child: Align(
-                            alignment: Alignment.center,
-                            child: _buildLogo(size: 42),
-                          ),
-                        ),
-                        if (!widget.isInDrawer) const SizedBox(height: 12),
-                        if (!widget.isInDrawer)
-                          Align(
-                            alignment: Alignment.center,
-                            child: GestureDetector(
-                              onTap: () {
-                                setState(() => _isCollapsed = !_isCollapsed);
-                                widget.onToggleSidebar?.call();
-                              },
-                              child: const SizedBox(
-                                width: 34,
-                                height: 34,
-                                child: Icon(
-                                  Icons.menu_open_rounded,
-                                  color: Colors.white70,
-                                  size: 18,
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
-                    )
-                  : useCompactExpandedHeader
-                  ? Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            _buildLogo(size: 42),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                _getRoleHeader(widget.role),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 0.35,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        if (!widget.isInDrawer) const SizedBox(height: 10),
-                        if (!widget.isInDrawer)
-                          GestureDetector(
-                            onTap: () {
-                              setState(() => _isCollapsed = !_isCollapsed);
-                              widget.onToggleSidebar?.call();
-                            },
-                            child: const SizedBox(
-                              width: 34,
-                              height: 34,
-                              child: Icon(
-                                Icons.menu_rounded,
-                                color: Colors.white70,
-                                size: 18,
-                              ),
-                            ),
-                          ),
-                      ],
-                    )
-                  : Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+                        _buildLogo(size: useCompactExpandedHeader ? 56 : 66),
+                        const SizedBox(width: 12),
                         Expanded(
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              _buildLogo(size: 54),
-                              const SizedBox(width: 14),
-                              Expanded(
-                                child: Text(
-                                  _getRoleHeader(widget.role),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 0.35,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        if (!widget.isInDrawer) const SizedBox(width: 8),
-                        if (!widget.isInDrawer)
-                          GestureDetector(
-                            onTap: () {
-                              setState(() => _isCollapsed = !_isCollapsed);
-                              widget.onToggleSidebar?.call();
-                            },
-                            child: const SizedBox(
-                              width: 34,
-                              height: 34,
-                              child: Icon(
-                                Icons.menu_rounded,
-                                color: Colors.white70,
-                                size: 18,
-                              ),
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: _buildRoleHeaderText(
+                              _getRoleHeader(widget.role),
+                              compact: useCompactExpandedHeader,
                             ),
                           ),
+                        ),
                       ],
                     ),
-              SizedBox(height: _isCollapsed ? 14 : 18),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
               Container(
                 height: 1,
                 width: double.infinity,
-                color: Colors.white.withValues(alpha: 0.12),
+                color: Colors.white.withValues(alpha: 0.10),
               ),
             ],
           );
@@ -277,8 +268,67 @@ class _SidebarState extends State<Sidebar> {
     return SizedBox(
       width: size,
       height: size,
-      child: Image.asset('assets/jmclogo.png', fit: BoxFit.contain),
+      child: Padding(
+        padding: EdgeInsets.all(size * 0.02),
+        child: Image.asset('assets/jmclogo.png', fit: BoxFit.contain),
+      ),
     );
+  }
+
+  Widget _buildRoleHeaderText(String text, {required bool compact}) {
+    final displayText = text.toUpperCase();
+    return Container(
+      constraints: BoxConstraints(
+        minHeight: compact ? 42 : 46,
+        maxWidth: compact ? 136 : 168,
+      ),
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 14 : 18,
+        vertical: compact ? 8 : 9,
+      ),
+      decoration: BoxDecoration(
+        color: _activeGold.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: _activeGold.withValues(alpha: 0.24)),
+      ),
+      child: Center(
+        child: ShaderMask(
+          shaderCallback: (bounds) => const LinearGradient(
+            colors: [Color(0xFFFFE3A1), Color(0xFFCDA14A)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ).createShader(bounds),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              displayText,
+              maxLines: 1,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: compact ? 15.5 : 17,
+                fontWeight: FontWeight.w800,
+                letterSpacing: compact ? 0.8 : 1.0,
+                height: 1.0,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _getRoleHeader(String role) {
+    switch (role.toLowerCase()) {
+      case 'admin':
+        return 'Administrator';
+      case 'dean':
+        return 'Department Dean';
+      case 'alumni':
+        return 'Alumni';
+      default:
+        return role.toUpperCase();
+    }
   }
 
   Widget _buildFooterCard() {
@@ -412,19 +462,6 @@ class _SidebarState extends State<Sidebar> {
       return Tooltip(message: title, child: tile);
     }
     return tile;
-  }
-
-  String _getRoleHeader(String role) {
-    switch (role.toLowerCase()) {
-      case 'admin':
-        return 'ADMINISTRATOR';
-      case 'dean':
-        return 'Department Head';
-      case 'alumni':
-        return 'ALUMNI';
-      default:
-        return 'Welcome';
-    }
   }
 
   List<Map<String, dynamic>> _getMenuItems(String role) {
