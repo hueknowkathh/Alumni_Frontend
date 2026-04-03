@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../services/content_service.dart';
+import '../widgets/luxury_module_banner.dart';
 
 class AnnouncementPage extends StatefulWidget {
   final Map<String, dynamic> user;
@@ -132,124 +133,20 @@ class _AnnouncementPageState extends State<AnnouncementPage> {
   }
 
   Widget _buildHeroHeader(bool isStacked) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [primaryMaroon, primaryMaroon.withValues(alpha: 0.88)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+    return LuxuryModuleBanner(
+      compact: isStacked,
+      title: 'Announcements',
+      description:
+          'Stay updated with alumni office news, reminders, and opportunities in the same polished experience as the jobs module.',
+      icon: Icons.campaign_outlined,
+      actions: [
+        LuxuryBannerAction(
+          icon: Icons.refresh_rounded,
+          label: 'Refresh',
+          onPressed: fetchAnnouncements,
+          iconOnly: !isStacked,
         ),
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: primaryMaroon.withValues(alpha: 0.18),
-            blurRadius: 24,
-            offset: const Offset(0, 14),
-          ),
-        ],
-      ),
-      child: Flex(
-        direction: isStacked ? Axis.vertical : Axis.horizontal,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 72,
-            height: 72,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(22),
-            ),
-            child: Icon(Icons.campaign_outlined, color: accentGold, size: 34),
-          ),
-          SizedBox(width: isStacked ? 0 : 18, height: isStacked ? 16 : 0),
-          if (isStacked)
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  "Announcements",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  "Stay updated with alumni office news, reminders, and opportunities in the same polished experience as the jobs module.",
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.82),
-                    height: 1.5,
-                    fontSize: 13,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton(
-                    onPressed: fetchAnnouncements,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size(52, 52),
-                      padding: EdgeInsets.zero,
-                      side: BorderSide(
-                        color: Colors.white.withValues(alpha: 0.30),
-                      ),
-                      shape: const CircleBorder(),
-                    ),
-                    child: const Icon(Icons.refresh_rounded, size: 18),
-                  ),
-                ),
-              ],
-            )
-          else
-            Expanded(
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "Announcements",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 28,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          "Stay updated with alumni office news, reminders, and opportunities in the same polished experience as the jobs module.",
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.82),
-                            height: 1.5,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  OutlinedButton(
-                    onPressed: fetchAnnouncements,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size(52, 52),
-                      padding: EdgeInsets.zero,
-                      side: BorderSide(
-                        color: Colors.white.withValues(alpha: 0.30),
-                      ),
-                      shape: const CircleBorder(),
-                    ),
-                    child: const Icon(Icons.refresh_rounded, size: 18),
-                  ),
-                ],
-              ),
-            ),
-        ],
-      ),
+      ],
     );
   }
 

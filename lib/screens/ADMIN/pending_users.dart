@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../services/activity_service.dart';
 import '../../services/api_service.dart';
+import '../widgets/luxury_module_banner.dart';
 
 class PendingUsersPage extends StatefulWidget {
   const PendingUsersPage({super.key});
@@ -339,141 +340,20 @@ class _PendingUsersPageState extends State<PendingUsersPage> {
   Widget _buildHeader() {
     final width = MediaQuery.of(context).size.width;
     final isStacked = width < 980;
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [primaryMaroon, primaryMaroon.withValues(alpha: 0.88)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+    return LuxuryModuleBanner(
+      compact: isStacked,
+      title: 'Pending Alumni Verification',
+      description:
+          'Review and approve newly registered alumni accounts in a cleaner verification workspace.',
+      icon: Icons.verified_user_outlined,
+      actions: [
+        LuxuryBannerAction(
+          icon: Icons.refresh_rounded,
+          label: 'Refresh',
+          onPressed: fetchPendingUsers,
+          iconOnly: !isStacked,
         ),
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: primaryMaroon.withValues(alpha: 0.18),
-            blurRadius: 24,
-            offset: const Offset(0, 14),
-          ),
-        ],
-      ),
-      child: isStacked
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(22),
-                  ),
-                  child: Icon(
-                    Icons.verified_user_outlined,
-                    color: accentGold,
-                    size: 34,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "Pending Alumni Verification",
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      "Review and approve newly registered alumni accounts in a cleaner verification workspace.",
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.82),
-                        height: 1.5,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton(
-                    onPressed: fetchPendingUsers,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size(52, 52),
-                      padding: EdgeInsets.zero,
-                      side: BorderSide(
-                        color: Colors.white.withValues(alpha: 0.30),
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
-                    child: const Icon(Icons.refresh_rounded),
-                  ),
-                ),
-              ],
-            )
-          : Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(22),
-                  ),
-                  child: Icon(
-                    Icons.verified_user_outlined,
-                    color: accentGold,
-                    size: 34,
-                  ),
-                ),
-                const SizedBox(width: 18),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "Pending Alumni Verification",
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        "Review and approve newly registered alumni accounts in a cleaner verification workspace.",
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.82),
-                          height: 1.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-                OutlinedButton(
-                  onPressed: fetchPendingUsers,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(52, 52),
-                    padding: EdgeInsets.zero,
-                    side: BorderSide(
-                      color: Colors.white.withValues(alpha: 0.30),
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                  child: const Icon(Icons.refresh_rounded),
-                ),
-              ],
-            ),
+      ],
     );
   }
 

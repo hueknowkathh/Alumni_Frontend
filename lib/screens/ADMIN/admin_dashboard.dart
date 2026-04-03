@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'dart:async';
 import '../../services/api_service.dart';
 import '../../state/user_store.dart';
+import '../widgets/luxury_module_banner.dart';
 
 class AdminDashboard extends StatefulWidget {
   final Function(int) onActionSelected;
@@ -378,10 +379,13 @@ class _AdminDashboardState extends State<AdminDashboard> {
     required String name,
     required bool isNarrow,
   }) {
-    final actions = Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      children: [
+    return LuxuryModuleBanner(
+      title: 'Welcome back, $name!',
+      description:
+          'Monitor registrations, tracer activity, and system-wide updates from one polished workspace.',
+      icon: Icons.admin_panel_settings_outlined,
+      compact: isNarrow,
+      trailing: [
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
@@ -404,121 +408,15 @@ class _AdminDashboardState extends State<AdminDashboard> {
             ],
           ),
         ),
-        OutlinedButton(
+      ],
+      actions: [
+        LuxuryBannerAction(
+          icon: Icons.refresh_rounded,
+          label: 'Refresh',
           onPressed: fetchDashboardData,
-          style: OutlinedButton.styleFrom(
-            foregroundColor: Colors.white,
-            side: BorderSide(color: Colors.white.withValues(alpha: 0.30)),
-            minimumSize: const Size(52, 52),
-            padding: EdgeInsets.zero,
-            shape: const CircleBorder(),
-          ),
-          child: const Icon(Icons.refresh_rounded, size: 18),
+          iconOnly: true,
         ),
       ],
-    );
-
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [primaryMaroon, primaryMaroon.withValues(alpha: 0.88)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: primaryMaroon.withValues(alpha: 0.18),
-            blurRadius: 24,
-            offset: const Offset(0, 14),
-          ),
-        ],
-      ),
-      child: isNarrow
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(22),
-                  ),
-                  child: Icon(
-                    Icons.admin_panel_settings_outlined,
-                    color: accentGold,
-                    size: 34,
-                  ),
-                ),
-                const SizedBox(height: 18),
-                Text(
-                  "Welcome back, $name!",
-                  style: const TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  "Monitor registrations, tracer activity, and system-wide updates from one polished workspace.",
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.82),
-                    height: 1.5,
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: 18),
-                actions,
-              ],
-            )
-          : Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(22),
-                  ),
-                  child: Icon(
-                    Icons.admin_panel_settings_outlined,
-                    color: accentGold,
-                    size: 34,
-                  ),
-                ),
-                const SizedBox(width: 18),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "Welcome back, $name!",
-                        style: const TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        "Monitor registrations, tracer activity, and system-wide updates from one polished workspace.",
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.82),
-                          height: 1.5,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 18),
-                actions,
-              ],
-            ),
     );
   }
   Widget _buildStatCard(

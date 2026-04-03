@@ -29,12 +29,7 @@ class Sidebar extends StatefulWidget {
 class _SidebarState extends State<Sidebar> {
   late bool _isCollapsed;
 
-  static const Color _sidebarBg = Color(0xFF4A152C);
-  static const Color _sidebarDeep = Color(0xFF32111F);
   static const Color _activeGold = Color(0xFFC5A046);
-  static const Color _panelRose = Color(0xFF6A2A43);
-  static const Color _panelPlum = Color(0xFF7A3751);
-  static const Color _softText = Color(0xFFE9D8DF);
 
   @override
   void initState() {
@@ -234,12 +229,95 @@ class _SidebarState extends State<Sidebar> {
   }
 
   Widget _buildLogo({required double size}) {
+    final image = SizedBox(
+      width: size,
+      height: size,
+      child: Image.asset('assets/jmclogo.png', fit: BoxFit.contain),
+    );
+
+    Widget tintedLayer({
+      required double dx,
+      required double dy,
+      required Color color,
+      required double opacity,
+      double scale = 1.0,
+    }) {
+      return Transform.translate(
+        offset: Offset(dx, dy),
+        child: Transform.scale(
+          scale: scale,
+          child: Opacity(
+            opacity: opacity,
+            child: ColorFiltered(
+              colorFilter: ColorFilter.mode(color, BlendMode.srcATop),
+              child: image,
+            ),
+          ),
+        ),
+      );
+    }
+
+    final edge = size * 0.014;
+    final innerEdge = size * 0.008;
+
     return SizedBox(
       width: size,
       height: size,
-      child: Padding(
-        padding: EdgeInsets.all(size * 0.02),
-        child: Image.asset('assets/jmclogo.png', fit: BoxFit.contain),
+      child: Stack(
+        alignment: Alignment.center,
+        clipBehavior: Clip.none,
+        children: [
+          tintedLayer(
+            dx: 0,
+            dy: size * 0.045,
+            color: Colors.black,
+            opacity: 0.20,
+            scale: 1.02,
+          ),
+          tintedLayer(
+            dx: -edge,
+            dy: 0,
+            color: const Color(0xFFC5A046),
+            opacity: 0.80,
+            scale: 1.018,
+          ),
+          tintedLayer(
+            dx: edge,
+            dy: 0,
+            color: const Color(0xFFC5A046),
+            opacity: 0.80,
+            scale: 1.018,
+          ),
+          tintedLayer(
+            dx: 0,
+            dy: -edge,
+            color: const Color(0xFFC5A046),
+            opacity: 0.80,
+            scale: 1.018,
+          ),
+          tintedLayer(
+            dx: 0,
+            dy: edge,
+            color: const Color(0xFFC5A046),
+            opacity: 0.80,
+            scale: 1.018,
+          ),
+          tintedLayer(
+            dx: -innerEdge,
+            dy: -innerEdge,
+            color: const Color(0xFF5A1832),
+            opacity: 0.88,
+            scale: 1.008,
+          ),
+          tintedLayer(
+            dx: innerEdge,
+            dy: innerEdge,
+            color: const Color(0xFF5A1832),
+            opacity: 0.88,
+            scale: 1.008,
+          ),
+          image,
+        ],
       ),
     );
   }
@@ -312,31 +390,65 @@ class _SidebarState extends State<Sidebar> {
         message: 'Academic Year 2025-2026',
         child: Container(
           width: double.infinity,
-          padding: EdgeInsets.all(_isCollapsed ? 10 : 14),
+          padding: EdgeInsets.all(_isCollapsed ? 9 : 12),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.08),
+            gradient: LinearGradient(
+              colors: [
+                const Color(0xFF7A4A1F).withValues(alpha: 0.88),
+                const Color(0xFFB07A2C).withValues(alpha: 0.82),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomCenter,
+            ),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+            border: Border.all(color: _activeGold.withValues(alpha: 0.28)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 14,
+                offset: const Offset(0, 7),
+              ),
+            ],
           ),
           child: _isCollapsed
-              ? const Icon(
+              ? Icon(
                   Icons.calendar_month_outlined,
-                  color: Colors.white70,
+                  color: _activeGold.withValues(alpha: 0.92),
                   size: 18,
                 )
-              : const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Text(
-                      'Academic Year',
-                      style: TextStyle(color: Colors.white70, fontSize: 10),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.14),
+                        ),
+                      ),
+                      child: const Text(
+                        'ACADEMIC YEAR',
+                        style: TextStyle(
+                          color: Color(0xFFFFE7A9),
+                          fontSize: 9,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.55,
+                        ),
+                      ),
                     ),
-                    SizedBox(height: 4),
-                    Text(
+                    const Text(
                       '2025-2026',
                       style: TextStyle(
                         color: Colors.white,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 14,
+                        height: 1.0,
                       ),
                     ),
                   ],
@@ -372,7 +484,7 @@ class _SidebarState extends State<Sidebar> {
           onTap: () async {
             if (isLogout) {
               await widget.onBeforeLogout?.call();
-              if (!mounted) return;
+              if (!mounted || !context.mounted) return;
               await AuthService.logout(context);
               return;
             }

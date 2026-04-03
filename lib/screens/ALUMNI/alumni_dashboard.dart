@@ -5,6 +5,7 @@ import 'dart:convert';
 import '../../services/api_service.dart';
 import '../../services/content_service.dart';
 import '../../state/user_store.dart';
+import '../widgets/luxury_module_banner.dart';
 
 class AlumniDashboard extends StatefulWidget {
   final Map<String, dynamic> user;
@@ -18,7 +19,6 @@ class AlumniDashboard extends StatefulWidget {
 
 class _AlumniDashboardState extends State<AlumniDashboard> {
   static const Color primaryMaroon = Color(0xFF4A152C);
-  static const Color accentGold = Color(0xFFC5A046);
   static const Color lightBackground = Color(0xFFF7F8FA);
   static const Color cardBorder = Color(0xFFE5E7EB);
   static const Color softRose = Color(0xFFF8F1F4);
@@ -163,111 +163,20 @@ class _AlumniDashboardState extends State<AlumniDashboard> {
   }
 
   Widget _buildHeroHeader(bool isStacked) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [primaryMaroon, primaryMaroon.withValues(alpha: 0.88)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: primaryMaroon.withValues(alpha: 0.18),
-            blurRadius: 24,
-            offset: const Offset(0, 14),
-          ),
-        ],
-      ),
-      child: Flex(
-        direction: isStacked ? Axis.vertical : Axis.horizontal,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 72,
-            height: 72,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(22),
-            ),
-            child: Icon(
-              Icons.dashboard_customize_outlined,
-              color: accentGold,
-              size: 34,
-            ),
-          ),
-          SizedBox(width: isStacked ? 0 : 18, height: isStacked ? 18 : 0),
-          if (isStacked)
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ValueListenableBuilder<Map<String, dynamic>?>(
-                  valueListenable: UserStore.currentUser,
-                  builder: (context, liveUser, _) {
-                    final name =
-                        (liveUser?['name'] ?? widget.user['name'] ?? 'Alumni')
-                            .toString()
-                            .trim();
-
-                    return Text(
-                      "Welcome back, ${name.isEmpty ? 'Alumni' : name}!",
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  "Review your profile, tracer participation, and recent alumni updates in one presentable, streamlined home screen.",
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.82),
-                    height: 1.5,
-                    fontSize: 13,
-                  ),
-                ),
-              ],
-            )
-          else
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ValueListenableBuilder<Map<String, dynamic>?>(
-                    valueListenable: UserStore.currentUser,
-                    builder: (context, liveUser, _) {
-                      final name =
-                          (liveUser?['name'] ?? widget.user['name'] ?? 'Alumni')
-                              .toString()
-                              .trim();
-
-                      return Text(
-                        "Welcome back, ${name.isEmpty ? 'Alumni' : name}!",
-                        style: const TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    "Review your profile, tracer participation, and recent alumni updates in one presentable, streamlined home screen.",
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.82),
-                      height: 1.5,
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-        ],
-      ),
+    return ValueListenableBuilder<Map<String, dynamic>?>(
+      valueListenable: UserStore.currentUser,
+      builder: (context, liveUser, _) {
+        final name = (liveUser?['name'] ?? widget.user['name'] ?? 'Alumni')
+            .toString()
+            .trim();
+        return LuxuryModuleBanner(
+          title: 'Welcome back, ${name.isEmpty ? 'Alumni' : name}!',
+          description:
+              'Review your profile, tracer participation, and recent alumni updates in one presentable, streamlined home screen.',
+          icon: Icons.dashboard_customize_outlined,
+          compact: isStacked,
+        );
+      },
     );
   }
 

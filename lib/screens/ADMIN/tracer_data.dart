@@ -9,6 +9,7 @@ import '../../services/api_service.dart';
 import '../../services/csv_export_service.dart';
 import '../../services/filter_options_service.dart';
 import '../../services/signed_tracer_filter.dart';
+import '../widgets/luxury_module_banner.dart';
 import 'admin_accreditation_module.dart';
 
 class TracerDataPage extends StatefulWidget {
@@ -175,7 +176,6 @@ class _TracerDataPageState extends State<TracerDataPage> {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final horizontalPadding = screenWidth < 600 ? 16.0 : 32.0;
-    final isCompact = screenWidth < 700;
     final isNarrow = screenWidth < 960;
     return Container(
       decoration: BoxDecoration(
@@ -198,243 +198,87 @@ class _TracerDataPageState extends State<TracerDataPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: double.infinity,
-                    padding: EdgeInsets.all(isCompact ? 20 : 28),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(28),
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [primaryMaroon, const Color(0xFF6C1F3D)],
+                  LuxuryModuleBanner(
+                    title: 'Tracer Governance & Report Oversight',
+                    description:
+                        'Review signed tracer records, validate institutional data quality, and manage accreditation-ready reporting in one workspace.',
+                    icon: Icons.analytics_outlined,
+                    compact: isNarrow,
+                    chips: [
+                      _buildHeroChip(
+                        Icons.fact_check_outlined,
+                        '${_signedRecords.length} signed records',
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: primaryMaroon.withValues(alpha: 0.17),
-                          blurRadius: 26,
-                          offset: const Offset(0, 16),
-                        ),
-                      ],
-                    ),
-                    child: isNarrow
-                        ? Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.14),
-                                  borderRadius: BorderRadius.circular(999),
-                                ),
-                                child: const Text(
-                                  'Admin Oversight',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
+                      _buildHeroChip(
+                        Icons.assignment_turned_in_outlined,
+                        '${_allData.length} validated responses',
+                      ),
+                    ],
+                    trailing: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          FilledButton.icon(
+                            onPressed: _isExportingPdf
+                                ? null
+                                : _downloadAccreditationReport,
+                            style: FilledButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              foregroundColor: primaryMaroon,
+                              disabledBackgroundColor: Colors.white.withValues(
+                                alpha: 0.26,
                               ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'Tracer Governance & Report Oversight',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: isCompact ? 26 : 30,
-                                  fontWeight: FontWeight.w800,
-                                  height: 1.15,
-                                ),
+                              disabledForegroundColor: primaryMaroon.withValues(
+                                alpha: 0.45,
                               ),
-                              const SizedBox(height: 10),
-                              Text(
-                                'Review signed tracer records, validate institutional data quality, and manage accreditation-ready reporting in one workspace.',
-                                style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.82),
-                                  height: 1.5,
-                                ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 16,
                               ),
-                              const SizedBox(height: 16),
-                              Wrap(
-                                spacing: 12,
-                                runSpacing: 12,
-                                children: [
-                                  _buildHeroChip(
-                                    Icons.fact_check_outlined,
-                                    '${_signedRecords.length} signed records',
-                                  ),
-                                  _buildHeroChip(
-                                    Icons.assignment_turned_in_outlined,
-                                    '${_allData.length} validated responses',
-                                  ),
-                                ],
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
                               ),
-                              const SizedBox(height: 16),
-                              Wrap(
-                                spacing: 12,
-                                runSpacing: 12,
-                                children: [
-                                  FilledButton.icon(
-                                    onPressed: _isExportingPdf
-                                        ? null
-                                        : _downloadAccreditationReport,
-                                    style: FilledButton.styleFrom(
-                                      backgroundColor: Colors.white,
-                                      foregroundColor: primaryMaroon,
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 18,
-                                        vertical: 16,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(16),
-                                      ),
-                                    ),
-                                    icon: const Icon(
-                                      Icons.picture_as_pdf_outlined,
-                                    ),
-                                    label: Text(
-                                      _isExportingPdf
-                                          ? 'Preparing PDF...'
-                                          : 'Generate Report',
-                                    ),
-                                  ),
-                                  FilledButton.icon(
-                                    onPressed: _filteredList.isEmpty
-                                        ? null
-                                        : _exportCsv,
-                                    style: FilledButton.styleFrom(
-                                      backgroundColor: accentGold,
-                                      foregroundColor: primaryMaroon,
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 18,
-                                        vertical: 16,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(16),
-                                      ),
-                                    ),
-                                    icon: const Icon(Icons.table_view_outlined),
-                                    label: const Text('Export CSV'),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          )
-                        : Wrap(
-                            spacing: 18,
-                            runSpacing: 18,
-                            alignment: WrapAlignment.spaceBetween,
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            children: [
-                              SizedBox(
-                                width: 620,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 8,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withValues(
-                                          alpha: 0.14,
-                                        ),
-                                        borderRadius: BorderRadius.circular(
-                                          999,
-                                        ),
-                                      ),
-                                      child: const Text(
-                                        'Admin Oversight',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 16),
-                                    const Text(
-                                      'Tracer Governance & Report Oversight',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 30,
-                                        fontWeight: FontWeight.w800,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 10),
-                                    Text(
-                                      'Review signed tracer records, validate institutional data quality, and manage accreditation-ready reporting in one workspace.',
-                                      style: TextStyle(
-                                        color: Colors.white.withValues(
-                                          alpha: 0.82,
-                                        ),
-                                        height: 1.5,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Wrap(
-                                spacing: 12,
-                                runSpacing: 12,
-                                children: [
-                                  _buildHeroChip(
-                                    Icons.fact_check_outlined,
-                                    '${_signedRecords.length} signed records',
-                                  ),
-                                  _buildHeroChip(
-                                    Icons.assignment_turned_in_outlined,
-                                    '${_allData.length} validated responses',
-                                  ),
-                                  FilledButton.icon(
-                                    onPressed: _isExportingPdf
-                                        ? null
-                                        : _downloadAccreditationReport,
-                                    style: FilledButton.styleFrom(
-                                      backgroundColor: Colors.white,
-                                      foregroundColor: primaryMaroon,
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 18,
-                                        vertical: 16,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(16),
-                                      ),
-                                    ),
-                                    icon: const Icon(
-                                      Icons.picture_as_pdf_outlined,
-                                    ),
-                                    label: Text(
-                                      _isExportingPdf
-                                          ? 'Preparing PDF...'
-                                          : 'Generate Report',
-                                    ),
-                                  ),
-                                  FilledButton.icon(
-                                    onPressed: _filteredList.isEmpty
-                                        ? null
-                                        : _exportCsv,
-                                    style: FilledButton.styleFrom(
-                                      backgroundColor: accentGold,
-                                      foregroundColor: primaryMaroon,
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 18,
-                                        vertical: 16,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(16),
-                                      ),
-                                    ),
-                                    icon: const Icon(Icons.table_view_outlined),
-                                    label: const Text('Export CSV'),
-                                  ),
-                                ],
-                              ),
-                            ],
+                            ),
+                            icon: const Icon(
+                              Icons.picture_as_pdf_outlined,
+                              size: 18,
+                            ),
+                            label: Text(
+                              _isExportingPdf
+                                  ? 'Preparing PDF...'
+                                  : 'Generate Report',
+                            ),
                           ),
+                          const SizedBox(height: 12),
+                          FilledButton.icon(
+                            onPressed: _filteredList.isEmpty ? null : _exportCsv,
+                            style: FilledButton.styleFrom(
+                              backgroundColor: accentGold,
+                              foregroundColor: primaryMaroon,
+                              disabledBackgroundColor: accentGold.withValues(
+                                alpha: 0.26,
+                              ),
+                              disabledForegroundColor: primaryMaroon.withValues(
+                                alpha: 0.45,
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 16,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                            ),
+                            icon: const Icon(
+                              Icons.table_view_outlined,
+                              size: 18,
+                            ),
+                            label: const Text('Export CSV'),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 24),
                   _buildAnalyticsCards(),

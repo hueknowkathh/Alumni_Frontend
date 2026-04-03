@@ -1,12 +1,13 @@
 import 'package:flutter/foundation.dart'
-    show TargetPlatform, defaultTargetPlatform, kIsWeb;
+    show TargetPlatform, defaultTargetPlatform, kIsWeb, kReleaseMode;
 
 import '../state/user_store.dart';
 
 /// Centralized API URL builder for the PHP backend.
 ///
 /// Default base URL behavior:
-/// - Web: `http://localhost/alumni_php`
+/// - Release/live builds: Render backend
+/// - Web debug: `http://localhost/alumni_php`
 /// - Android emulator: `http://10.0.2.2/alumni_php`
 /// - Everything else (iOS simulator, desktop): `http://localhost/alumni_php`
 ///
@@ -14,10 +15,16 @@ import '../state/user_store.dart';
 /// `--dart-define=API_BASE_URL=http://<host>/alumni_php`
 class ApiService {
   static const String _apiBaseUrlDefine = String.fromEnvironment('API_BASE_URL');
+  static const String _liveBaseUrl =
+      'https://alumni-backend-vjqe.onrender.com';
 
   static String get baseUrl {
     final defined = _apiBaseUrlDefine.trim();
     if (defined.isNotEmpty) return _normalizeBaseUrl(defined);
+
+    if (kReleaseMode) {
+      return _liveBaseUrl;
+    }
 
     if (kIsWeb) return 'http://localhost/alumni_php';
     if (defaultTargetPlatform == TargetPlatform.android) {

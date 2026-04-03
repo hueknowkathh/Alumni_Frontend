@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import '../../services/api_service.dart';
 import '../../services/linkedin_auth_service.dart';
 import '../../state/user_store.dart';
+import '../widgets/luxury_module_banner.dart';
 
 class SettingsPage extends StatefulWidget {
   final Map<String, dynamic> user;
@@ -30,7 +31,6 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _isLinkingLinkedIn = false;
 
   static const Color primaryMaroon = Color(0xFF4A152C);
-  static const Color accentGold = Color(0xFFC5A046);
   static const Color cardBorder = Color(0xFFE5E7EB);
 
   @override
@@ -378,87 +378,12 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _buildHeroHeader(bool isStacked) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [primaryMaroon, primaryMaroon.withValues(alpha: 0.88)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: primaryMaroon.withValues(alpha: 0.18),
-            blurRadius: 24,
-            offset: const Offset(0, 14),
-          ),
-        ],
-      ),
-      child: Flex(
-        direction: isStacked ? Axis.vertical : Axis.horizontal,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 72,
-            height: 72,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(22),
-            ),
-            child: Icon(Icons.tune_rounded, color: accentGold, size: 34),
-          ),
-          SizedBox(width: isStacked ? 0 : 18, height: isStacked ? 16 : 0),
-          if (isStacked)
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  "Settings",
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  "Manage your account preferences, security, and notifications in the same polished style as the upgraded alumni pages.",
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.82),
-                    fontSize: 13,
-                    height: 1.5,
-                  ),
-                ),
-              ],
-            )
-          else
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Settings",
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    "Manage your account preferences, security, and notifications in the same polished style as the upgraded alumni pages.",
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.82),
-                      fontSize: 14,
-                      height: 1.5,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-        ],
-      ),
+    return LuxuryModuleBanner(
+      compact: isStacked,
+      title: 'Settings',
+      description:
+          'Manage your account preferences, security, and notifications in the same polished style as the upgraded alumni pages.',
+      icon: Icons.tune_rounded,
     );
   }
 

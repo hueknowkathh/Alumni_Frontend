@@ -6,6 +6,7 @@ import 'dart:async';
 import '../../services/api_service.dart';
 import '../../services/csv_export_service.dart';
 import '../../services/filter_options_service.dart';
+import '../widgets/luxury_module_banner.dart';
 import 'user_history_page.dart';
 
 class AlumniList extends StatefulWidget {
@@ -21,6 +22,7 @@ class _AlumniListState extends State<AlumniList> {
   final Color borderColor = const Color(0xFFE0E0E0);
   final Color accentGold = const Color(0xFFC5A046);
   final Color cardBorder = const Color(0xFFE5E7EB);
+  final Color softRose = const Color(0xFFF8F1F4);
 
   List<dynamic> allAlumni = [];
   List<dynamic> filteredAlumni = [];
@@ -65,9 +67,12 @@ class _AlumniListState extends State<AlumniList> {
 
   // ✅ FETCH: Get all verified alumni
   Future<void> fetchAlumni({bool showLoader = true}) async {
-    if (showLoader) setState(() => isLoading = true);
+    if (showLoader && mounted) {
+      setState(() => isLoading = true);
+    }
     try {
       final response = await http.get(ApiService.uri('get_alumni_list.php'));
+      if (!mounted) return;
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
         setState(() {
@@ -77,6 +82,7 @@ class _AlumniListState extends State<AlumniList> {
         });
       }
     } catch (e) {
+      if (!mounted) return;
       _showSnackBar("Error connecting to server", Colors.red);
       setState(() => isLoading = false);
     }
@@ -139,35 +145,168 @@ class _AlumniListState extends State<AlumniList> {
 
   // ✅ VIEW: Show Detail Popup
   void _viewAlumni(Map<String, dynamic> user) {
+    final employmentStatus =
+        (user['employment_status'] ??
+                user['employmentStatus'] ??
+                user['tracer_status'] ??
+                user['status'])
+            ?.toString();
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        title: Row(
-          children: [
-            Icon(Icons.person, color: primaryMaroon),
-            const SizedBox(width: 10),
-            const Text("Alumni Profile"),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _detailRow("Full Name", user['name']),
-            _detailRow("Email", user['email']),
-            _detailRow("Program", user['program']),
-            _detailRow("Graduation Year", user['year']?.toString()),
-            _detailRow("Employment Status", user['status']),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Close"),
+      builder: (context) {
+        final width = MediaQuery.of(context).size.width;
+        final height = MediaQuery.of(context).size.height;
+        final isCompact = width < 560;
+
+        return Dialog(
+          insetPadding: EdgeInsets.symmetric(
+            horizontal: isCompact ? 18 : 28,
+            vertical: 24,
           ),
-        ],
-      ),
+          backgroundColor: Colors.transparent,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: 560,
+              maxHeight: height * 0.88,
+            ),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(28),
+                gradient: const LinearGradient(
+                  colors: [
+                    Color(0xFFFFFBF7),
+                    Color(0xFFF8F1F4),
+                    Color(0xFFFFFCFA),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                border: Border.all(
+                  color: primaryMaroon.withValues(alpha: 0.10),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: primaryMaroon.withValues(alpha: 0.16),
+                    blurRadius: 28,
+                    offset: const Offset(0, 16),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.max,
+                children: [
+                  Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.fromLTRB(
+                      isCompact ? 18 : 22,
+                      isCompact ? 18 : 22,
+                      isCompact ? 18 : 22,
+                      isCompact ? 16 : 18,
+                    ),
+                    decoration: const BoxDecoration(
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(28),
+                      ),
+                      gradient: LinearGradient(
+                        colors: [
+                          Color(0xFF5A1832),
+                          Color(0xFF6A2A43),
+                          Color(0xFF35101E),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                    ),
+                    child: isCompact
+                        ? Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildProfileDialogHeader(
+                                user,
+                                isCompact: true,
+                              ),
+                            ],
+                          )
+                        : _buildProfileDialogHeader(
+                            user,
+                            isCompact: false,
+                          ),
+                  ),
+                  Flexible(
+                    child: SingleChildScrollView(
+                      padding: EdgeInsets.fromLTRB(
+                        isCompact ? 18 : 22,
+                        18,
+                        isCompact ? 18 : 22,
+                        isCompact ? 18 : 20,
+                      ),
+                      child: Column(
+                        children: [
+                          _buildProfileInfoCard(
+                            'Personal Details',
+                            Icons.badge_outlined,
+                            [
+                              _buildProfileInfoTile(
+                                'Full Name',
+                                user['name']?.toString(),
+                              ),
+                              _buildProfileInfoTile(
+                                'Email Address',
+                                user['email']?.toString(),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 14),
+                          _buildProfileInfoCard(
+                            'Academic & Career Snapshot',
+                            Icons.insights_outlined,
+                            [
+                              _buildProfileInfoTile(
+                                'Program',
+                                user['program']?.toString(),
+                              ),
+                              _buildProfileInfoTile(
+                                'Graduation Year',
+                                user['year']?.toString(),
+                              ),
+                              _buildProfileInfoTile(
+                                'Employment Status',
+                                employmentStatus,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 18),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              style: TextButton.styleFrom(
+                                foregroundColor: primaryMaroon,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 10,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                              ),
+                              child: const Text(
+                                'Close',
+                                style: TextStyle(fontWeight: FontWeight.w700),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -216,6 +355,7 @@ class _AlumniListState extends State<AlumniList> {
   }
 
   void _showSnackBar(String msg, Color color) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg),
@@ -251,18 +391,235 @@ class _AlumniListState extends State<AlumniList> {
     }
   }
 
-  Widget _detailRow(String label, String? value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: RichText(
-        text: TextSpan(
-          style: const TextStyle(color: Colors.black, fontSize: 14),
-          children: [
-            TextSpan(
-              text: "$label: ",
-              style: const TextStyle(fontWeight: FontWeight.bold),
+  Widget _buildProfileDialogBadge() {
+    return Container(
+      width: 66,
+      height: 66,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        gradient: LinearGradient(
+          colors: [
+            Colors.white.withValues(alpha: 0.14),
+            Colors.white.withValues(alpha: 0.06),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        border: Border.all(color: accentGold.withValues(alpha: 0.34)),
+      ),
+      child: Icon(Icons.person_outline_rounded, color: accentGold, size: 34),
+    );
+  }
+
+  Widget _buildProfileDialogHeader(
+    Map<String, dynamic> user, {
+    required bool isCompact,
+  }) {
+    final name = user['name']?.toString().trim();
+    final program = user['program']?.toString().trim();
+    final year = user['year']?.toString().trim();
+    final summaryText = [
+      if (program != null && program.isNotEmpty) program,
+      if (year != null && year.isNotEmpty) 'Batch $year',
+    ].join(' • ');
+
+    final displayName =
+        (name == null || name.isEmpty) ? 'Unnamed Alumni' : name;
+    final profileChip = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: Text(
+        'ALUMNI PROFILE',
+        style: TextStyle(
+          color: accentGold,
+          fontSize: 12,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.7,
+        ),
+      ),
+    );
+
+    if (isCompact) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildProfileDialogBadge(),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Align(alignment: Alignment.centerRight, child: profileChip),
+                const SizedBox(height: 10),
+                Text(
+                  displayName,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 28,
+                    fontWeight: FontWeight.w800,
+                    height: 1.05,
+                  ),
+                ),
+                if (summaryText.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      summaryText,
+                      textAlign: TextAlign.right,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.82),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        height: 1.35,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
             ),
-            TextSpan(text: value ?? "N/A"),
+          ),
+        ],
+      );
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        _buildProfileDialogBadge(),
+        const SizedBox(width: 18),
+        Expanded(
+          child: Text(
+            displayName,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 30,
+              fontWeight: FontWeight.w800,
+              height: 1.05,
+            ),
+          ),
+        ),
+        const SizedBox(width: 18),
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 220),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              profileChip,
+              if (summaryText.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Text(
+                  summaryText,
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.82),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildProfileInfoCard(
+    String title,
+    IconData icon,
+    List<Widget> children,
+  ) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 14,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: softRose,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, size: 18, color: primaryMaroon),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfileInfoTile(String label, String? value) {
+    final normalized = value?.trim();
+    final displayValue =
+        (normalized == null || normalized.isEmpty) ? 'N/A' : normalized;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFCF8F5),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: borderColor.withValues(alpha: 0.9)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label.toUpperCase(),
+              style: TextStyle(
+                color: primaryMaroon.withValues(alpha: 0.72),
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.7,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              displayValue,
+              style: const TextStyle(
+                color: Colors.black87,
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                height: 1.3,
+              ),
+            ),
           ],
         ),
       ),
@@ -295,191 +652,26 @@ class _AlumniListState extends State<AlumniList> {
   Widget _buildHeader() {
     final width = MediaQuery.of(context).size.width;
     final isStacked = width < 980;
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [primaryMaroon, primaryMaroon.withValues(alpha: 0.88)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+    return LuxuryModuleBanner(
+      title: 'Alumni List',
+      description:
+          'Review verified graduates, browse their records, and access user history in a cleaner management layout.',
+      icon: Icons.groups_2_outlined,
+      compact: isStacked,
+      actions: [
+        LuxuryBannerAction(
+          icon: Icons.refresh_rounded,
+          label: 'Refresh',
+          onPressed: fetchAlumni,
         ),
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: primaryMaroon.withValues(alpha: 0.18),
-            blurRadius: 24,
-            offset: const Offset(0, 14),
-          ),
-        ],
-      ),
-      child: isStacked
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(22),
-                  ),
-                  child: Icon(
-                    Icons.groups_2_outlined,
-                    color: accentGold,
-                    size: 34,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "Alumni List",
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      "Review verified graduates, browse their records, and access user history in a cleaner management layout.",
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.82),
-                        height: 1.5,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    children: [
-                      OutlinedButton(
-                        onPressed: fetchAlumni,
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          minimumSize: const Size(52, 52),
-                          padding: EdgeInsets.zero,
-                          side: BorderSide(
-                            color: Colors.white.withValues(alpha: 0.30),
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                        child: const Icon(Icons.refresh_rounded),
-                      ),
-                      OutlinedButton.icon(
-                        onPressed: filteredAlumni.isEmpty ? null : _exportCsv,
-                        icon: const Icon(Icons.table_view_outlined),
-                        label: const Text("Export CSV"),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          minimumSize: const Size(0, 52),
-                          side: BorderSide(
-                            color: Colors.white.withValues(alpha: 0.30),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 18,
-                            vertical: 14,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            )
-          : Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(22),
-                  ),
-                  child: Icon(
-                    Icons.groups_2_outlined,
-                    color: accentGold,
-                    size: 34,
-                  ),
-                ),
-                const SizedBox(width: 18),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "Alumni List",
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        "Review verified graduates, browse their records, and access user history in a cleaner management layout.",
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.82),
-                          height: 1.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: [
-                    OutlinedButton(
-                      onPressed: fetchAlumni,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        minimumSize: const Size(52, 52),
-                        padding: EdgeInsets.zero,
-                        side: BorderSide(
-                          color: Colors.white.withValues(alpha: 0.30),
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                      child: const Icon(Icons.refresh_rounded),
-                    ),
-                    OutlinedButton.icon(
-                      onPressed: filteredAlumni.isEmpty ? null : _exportCsv,
-                      icon: const Icon(Icons.table_view_outlined),
-                      label: const Text("Export CSV"),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        minimumSize: const Size(0, 52),
-                        side: BorderSide(
-                          color: Colors.white.withValues(alpha: 0.30),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 18,
-                          vertical: 14,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+        LuxuryBannerAction(
+          icon: Icons.table_view_outlined,
+          label: 'Export CSV',
+          onPressed: filteredAlumni.isEmpty ? null : _exportCsv,
+          filled: true,
+          enabled: filteredAlumni.isNotEmpty,
+        ),
+      ],
     );
   }
 

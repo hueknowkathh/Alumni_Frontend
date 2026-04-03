@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import '../../services/api_service.dart';
 import '../../services/activity_service.dart';
 import '../../services/content_service.dart';
+import '../widgets/luxury_module_banner.dart';
 
 class AlumniJobsPage extends StatefulWidget {
   final Map<String, dynamic> user;
@@ -679,130 +680,20 @@ class _AlumniJobsPageState extends State<AlumniJobsPage> {
 
   Widget _buildHeroHeader() {
     final isStacked = MediaQuery.of(context).size.width < 760;
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [primaryMaroon, primaryMaroon.withValues(alpha: 0.88)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+    return LuxuryModuleBanner(
+      compact: isStacked,
+      title: 'Job Opportunities',
+      description:
+          'Explore curated job openings for alumni and apply directly through the portal.',
+      icon: Icons.cases_outlined,
+      actions: [
+        LuxuryBannerAction(
+          icon: Icons.refresh_rounded,
+          label: 'Refresh',
+          onPressed: fetchJobs,
+          iconOnly: !isStacked,
         ),
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: primaryMaroon.withValues(alpha: 0.18),
-            blurRadius: 24,
-            offset: const Offset(0, 14),
-          ),
-        ],
-      ),
-      child: isStacked
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: 72,
-                      height: 72,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.10),
-                        borderRadius: BorderRadius.circular(22),
-                      ),
-                      child: Icon(
-                        Icons.cases_outlined,
-                        color: accentGold,
-                        size: 34,
-                      ),
-                    ),
-                    const Spacer(),
-                    OutlinedButton(
-                      onPressed: fetchJobs,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        side: BorderSide(
-                          color: Colors.white.withValues(alpha: 0.30),
-                        ),
-                        minimumSize: const Size(52, 52),
-                        padding: EdgeInsets.zero,
-                        shape: const CircleBorder(),
-                      ),
-                      child: const Icon(Icons.refresh_rounded, size: 18),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 18),
-                const Text(
-                  "Job Opportunities",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 28,
-                    fontWeight: FontWeight.w800,
-                    height: 1.15,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  "Explore curated job openings for alumni and apply directly through the portal.",
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.82),
-                    height: 1.5,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            )
-          : Row(
-              children: [
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(22),
-                  ),
-                  child: Icon(Icons.cases_outlined, color: accentGold, size: 34),
-                ),
-                const SizedBox(width: 18),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "Job Opportunities",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 28,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        "Explore curated job openings for alumni and apply directly through the portal.",
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.82),
-                          height: 1.5,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-                OutlinedButton(
-                  onPressed: fetchJobs,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    side: BorderSide(color: Colors.white.withValues(alpha: 0.30)),
-                    minimumSize: const Size(52, 52),
-                    padding: EdgeInsets.zero,
-                    shape: const CircleBorder(),
-                  ),
-                  child: const Icon(Icons.refresh_rounded, size: 18),
-                ),
-              ],
-            ),
+      ],
     );
   }
 

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../services/filter_options_service.dart';
 import '../../state/user_store.dart';
+import '../widgets/luxury_module_banner.dart';
 import 'dean_analytics_data.dart';
 
 class DeanDashboard extends StatefulWidget {
@@ -381,126 +382,22 @@ class _DeanDashboardState extends State<DeanDashboard> {
   }
 
   Widget _buildHeroHeader(bool isNarrow) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [primaryMaroon, primaryMaroon.withValues(alpha: 0.88)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+    return LuxuryModuleBanner(
+      title: 'Welcome, ${widget.user['name'] ?? _roleLabel}!',
+      description: _assignedProgram == null
+          ? 'Review live tracer analytics, industry trends, and graduate outcomes across the academic programs.'
+          : 'Review live tracer analytics, industry trends, and graduate outcomes for $_assignedProgram.',
+      icon: Icons.query_stats_outlined,
+      compact: isNarrow,
+      trailing: [_buildProgramBadge(expanded: false)],
+      actions: [
+        LuxuryBannerAction(
+          icon: Icons.refresh_rounded,
+          label: 'Refresh',
+          onPressed: _fetchDashboardData,
+          iconOnly: true,
         ),
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: primaryMaroon.withValues(alpha: 0.18),
-            blurRadius: 24,
-            offset: const Offset(0, 14),
-          ),
-        ],
-      ),
-      child: isNarrow
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: 72,
-                      height: 72,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.10),
-                        borderRadius: BorderRadius.circular(22),
-                      ),
-                      child: Icon(
-                        Icons.query_stats_outlined,
-                        color: accentGold,
-                        size: 34,
-                      ),
-                    ),
-                    const Spacer(),
-                    _buildRefreshButton(),
-                  ],
-                ),
-                const SizedBox(height: 18),
-                Text(
-                  "Welcome, ${widget.user['name'] ?? _roleLabel}!",
-                  style: const TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  _assignedProgram == null
-                      ? "Review live tracer analytics, industry trends, and graduate outcomes across the academic programs."
-                      : "Review live tracer analytics, industry trends, and graduate outcomes for $_assignedProgram.",
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.82),
-                    height: 1.5,
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: 18),
-                _buildProgramBadge(expanded: true),
-              ],
-            )
-          : Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(22),
-                  ),
-                  child: Icon(
-                    Icons.query_stats_outlined,
-                    color: accentGold,
-                    size: 34,
-                  ),
-                ),
-                const SizedBox(width: 18),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "Welcome, ${widget.user['name'] ?? _roleLabel}!",
-                        style: const TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        _assignedProgram == null
-                            ? "Review live tracer analytics, industry trends, and graduate outcomes across the academic programs."
-                            : "Review live tracer analytics, industry trends, and graduate outcomes for $_assignedProgram.",
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.82),
-                          height: 1.5,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 18),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  alignment: WrapAlignment.end,
-                  children: [
-                    _buildProgramBadge(),
-                    _buildRefreshButton(),
-                  ],
-                ),
-              ],
-            ),
+      ],
     );
   }
 
@@ -556,21 +453,6 @@ class _DeanDashboardState extends State<DeanDashboard> {
 
     return expanded ? SizedBox(width: double.infinity, child: badge) : badge;
   }
-
-  Widget _buildRefreshButton() {
-    return OutlinedButton(
-      onPressed: _fetchDashboardData,
-      style: OutlinedButton.styleFrom(
-        foregroundColor: Colors.white,
-        side: BorderSide(color: Colors.white.withValues(alpha: 0.30)),
-        minimumSize: const Size(52, 52),
-        padding: EdgeInsets.zero,
-        shape: const CircleBorder(),
-      ),
-      child: const Icon(Icons.refresh_rounded, size: 18),
-    );
-  }
-
   Widget _buildEmptyState(String message) {
     return Center(
       child: Text(
@@ -769,19 +651,32 @@ class _DeanDashboardState extends State<DeanDashboard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: color, size: 22),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(icon, color: color, size: 22),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 30,
+                    fontWeight: FontWeight.bold,
+                    height: 1.0,
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 20),
-          Text(
-            value,
-            style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-          ),
+          const SizedBox(height: 14),
           Text(
             label,
             style: const TextStyle(

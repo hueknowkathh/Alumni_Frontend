@@ -311,7 +311,7 @@ class _AlumniMainLayoutState extends State<AlumniMainLayout> {
                 onBeforeLogout: () => _autoSaveActiveTracer(reason: 'logout'),
                 onItemSelected: (index) async {
                   await _handleModuleSelection(index);
-                  if (!mounted) return;
+                  if (!mounted || !context.mounted) return;
                   Navigator.pop(context);
                 },
               ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../services/content_service.dart';
+import '../widgets/luxury_module_banner.dart';
 
 class AnnouncementPage extends StatefulWidget {
   const AnnouncementPage({super.key});
@@ -138,135 +139,20 @@ class _AnnouncementPageState extends State<AnnouncementPage> {
 
   Widget _buildHeroHeader() {
     final isStacked = MediaQuery.of(context).size.width < 820;
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [primaryMaroon, primaryMaroon.withValues(alpha: 0.88)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+    return LuxuryModuleBanner(
+      compact: isStacked,
+      title: 'Announcements',
+      description:
+          'View alumni office news, reminders, and opportunities in the same polished read-only experience used across the portal.',
+      icon: Icons.campaign_outlined,
+      actions: [
+        LuxuryBannerAction(
+          icon: Icons.refresh_rounded,
+          label: 'Refresh',
+          onPressed: fetchAnnouncements,
+          iconOnly: true,
         ),
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: primaryMaroon.withValues(alpha: 0.18),
-            blurRadius: 24,
-            offset: const Offset(0, 14),
-          ),
-        ],
-      ),
-      child: isStacked
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: 72,
-                      height: 72,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.10),
-                        borderRadius: BorderRadius.circular(22),
-                      ),
-                      child: Icon(
-                        Icons.campaign_outlined,
-                        color: accentGold,
-                        size: 34,
-                      ),
-                    ),
-                    const Spacer(),
-                    OutlinedButton(
-                      onPressed: fetchAnnouncements,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        minimumSize: const Size(52, 52),
-                        padding: EdgeInsets.zero,
-                        side: BorderSide(
-                          color: Colors.white.withValues(alpha: 0.30),
-                        ),
-                        shape: const CircleBorder(),
-                      ),
-                      child: const Icon(Icons.refresh_rounded, size: 18),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  "Announcements",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 28,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  "View alumni office news, reminders, and opportunities in the same polished read-only experience used across the portal.",
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.82),
-                    height: 1.5,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            )
-          : Row(
-              children: [
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(22),
-                  ),
-                  child: Icon(
-                    Icons.campaign_outlined,
-                    color: accentGold,
-                    size: 34,
-                  ),
-                ),
-                const SizedBox(width: 18),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "Announcements",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 28,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        "View alumni office news, reminders, and opportunities in the same polished read-only experience used across the portal.",
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.82),
-                          height: 1.5,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-                OutlinedButton(
-                  onPressed: fetchAnnouncements,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(52, 52),
-                    padding: EdgeInsets.zero,
-                    side: BorderSide(
-                      color: Colors.white.withValues(alpha: 0.30),
-                    ),
-                    shape: const CircleBorder(),
-                  ),
-                  child: const Icon(Icons.refresh_rounded, size: 18),
-                ),
-              ],
-            ),
+      ],
     );
   }
 

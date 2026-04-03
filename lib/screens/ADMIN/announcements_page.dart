@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import '../../services/api_service.dart';
+import '../widgets/luxury_module_banner.dart';
 
 class AnnouncementsPage extends StatefulWidget {
   const AnnouncementsPage({super.key});
@@ -183,77 +184,342 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
 
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: Text(isEditing ? "Edit Announcement" : "Create Announcement"),
-        content: SizedBox(
-          width: 400,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: titleController,
-                decoration: const InputDecoration(labelText: "Title"),
+      builder: (_) => StatefulBuilder(
+        builder: (context, setDialogState) => Dialog(
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 24,
+          ),
+          backgroundColor: Colors.transparent,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(28),
+                gradient: const LinearGradient(
+                  colors: [
+                    Color(0xFFFFFBF7),
+                    Color(0xFFF8F1F4),
+                    Color(0xFFFFFCFA),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                border: Border.all(
+                  color: primaryMaroon.withValues(alpha: 0.10),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: primaryMaroon.withValues(alpha: 0.18),
+                    blurRadius: 28,
+                    offset: const Offset(0, 16),
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: descController,
-                maxLines: 3,
-                decoration: const InputDecoration(labelText: "Description"),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
+                    decoration: const BoxDecoration(
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(28),
+                      ),
+                      gradient: LinearGradient(
+                        colors: [
+                          Color(0xFF5A1832),
+                          Color(0xFF6A2A43),
+                          Color(0xFF35101E),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 66,
+                          height: 66,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(20),
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.white.withValues(alpha: 0.14),
+                                Colors.white.withValues(alpha: 0.05),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            border: Border.all(
+                              color: accentGold.withValues(alpha: 0.35),
+                            ),
+                          ),
+                          child: Icon(
+                            isEditing
+                                ? Icons.edit_outlined
+                                : Icons.campaign_outlined,
+                            color: accentGold,
+                            size: 32,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 7,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(999),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.08),
+                                  ),
+                                ),
+                                child: Text(
+                                  isEditing
+                                      ? 'ANNOUNCEMENT EDITOR'
+                                      : 'NEW ANNOUNCEMENT',
+                                  style: TextStyle(
+                                    color: accentGold,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.7,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                            Text(
+                              isEditing
+                                  ? 'Update announcement'
+                                  : 'Create announcement',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 28,
+                                fontWeight: FontWeight.w800,
+                                height: 1.05,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  ),
+                  Flexible(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(22, 20, 22, 22),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildDialogFieldShell(
+                            label: 'Announcement Title',
+                            child: TextField(
+                              controller: titleController,
+                              decoration: _dialogInputDecoration(
+                                'Enter a clear headline',
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          _buildDialogFieldShell(
+                            label: 'Description',
+                            child: TextField(
+                              controller: descController,
+                              maxLines: 4,
+                              decoration: _dialogInputDecoration(
+                                'Write the full announcement details',
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          _buildDialogFieldShell(
+                            label: 'Category',
+                            child: DropdownButtonFormField<String>(
+                              initialValue: selectedCategory,
+                              items: const [
+                                "Events",
+                                "Reminders",
+                                "Job Opportunities",
+                                "GENERAL",
+                              ].map(
+                                (cat) => DropdownMenuItem(
+                                  value: cat,
+                                  child: Text(cat),
+                                ),
+                              ).toList(),
+                              onChanged: (value) {
+                                if (value == null) return;
+                                setDialogState(() => selectedCategory = value);
+                              },
+                              decoration: _dialogInputDecoration(
+                                'Choose a category',
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: primaryMaroon,
+                                    side: BorderSide(
+                                      color: primaryMaroon.withValues(
+                                        alpha: 0.18,
+                                      ),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 16,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(18),
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    'Cancel',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: FilledButton.icon(
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: primaryMaroon,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 16,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(18),
+                                    ),
+                                  ),
+                                  onPressed: isSaving
+                                      ? null
+                                      : () async {
+                                          final success =
+                                              await saveAnnouncement(
+                                                titleController.text,
+                                                descController.text,
+                                                selectedCategory,
+                                                id: isEditing
+                                                    ? announcement['id']
+                                                    : null,
+                                              );
+
+                                          if (success && mounted) {
+                                            Navigator.pop(context);
+                                          }
+                                        },
+                                  icon: isSaving
+                                      ? const SizedBox(
+                                          height: 16,
+                                          width: 16,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.white,
+                                          ),
+                                        )
+                                      : Icon(
+                                          isEditing
+                                              ? Icons.check_circle_outline
+                                              : Icons.publish_outlined,
+                                          size: 18,
+                                        ),
+                                  label: Text(
+                                    isEditing ? 'Update Post' : 'Publish Post',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue: selectedCategory,
-                items: ["Events", "Reminders", "Job Opportunities", "GENERAL"]
-                    .map(
-                      (cat) => DropdownMenuItem(value: cat, child: Text(cat)),
-                    )
-                    .toList(),
-                onChanged: (value) => selectedCategory = value!,
-                decoration: const InputDecoration(labelText: "Category"),
-              ),
-            ],
+            ),
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: primaryMaroon,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(30),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            ),
-            onPressed: isSaving
-                ? null
-                : () async {
-                    final success = await saveAnnouncement(
-                      titleController.text,
-                      descController.text,
-                      selectedCategory,
-                      id: isEditing ? announcement['id'] : null,
-                    );
+      ),
+    );
+  }
 
-                    if (success && mounted) {
-                      Navigator.pop(context);
-                    }
-                  },
-            child: isSaving
-                ? const SizedBox(
-                    height: 16,
-                    width: 16,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
-                : Text(isEditing ? "Update" : "Post"),
+  Widget _buildDialogFieldShell({
+    required String label,
+    required Widget child,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 12,
+            offset: const Offset(0, 8),
           ),
         ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label.toUpperCase(),
+            style: TextStyle(
+              color: primaryMaroon.withValues(alpha: 0.72),
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.7,
+            ),
+          ),
+          const SizedBox(height: 10),
+          child,
+        ],
+      ),
+    );
+  }
+
+  InputDecoration _dialogInputDecoration(String hintText) {
+    return InputDecoration(
+      hintText: hintText,
+      filled: true,
+      fillColor: const Color(0xFFFCF8F5),
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 14,
+      ),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(
+          color: borderColor.withValues(alpha: 0.9),
+        ),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(
+          color: borderColor.withValues(alpha: 0.9),
+        ),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: primaryMaroon, width: 1.2),
       ),
     );
   }
@@ -328,178 +594,26 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
 
   Widget _buildHeroHeader() {
     final isStacked = MediaQuery.of(context).size.width < 860;
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [primaryMaroon, primaryMaroon.withValues(alpha: 0.88)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+    return LuxuryModuleBanner(
+      compact: isStacked,
+      title: 'Manage Announcements',
+      description:
+          'Create and oversee public updates with the same polished card system as the alumni jobs experience.',
+      icon: Icons.campaign_outlined,
+      actions: [
+        LuxuryBannerAction(
+          icon: Icons.refresh_rounded,
+          label: 'Refresh',
+          onPressed: fetchAnnouncements,
+          iconOnly: !isStacked,
         ),
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: primaryMaroon.withValues(alpha: 0.18),
-            blurRadius: 24,
-            offset: const Offset(0, 14),
-          ),
-        ],
-      ),
-      child: isStacked
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(22),
-                  ),
-                  child: Icon(
-                    Icons.campaign_outlined,
-                    color: accentGold,
-                    size: 34,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  "Manage Announcements",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 28,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  "Create and oversee public updates with the same polished card system as the alumni jobs experience.",
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.82),
-                    height: 1.5,
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: [
-                    OutlinedButton(
-                      onPressed: fetchAnnouncements,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        minimumSize: const Size(52, 52),
-                        padding: EdgeInsets.zero,
-                        side: BorderSide(
-                          color: Colors.white.withValues(alpha: 0.30),
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                      child: const Icon(Icons.refresh_rounded, size: 18),
-                    ),
-                    ElevatedButton.icon(
-                      onPressed: () => _showAnnouncementDialog(),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: accentGold,
-                        foregroundColor: Colors.black87,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 18,
-                          vertical: 14,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                      icon: const Icon(Icons.add, size: 18),
-                      label: const Text("Create New"),
-                    ),
-                  ],
-                ),
-              ],
-            )
-          : Row(
-              children: [
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(22),
-                  ),
-                  child: Icon(
-                    Icons.campaign_outlined,
-                    color: accentGold,
-                    size: 34,
-                  ),
-                ),
-                const SizedBox(width: 18),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "Manage Announcements",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 28,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        "Create and oversee public updates with the same polished card system as the alumni jobs experience.",
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.82),
-                          height: 1.5,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: [
-                    OutlinedButton(
-                      onPressed: fetchAnnouncements,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        minimumSize: const Size(52, 52),
-                        padding: EdgeInsets.zero,
-                        side: BorderSide(
-                          color: Colors.white.withValues(alpha: 0.30),
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                      child: const Icon(Icons.refresh_rounded, size: 18),
-                    ),
-                    ElevatedButton.icon(
-                      onPressed: () => _showAnnouncementDialog(),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: accentGold,
-                        foregroundColor: Colors.black87,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 18,
-                          vertical: 14,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                      icon: const Icon(Icons.add, size: 18),
-                      label: const Text("Create New"),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+        LuxuryBannerAction(
+          icon: Icons.add,
+          label: 'Create New',
+          onPressed: () => _showAnnouncementDialog(),
+          filled: true,
+        ),
+      ],
     );
   }
 

@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 
 import '../../services/api_service.dart';
 import '../../state/user_store.dart';
+import '../widgets/luxury_module_banner.dart';
 
 class SettingsPage extends StatefulWidget {
   final Map<String, dynamic> user;
@@ -28,7 +29,6 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _eventInvitations = false;
 
   static const Color primaryMaroon = Color(0xFF4A152C);
-  static const Color accentGold = Color(0xFFC5A046);
   static const Color cardBorder = Color(0xFFE5E7EB);
 
   @override
@@ -237,102 +237,12 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Widget _buildHeroHeader() {
     final isCompact = MediaQuery.of(context).size.width < 760;
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [primaryMaroon, primaryMaroon.withValues(alpha: 0.88)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: primaryMaroon.withValues(alpha: 0.18),
-            blurRadius: 24,
-            offset: const Offset(0, 14),
-          ),
-        ],
-      ),
-      child: isCompact
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(22),
-                  ),
-                  child: Icon(
-                    Icons.admin_panel_settings_outlined,
-                    color: accentGold,
-                    size: 34,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  "Settings",
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  "Manage your dean account security and alerts with the same polished presentation as the analytics modules.",
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.82),
-                    fontSize: 14,
-                    height: 1.5,
-                  ),
-                ),
-              ],
-            )
-          : Row(
-              children: [
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(22),
-                  ),
-                  child: Icon(
-                    Icons.admin_panel_settings_outlined,
-                    color: accentGold,
-                    size: 34,
-                  ),
-                ),
-                const SizedBox(width: 18),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "Settings",
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        "Manage your dean account security and alerts with the same polished presentation as the analytics modules.",
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.82),
-                          fontSize: 14,
-                          height: 1.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+    return LuxuryModuleBanner(
+      compact: isCompact,
+      title: 'Settings',
+      description:
+          'Manage your dean account security and alerts with the same polished presentation as the analytics modules.',
+      icon: Icons.admin_panel_settings_outlined,
     );
   }
 

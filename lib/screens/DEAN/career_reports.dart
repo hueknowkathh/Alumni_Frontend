@@ -255,23 +255,30 @@ class _CareerReportsPageState extends State<CareerReportsPage> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.14),
-                                borderRadius: BorderRadius.circular(999),
-                              ),
-                              child: const Text(
-                                'Dean Reports',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.14),
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: const Text(
+                                    'Dean Reports',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
                                 ),
-                              ),
+                                const Spacer(),
+                                _buildHeroProgramBadge(),
+                              ],
                             ),
                             const SizedBox(height: 16),
                             const Text(
@@ -430,115 +437,175 @@ class _CareerReportsPageState extends State<CareerReportsPage> {
                   ),
                 ),
               ),
+      ),
+    );
+  }
+
+  Widget _buildHeroProgramBadge() {
+    final value = _assignedProgram ?? selectedProgram;
+    return Container(
+      constraints: const BoxConstraints(minWidth: 132, maxWidth: 220),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.lock_outline, color: accentGold, size: 16),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              'Program: $value',
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+              ),
             ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildFilterSection() {
+    final canExport = !(_rows.isEmpty && _departmentAlumni.isEmpty);
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(20),
+        gradient: LinearGradient(
+          colors: [
+            Colors.white.withValues(alpha: 0.14),
+            Colors.white.withValues(alpha: 0.09),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(26),
         border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
-      ),
-      child: Wrap(
-        spacing: 16,
-        runSpacing: 14,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: [
-          Padding(
-            padding: EdgeInsets.only(right: 4),
-            child: Icon(Icons.filter_alt_outlined, color: accentGold),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.09),
+            blurRadius: 20,
+            offset: const Offset(0, 12),
           ),
-          if (_assignedProgram == null)
-            _buildDropdown('Program', selectedProgram, _programOptions, (v) {
-              if (v == null) return;
-              setState(() {
-                selectedProgram = v;
-                selectedBatch = 'All Batches';
-                selectedStatus = 'All Status';
-              });
-              _loadFilterOptions();
-              _fetchReports();
-            })
-          else
-            _buildLockedProgramBadge(),
-          _buildDropdown('Batch', selectedBatch, _batchOptions, (v) {
-            if (v == null) return;
-            setState(() {
-              selectedBatch = v;
-              _applyFilters();
-            });
-          }),
-          _buildDropdown('Status', selectedStatus, _statusOptions, (v) {
-            if (v == null) return;
-            setState(() {
-              selectedStatus = v;
-              _applyFilters();
-            });
-          }),
-          FilledButton.icon(
-            onPressed: (_rows.isEmpty && _departmentAlumni.isEmpty)
-                ? null
-                : _exportCsv,
-            icon: const Icon(Icons.table_view_outlined),
+        ],
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isStacked = constraints.maxWidth < 980;
+          final leftControls = Wrap(
+            spacing: 20,
+            runSpacing: 16,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Container(
+                constraints: const BoxConstraints(minWidth: 96),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.black.withValues(alpha: 0.14),
+                      Colors.black.withValues(alpha: 0.08),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: accentGold.withValues(alpha: 0.24)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.filter_alt_outlined, color: accentGold, size: 18),
+                    const SizedBox(width: 8),
+                    Text(
+                      'FILTERS',
+                      style: TextStyle(
+                        color: accentGold.withValues(alpha: 0.96),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (_assignedProgram == null)
+                _buildDropdown('Program', selectedProgram, _programOptions, (v) {
+                  if (v == null) return;
+                  setState(() {
+                    selectedProgram = v;
+                    selectedBatch = 'All Batches';
+                    selectedStatus = 'All Status';
+                  });
+                  _loadFilterOptions();
+                  _fetchReports();
+                }),
+              _buildDropdown('Batch', selectedBatch, _batchOptions, (v) {
+                if (v == null) return;
+                setState(() {
+                  selectedBatch = v;
+                  _applyFilters();
+                });
+              }),
+              _buildDropdown('Status', selectedStatus, _statusOptions, (v) {
+                if (v == null) return;
+                setState(() {
+                  selectedStatus = v;
+                  _applyFilters();
+                });
+              }),
+            ],
+          );
+
+          final exportButton = FilledButton.icon(
+            onPressed: canExport ? _exportCsv : null,
+            icon: const Icon(Icons.table_view_outlined, size: 18),
             label: const Text('Export CSV'),
             style: FilledButton.styleFrom(
               backgroundColor: Colors.white,
               foregroundColor: primaryMaroon,
+              disabledBackgroundColor: Colors.white.withValues(alpha: 0.26),
+              disabledForegroundColor: primaryMaroon.withValues(alpha: 0.45),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
+          );
 
-  Widget _buildLockedProgramBadge() {
-    return SizedBox(
-      width: 180,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Program',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: Colors.white.withValues(alpha: 0.82),
-            ),
-          ),
-          const SizedBox(height: 6),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
-            ),
-            child: Row(
+          if (isStacked) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.lock_outline, color: accentGold, size: 18),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    _assignedProgram ?? selectedProgram,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
+                leftControls,
+                const SizedBox(height: 16),
+                SizedBox(width: double.infinity, child: exportButton),
               ],
-            ),
-          ),
-        ],
+            );
+          }
+
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: leftControls),
+              const SizedBox(width: 18),
+              exportButton,
+            ],
+          );
+        },
       ),
     );
   }
-
   Widget _buildDropdown(
     String label,
     String value,
@@ -546,35 +613,46 @@ class _CareerReportsPageState extends State<CareerReportsPage> {
     ValueChanged<String?> onChanged,
   ) {
     return SizedBox(
-      width: 180,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      width: 220,
+      child: Row(
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: Colors.white.withValues(alpha: 0.82),
+          SizedBox(
+            width: 68,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: Colors.white.withValues(alpha: 0.86),
+              ),
             ),
           ),
-          const SizedBox(height: 6),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: borderColor),
-            ),
-            child: DropdownButton<String>(
-              value: items.contains(value) ? value : items.first,
-              isExpanded: true,
-              isDense: true,
-              underline: const SizedBox(),
-              items: items
-                  .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                  .toList(),
-              onChanged: onChanged,
+          const SizedBox(width: 10),
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: borderColor.withValues(alpha: 0.95)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.03),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: DropdownButton<String>(
+                value: items.contains(value) ? value : items.first,
+                isExpanded: true,
+                isDense: true,
+                underline: const SizedBox(),
+                items: items
+                    .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                    .toList(),
+                onChanged: onChanged,
+              ),
             ),
           ),
         ],
