@@ -2164,7 +2164,7 @@ class _TracerFormPageState extends State<TracerFormPage> {
           return _dropdownValues['related_job'] == 'No';
         }
         if (question.key == 'more_hours_reason') {
-          return _dropdownValues['want_more_hours'] == 'Yes';
+          return _dropdownValues['want_more_hours'] == 'No';
         }
         return true;
       case 'study_program':
