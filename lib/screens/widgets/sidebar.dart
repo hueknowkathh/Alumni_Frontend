@@ -6,6 +6,7 @@ class Sidebar extends StatefulWidget {
   final String role;
   final int selectedIndex;
   final Function(int)? onItemSelected;
+  final Future<void> Function()? onBeforeLogout;
   final bool isCollapsed;
   final VoidCallback? onToggleSidebar;
   final bool isInDrawer;
@@ -15,6 +16,7 @@ class Sidebar extends StatefulWidget {
     required this.role,
     this.selectedIndex = 0,
     this.onItemSelected,
+    this.onBeforeLogout,
     this.isCollapsed = false,
     this.onToggleSidebar,
     this.isInDrawer = false,
@@ -350,6 +352,8 @@ class _SidebarState extends State<Sidebar> {
           borderRadius: BorderRadius.circular(16),
           onTap: () async {
             if (isLogout) {
+              await widget.onBeforeLogout?.call();
+              if (!mounted) return;
               await AuthService.logout(context);
               return;
             }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -8,6 +9,24 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../services/api_service.dart';
 import '../../services/activity_service.dart';
+
+class TracerFormPageController {
+  _TracerFormPageState? _state;
+
+  void _attach(_TracerFormPageState state) {
+    _state = state;
+  }
+
+  void _detach(_TracerFormPageState state) {
+    if (identical(_state, state)) {
+      _state = null;
+    }
+  }
+
+  Future<void> saveDraftSilently({String reason = 'manual'}) async {
+    await _state?._saveDraftSilently(reason: reason);
+  }
+}
 
 Map<String, dynamic> _parseJsonResponse(http.Response response) {
   try {
@@ -218,16 +237,19 @@ class TracerFormPage extends StatefulWidget {
     super.key,
     required this.userId,
     required this.programCode,
+    this.controller,
   });
 
   final int userId;
   final String programCode;
+  final TracerFormPageController? controller;
 
   @override
   State<TracerFormPage> createState() => _TracerFormPageState();
 }
 
-class _TracerFormPageState extends State<TracerFormPage> {
+class _TracerFormPageState extends State<TracerFormPage>
+    with WidgetsBindingObserver {
   static const Color _maroon = Color(0xFF4A152C);
   static const Color _rose = Color(0xFF8C3A57);
   static const Color _cream = Color(0xFFF8F3F1);
@@ -262,6 +284,7 @@ class _TracerFormPageState extends State<TracerFormPage> {
   String? _latestPdfDownloadUrl;
   String? _latestAgreementVersion;
   int _signedSubmissionCount = 0;
+  bool _isAutoSavingDraft = false;
 
   late final _ProgramConfig _config;
   late final Map<String, TextEditingController> _textControllers;
@@ -472,7 +495,7 @@ class _TracerFormPageState extends State<TracerFormPage> {
     ),
     const _QuestionDef(
       key: 'more_hours_reason',
-      label: 'If yes, why?',
+      label: 'If no, why?',
       numberLabel: '25a',
       type: _FieldType.dropdown,
       options: [
@@ -666,6 +689,8 @@ class _TracerFormPageState extends State<TracerFormPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    widget.controller?._attach(this);
     _config = _programConfig(widget.programCode);
     _textControllers = {
       for (final key in _textFieldKeys) key: TextEditingController(),
@@ -1394,6 +1419,82 @@ class _TracerFormPageState extends State<TracerFormPage> {
     }
   }
 
+  bool _hasMeaningfulDraftContent() {
+    if (_agreeToConsent) return true;
+    if ((_existingSignatureBase64 ?? '').trim().isNotEmpty) return true;
+    if (_signature.isNotEmpty) return true;
+    if (_careerTimeline.any((entry) => entry.hasMeaningfulValue)) return true;
+    if (_dropdownValues.values.any((value) => value?.trim().isNotEmpty ?? false)) {
+      return true;
+    }
+    if (_textControllers.values.any((controller) => controller.text.trim().isNotEmpty)) {
+      return true;
+    }
+    if (_multiSelectValues.values.any((values) => values.isNotEmpty)) return true;
+    if (_ratingValues.values.any((value) => value > 0)) return true;
+    return false;
+  }
+
+  Future<void> _saveDraftSilently({String reason = 'auto'}) async {
+    if (!mounted || _isReadOnly || _isSaving || _isAutoSavingDraft) return;
+    if (!_hasMeaningfulDraftContent()) return;
+
+    final timeline = _careerTimeline
+        .where((entry) => entry.hasMeaningfulValue)
+        .map((entry) => entry.toMap())
+        .toList();
+
+    String signatureBase64 = _existingSignatureBase64 ?? '';
+    if (_signature.isNotEmpty) {
+      final sign = await _signature.toPngBytes();
+      if (sign != null) signatureBase64 = base64Encode(sign);
+    }
+
+    final data = _buildTracerPayload(
+      saveAsDraft: true,
+      timeline: timeline,
+      signatureBase64: signatureBase64,
+      isoDate: DateTime.now().toIso8601String(),
+    );
+
+    if (mounted) {
+      setState(() => _isAutoSavingDraft = true);
+    }
+
+    try {
+      final response = await http.post(
+        ApiService.uri('submit_tracer.php'),
+        headers: ApiService.jsonHeaders(),
+        body: jsonEncode(data),
+      );
+      final result = _parseJsonResponse(response);
+      if (result['success'] == true && mounted) {
+        setState(() {
+          _hasDraftSaved = true;
+          _hasExistingSubmission = false;
+          _isReadOnly = false;
+          _isCareerUpdateMode = false;
+          _submissionDateIso = '';
+          _syncSubmissionDateController();
+          if (signatureBase64.isNotEmpty) {
+            _existingSignatureBase64 = signatureBase64;
+            _existingSignatureBytes = base64Decode(signatureBase64);
+          }
+        });
+      } else {
+        debugPrint(
+          'Tracer auto-save failed during $reason: ${result['message'] ?? 'unknown error'}',
+        );
+      }
+    } catch (e) {
+      debugPrint('Tracer auto-save exception during $reason: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isAutoSavingDraft = false);
+      }
+    }
+  }
+
   Future<void> _submit() async {
     if (_isReadOnly) return;
     if (!_formKey.currentState!.validate()) {
@@ -1498,6 +1599,15 @@ class _TracerFormPageState extends State<TracerFormPage> {
     }
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.hidden ||
+        state == AppLifecycleState.paused) {
+      unawaited(_saveDraftSilently(reason: 'app_lifecycle'));
+    }
+  }
+
   String _text(String key) => _textControllers[key]?.text.trim() ?? '';
 
   void _showSnack(String message) {
@@ -1532,6 +1642,8 @@ class _TracerFormPageState extends State<TracerFormPage> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    widget.controller?._detach(this);
     for (final controller in _textControllers.values) {
       controller.dispose();
     }

@@ -9,6 +9,7 @@ import 'jobs_page.dart';
 import 'settings_page.dart';
 import 'bsit_tracer.dart';
 import 'bssw_tracer.dart';
+import 'tracer_form_page.dart';
 import '../../state/user_store.dart';
 
 class AlumniMainLayout extends StatefulWidget {
@@ -20,6 +21,8 @@ class AlumniMainLayout extends StatefulWidget {
 }
 
 class _AlumniMainLayoutState extends State<AlumniMainLayout> {
+  static const int _bsswTracerIndex = 5;
+  static const int _bsitTracerIndex = 6;
   int _selectedIndex = 0;
   bool _isSidebarCollapsed = false;
   bool _hasInitializedLayout = false;
@@ -31,6 +34,10 @@ class _AlumniMainLayoutState extends State<AlumniMainLayout> {
   final Color primaryMaroon = const Color(0xFF4A152C);
   final Color accentGold = const Color(0xFFC5A046);
   final Color borderColor = const Color(0xFFE0E0E0);
+  final TracerFormPageController _bsswTracerController =
+      TracerFormPageController();
+  final TracerFormPageController _bsitTracerController =
+      TracerFormPageController();
 
   late final List<Widget> _pages;
 
@@ -41,14 +48,20 @@ class _AlumniMainLayoutState extends State<AlumniMainLayout> {
     _pages = [
       AlumniDashboard(
         user: widget.user,
-        onModuleSelected: (index) => setState(() => _selectedIndex = index),
+        onModuleSelected: _handleModuleSelection,
       ),
       ProfilePage(user: widget.user),
       AnnouncementPage(user: widget.user),
       AlumniJobsPage(user: widget.user),
       SettingsPage(user: widget.user),
-      BSSWTracerPage(userId: widget.user['id']), // Corrected line
-      BSITTracerPage(userId: widget.user['id']), // Corrected line
+      BSSWTracerPage(
+        userId: widget.user['id'],
+        controller: _bsswTracerController,
+      ),
+      BSITTracerPage(
+        userId: widget.user['id'],
+        controller: _bsitTracerController,
+      ),
     ];
     _fetchNotifications();
     _notificationTimer = Timer.periodic(const Duration(seconds: 20), (_) {
@@ -79,6 +92,26 @@ class _AlumniMainLayoutState extends State<AlumniMainLayout> {
   void dispose() {
     _notificationTimer?.cancel();
     super.dispose();
+  }
+
+  bool _isTracerIndex(int index) =>
+      index == _bsswTracerIndex || index == _bsitTracerIndex;
+
+  Future<void> _autoSaveActiveTracer({required String reason}) async {
+    if (!_isTracerIndex(_selectedIndex)) return;
+    final controller = _selectedIndex == _bsswTracerIndex
+        ? _bsswTracerController
+        : _bsitTracerController;
+    await controller.saveDraftSilently(reason: reason);
+  }
+
+  Future<void> _handleModuleSelection(int index) async {
+    if (index == _selectedIndex) return;
+    if (_isTracerIndex(_selectedIndex) && !_isTracerIndex(index)) {
+      await _autoSaveActiveTracer(reason: 'module_switch');
+    }
+    if (!mounted) return;
+    setState(() => _selectedIndex = index);
   }
 
   void _showNotifications() async {
@@ -275,8 +308,10 @@ class _AlumniMainLayoutState extends State<AlumniMainLayout> {
                 role: "alumni",
                 selectedIndex: _selectedIndex,
                 isInDrawer: true,
-                onItemSelected: (index) {
-                  setState(() => _selectedIndex = index);
+                onBeforeLogout: () => _autoSaveActiveTracer(reason: 'logout'),
+                onItemSelected: (index) async {
+                  await _handleModuleSelection(index);
+                  if (!mounted) return;
                   Navigator.pop(context);
                 },
               ),
@@ -291,7 +326,8 @@ class _AlumniMainLayoutState extends State<AlumniMainLayout> {
               isCollapsed: _isSidebarCollapsed,
               onToggleSidebar: () =>
                   setState(() => _isSidebarCollapsed = !_isSidebarCollapsed),
-              onItemSelected: (index) => setState(() => _selectedIndex = index),
+              onBeforeLogout: () => _autoSaveActiveTracer(reason: 'logout'),
+              onItemSelected: _handleModuleSelection,
             ),
           Expanded(
             child: Column(
