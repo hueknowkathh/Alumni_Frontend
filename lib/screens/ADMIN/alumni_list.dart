@@ -88,6 +88,31 @@ class _AlumniListState extends State<AlumniList> {
     }
   }
 
+  String _resolveEmploymentStatus(Map<String, dynamic> user) {
+    final candidates = [
+      user['employment_status'],
+      user['employmentStatus'],
+      user['tracer_status'],
+    ];
+
+    for (final candidate in candidates) {
+      final value = candidate?.toString().trim() ?? '';
+      if (value.isEmpty) continue;
+
+      final lower = value.toLowerCase();
+      if (lower == 'approved' ||
+          lower == 'pending' ||
+          lower == 'rejected' ||
+          lower == 'verified') {
+        continue;
+      }
+
+      return value;
+    }
+
+    return 'Not Submitted';
+  }
+
   // ✅ DELETE: Remove user from DB
   @override
   void dispose() {
@@ -145,12 +170,7 @@ class _AlumniListState extends State<AlumniList> {
 
   // ✅ VIEW: Show Detail Popup
   void _viewAlumni(Map<String, dynamic> user) {
-    final employmentStatus =
-        (user['employment_status'] ??
-                user['employmentStatus'] ??
-                user['tracer_status'] ??
-                user['status'])
-            ?.toString();
+    final employmentStatus = _resolveEmploymentStatus(user);
 
     showDialog(
       context: context,
