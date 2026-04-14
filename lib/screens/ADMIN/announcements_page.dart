@@ -185,7 +185,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
     showDialog(
       context: context,
       builder: (_) => StatefulBuilder(
-        builder: (context, setDialogState) => Dialog(
+        builder: (dialogContext, setDialogState) => Dialog(
           insetPadding: const EdgeInsets.symmetric(
             horizontal: 20,
             vertical: 24,
@@ -367,7 +367,8 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                             children: [
                               Expanded(
                                 child: OutlinedButton(
-                                  onPressed: () => Navigator.pop(context),
+                                  onPressed: () =>
+                                      Navigator.of(dialogContext).pop(),
                                   style: OutlinedButton.styleFrom(
                                     foregroundColor: primaryMaroon,
                                     side: BorderSide(
@@ -416,8 +417,9 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                                                     : null,
                                               );
 
-                                          if (success && mounted) {
-                                            Navigator.pop(context);
+                                          if (success &&
+                                              dialogContext.mounted) {
+                                            Navigator.of(dialogContext).pop();
                                           }
                                         },
                                   icon: isSaving
