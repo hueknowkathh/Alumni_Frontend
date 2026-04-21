@@ -21,7 +21,9 @@ services:
     restart: unless-stopped
 
   backend:
-    image: php:8.2-apache
+    build:
+      context: ${ALUMNI_PHP_PATH:-C:/xampp/htdocs/alumni_php}
+      dockerfile: Dockerfile
     container_name: alumni_backend
     restart: unless-stopped
     depends_on:

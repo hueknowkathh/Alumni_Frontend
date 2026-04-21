@@ -11,11 +11,13 @@ services:
       - backend
 
   backend:
-    image: php:8.2-apache
+    build:
+      context: ${ALUMNI_PHP_PATH:-C:/xampp/htdocs/alumni_php}
+      dockerfile: Dockerfile
     ports:
       - "8080:80"
     volumes:
-      - ${ALUMNI_PHP_PATH:-../alumni_php}:/var/www/html/alumni_php
+      - ${ALUMNI_PHP_PATH:-C:/xampp/htdocs/alumni_php}:/var/www/html/alumni_php
     depends_on:
       - db
 
