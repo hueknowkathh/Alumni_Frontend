@@ -382,9 +382,7 @@ class _GraduateRegistryPageState extends State<GraduateRegistryPage> {
           'Upload your official graduate list from Excel, organize batches automatically by year graduated, and monitor how many graduates belong to each current program.',
       icon: Icons.upload_file_outlined,
       compact: compact,
-      trailing: [
-        _buildHeaderActions(compact),
-      ],
+      trailing: [_buildHeaderActions(compact)],
     );
   }
 
@@ -509,11 +507,7 @@ class _GraduateRegistryPageState extends State<GraduateRegistryPage> {
                 ),
               ];
 
-              return Wrap(
-                spacing: 16,
-                runSpacing: 16,
-                children: cards,
-              );
+              return Wrap(spacing: 16, runSpacing: 16, children: cards);
             },
           ),
         ],
