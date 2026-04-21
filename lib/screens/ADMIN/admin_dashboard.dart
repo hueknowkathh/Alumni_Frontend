@@ -40,6 +40,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
   Timer? _dashboardRefreshTimer;
 
   Map<String, dynamic> liveStats = {
+    "total_graduates": 0,
+    "registered_alumni": 0,
     "total_alumni": 0,
     "pending_users": 0,
     "tracer_submissions": 0,
@@ -181,10 +183,18 @@ class _AdminDashboardState extends State<AdminDashboard> {
           runSpacing: 16,
           children: [
             _buildStatCard(
-              "Total Alumni",
-              liveStats['total_alumni'].toString(),
+              "Total Graduates",
+              (liveStats['total_graduates'] ?? liveStats['total_alumni'] ?? 0)
+                  .toString(),
               Icons.people_outline,
               Colors.blue,
+              availableWidth,
+            ),
+            _buildStatCard(
+              "Registered Alumni",
+              (liveStats['registered_alumni'] ?? 0).toString(),
+              Icons.verified_user_outlined,
+              Colors.teal,
               availableWidth,
             ),
             _buildStatCard(

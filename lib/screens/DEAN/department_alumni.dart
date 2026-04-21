@@ -20,6 +20,13 @@ class DepartmentAlumniPage extends StatefulWidget {
 }
 
 class _DepartmentAlumniPageState extends State<DepartmentAlumniPage> {
+  static const Map<String, dynamic> _defaultSummary = {
+    "total_graduates": 0,
+    "employed": 0,
+    "employment_rate": "0%",
+    "job_alignment": "0%",
+  };
+
   final Color primaryMaroon = const Color(0xFF4A152C);
   final Color bgLight = const Color(0xFFF7F8FA);
   final Color accentGold = const Color(0xFFC5A046);
@@ -34,12 +41,7 @@ class _DepartmentAlumniPageState extends State<DepartmentAlumniPage> {
   List<String> _statusOptions = const ['All Status'];
 
   List<dynamic> _filteredAlumni = [];
-  Map<String, dynamic> _summary = {
-    "total_graduates": 0,
-    "employed": 0,
-    "employment_rate": "0%",
-    "job_alignment": "0%",
-  };
+  Map<String, dynamic> _summary = Map<String, dynamic>.from(_defaultSummary);
   bool _isLoading = true;
   bool _isExportingReport = false;
   Timer? _autoRefreshTimer;
@@ -120,11 +122,18 @@ class _DepartmentAlumniPageState extends State<DepartmentAlumniPage> {
       if (data is! Map<String, dynamic>) {
         throw Exception('Unexpected response format');
       }
+      if (data['error'] != null) {
+        throw Exception((data['debug'] ?? data['error']).toString());
+      }
 
       if (!mounted) return;
+      final summary = Map<String, dynamic>.from(_defaultSummary)
+        ..addAll(
+          Map<String, dynamic>.from(data['summary'] ?? const <String, dynamic>{}),
+        );
       setState(() {
         _filteredAlumni = List<dynamic>.from(data['alumni'] ?? const []);
-        _summary = Map<String, dynamic>.from(data['summary'] ?? const {});
+        _summary = summary;
         _isLoading = false;
       });
     } catch (e) {
@@ -140,6 +149,16 @@ class _DepartmentAlumniPageState extends State<DepartmentAlumniPage> {
   void dispose() {
     _autoRefreshTimer?.cancel();
     super.dispose();
+  }
+
+  String _summaryValue(String key, {String fallback = '0'}) {
+    final value = _summary[key];
+    if (value == null) return fallback;
+    final text = value.toString().trim();
+    if (text.isEmpty || text.toLowerCase() == 'null') {
+      return fallback;
+    }
+    return text;
   }
 
   List<List<String>> _buildDepartmentExportRows() {
@@ -653,28 +672,28 @@ class _DepartmentAlumniPageState extends State<DepartmentAlumniPage> {
                 children: [
                   _buildMetricCard(
                     "Registered Graduates",
-                    "${_summary['total_graduates']}",
+                    _summaryValue('total_graduates'),
                     Icons.people,
                     Colors.blue,
                     summaryContentWidth,
                   ),
                   _buildMetricCard(
                     "Employed",
-                    "${_summary['employed']}",
+                    _summaryValue('employed'),
                     Icons.work,
                     Colors.green,
                     summaryContentWidth,
                   ),
                   _buildMetricCard(
                     "Employment Rate",
-                    "${_summary['employment_rate']}",
+                    _summaryValue('employment_rate', fallback: '0%'),
                     Icons.trending_up,
                     accentGold,
                     summaryContentWidth,
                   ),
                   _buildMetricCard(
                     "Job Alignment",
-                    "${_summary['job_alignment']}",
+                    _summaryValue('job_alignment', fallback: '0%'),
                     Icons.check_circle_outline,
                     Colors.purple,
                     summaryContentWidth,
