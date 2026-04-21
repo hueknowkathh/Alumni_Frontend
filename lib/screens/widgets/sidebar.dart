@@ -130,11 +130,7 @@ class _SidebarState extends State<Sidebar> {
       ),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [
-            Color(0xFF6E203E),
-            Color(0xFF5A1832),
-            Color(0xFF461426),
-          ],
+          colors: [Color(0xFF6E203E), Color(0xFF5A1832), Color(0xFF461426)],
           begin: Alignment.topLeft,
           end: Alignment.bottomCenter,
         ),
@@ -551,6 +547,7 @@ class _SidebarState extends State<Sidebar> {
         return [
           {'title': 'Dashboard', 'icon': Icons.grid_view_outlined},
           {'title': 'Alumni List', 'icon': Icons.people_outline},
+          {'title': 'Graduates', 'icon': Icons.upload_file_outlined},
           {'title': 'Tracer Governance', 'icon': Icons.analytics_outlined},
           {'title': 'Verify Users', 'icon': Icons.verified_user_outlined},
           {'title': 'Announcements', 'icon': Icons.campaign_outlined},

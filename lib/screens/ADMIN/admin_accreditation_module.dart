@@ -450,7 +450,7 @@ class AdminAccreditationModule extends StatelessWidget {
             ['Signed Responses', fallback.bsitSigned, fallback.bsswSigned],
             ['Employment', fallback.bsitEmployment, fallback.bsswEmployment],
             ['Relevance', fallback.bsitRelevance, fallback.bsswRelevance],
-            ['Scope', 'Signed-only', 'Signed-only'],
+            ['Scope', '0', '0'],
           ]
         : <List<String>>[
             const ['Metric', 'BSIT', 'BSSW'],
@@ -741,7 +741,7 @@ class _ProgramComparisonFallback {
         return (row['program'] ?? '').toString().toUpperCase() == program;
       }).toList();
       if (programRows.isEmpty) {
-        return 'No signed data';
+        return '0';
       }
       final employed = programRows.where((row) {
         final status = (row['employment_status'] ?? '').toString();
@@ -756,7 +756,7 @@ class _ProgramComparisonFallback {
         return (row['program'] ?? '').toString().toUpperCase() == program;
       }).toList();
       if (programRows.isEmpty) {
-        return 'No signed data';
+        return '0';
       }
       final ratedRows = programRows.where((row) {
         final value = (row['job_related'] ?? '')
@@ -766,7 +766,7 @@ class _ProgramComparisonFallback {
         return value == 'yes' || value == 'no';
       }).toList();
       if (ratedRows.isEmpty) {
-        return 'N/A';
+        return '0';
       }
       final related = ratedRows.where((row) {
         return (row['job_related'] ?? '').toString().trim().toLowerCase() ==

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../widgets/sidebar.dart';
 import 'admin_dashboard.dart';
 import 'alumni_list.dart';
+import 'graduate_registry_page.dart';
 import 'tracer_data.dart';
 import 'pending_users.dart';
 import 'announcements_page.dart';
@@ -66,7 +67,7 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
   void initState() {
     super.initState();
     if (UserStore.value == null) UserStore.set(widget.user);
-    _pageCache = List<Widget?>.filled(9, null);
+    _pageCache = List<Widget?>.filled(10, null);
     fetchFullActivity();
     fetchAllUsers();
     _dashboardRealtimeTimer = Timer.periodic(const Duration(seconds: 10), (_) {
@@ -78,7 +79,7 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
   Future<void> _openRecentActivityPage() async {
     await fetchFullActivity(showLoader: true);
     if (!mounted) return;
-    setState(() => _selectedIndex = 7);
+    setState(() => _selectedIndex = 8);
   }
 
   Future<void> fetchFullActivity({bool showLoader = true}) async {
@@ -196,7 +197,8 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
                               ),
                             ),
                             TextButton(
-                              onPressed: () => Navigator.of(dialogContext).pop(),
+                              onPressed: () =>
+                                  Navigator.of(dialogContext).pop(),
                               child: const Text('Close'),
                             ),
                           ],
@@ -215,7 +217,9 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
                                 ),
                               )
                             : ListView.separated(
-                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 8,
+                                ),
                                 itemCount: _adminNotifications.length,
                                 separatorBuilder: (_, _) =>
                                     const Divider(height: 1),
@@ -372,28 +376,30 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
           user: widget.user,
           onActionSelected: (target) => setState(() => _selectedIndex = target),
           onOpenRecentActivity: _openRecentActivityPage,
-          onOpenLatestUsers: () => setState(() => _selectedIndex = 8),
+          onOpenLatestUsers: () => setState(() => _selectedIndex = 9),
         );
       case 1:
         return const AlumniList();
       case 2:
-        return const TracerDataPage();
+        return const GraduateRegistryPage();
       case 3:
-        return const PendingUsersPage();
+        return const TracerDataPage();
       case 4:
-        return const AnnouncementsPage();
+        return const PendingUsersPage();
       case 5:
-        return const JobsPage();
+        return const AnnouncementsPage();
       case 6:
-        return const AdminSettings();
+        return const JobsPage();
       case 7:
+        return const AdminSettings();
+      case 8:
         return RecentActivityPage(
           activities: _allActivities,
           isLoading: _isLoadingActivity,
           onBack: () => setState(() => _selectedIndex = dashboard),
           onRefresh: fetchFullActivity,
         );
-      case 8:
+      case 9:
         return UserRegistrationsPage(
           users: _allUsers,
           isLoading: _isLoadingUsers,
