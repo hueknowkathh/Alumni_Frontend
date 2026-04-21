@@ -318,7 +318,7 @@ class _CareerReportsPageState extends State<CareerReportsPage> {
                             runSpacing: 16,
                             children: [
                               _buildSummaryCard(
-                                'Registered Graduates',
+                                'Total Graduates',
                                 '$total',
                                 Icons.people,
                                 Colors.blue,

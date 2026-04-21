@@ -277,7 +277,7 @@ class _CareerOverviewPageState extends State<CareerOverviewPage> {
                             runSpacing: 16,
                             children: [
                               _buildSummaryCard(
-                                'Registered Graduates',
+                                'Total Graduates',
                                 '${_summary['total_alumni'] ?? 0}',
                                 Icons.groups,
                                 Colors.blue,

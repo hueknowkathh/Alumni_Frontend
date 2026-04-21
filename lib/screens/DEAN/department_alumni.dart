@@ -168,7 +168,7 @@ class _DepartmentAlumniPageState extends State<DepartmentAlumniPage> {
       ['Batch Filter', selectedBatch, '', '', ''],
       ['Status Filter', selectedStatus, '', '', ''],
       [
-        'Registered Graduates',
+        'Total Graduates',
         '${_summary['total_graduates'] ?? 0}',
         '',
         '',
@@ -266,7 +266,7 @@ class _DepartmentAlumniPageState extends State<DepartmentAlumniPage> {
                 children: [
                   _pdfRow(['Metric', 'Value'], isHeader: true),
                   _pdfRow([
-                    'Registered Graduates',
+                    'Total Graduates',
                     '${_summary['total_graduates'] ?? 0}',
                   ]),
                   _pdfRow(['Employed', '${_summary['employed'] ?? 0}']),
@@ -671,7 +671,7 @@ class _DepartmentAlumniPageState extends State<DepartmentAlumniPage> {
                 runSpacing: 16,
                 children: [
                   _buildMetricCard(
-                    "Registered Graduates",
+                    "Total Graduates",
                     _summaryValue('total_graduates'),
                     Icons.people,
                     Colors.blue,

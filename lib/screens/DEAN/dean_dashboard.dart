@@ -155,7 +155,7 @@ class _DeanDashboardState extends State<DeanDashboard> {
                           runSpacing: 20,
                           children: [
                             _buildStatCard(
-                              "Registered Graduates",
+                              "Total Graduates",
                               "${_summary['total_alumni'] ?? 0}",
                               Icons.people_alt_outlined,
                               Colors.blue,
