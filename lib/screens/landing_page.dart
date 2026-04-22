@@ -442,7 +442,7 @@ class _LandingPageState extends State<LandingPage>
               child: Container(
                 decoration: const BoxDecoration(
                   image: DecorationImage(
-                    image: AssetImage('assets/download.png'),
+                    image: AssetImage('assets/loginpage_bg.png'),
                     fit: BoxFit.cover,
                   ),
                 ),

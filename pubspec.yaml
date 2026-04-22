@@ -73,7 +73,7 @@ flutter:
   assets:
     - assets/logo.png
     - assets/jmc.jpg
-    - assets/download.png
+    - assets/loginpage_bg.png
     - assets/jmclogo.png
   
   #   - images/a_dot_ham.jpeg

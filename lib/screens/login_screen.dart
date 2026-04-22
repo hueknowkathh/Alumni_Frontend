@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -149,10 +150,7 @@ class _LoginPageState extends State<LoginPage> {
       final response = await http.post(
         ApiService.uri('forgot_password.php'),
         headers: ApiService.jsonHeaders(),
-        body: jsonEncode({
-          "email": email.trim(),
-          "newPassword": newPassword,
-        }),
+        body: jsonEncode({"email": email.trim(), "newPassword": newPassword}),
       );
 
       final decoded = jsonDecode(response.body);
@@ -169,10 +167,7 @@ class _LoginPageState extends State<LoginPage> {
       };
     } catch (e) {
       debugPrint("Forgot password error: $e");
-      return {
-        'ok': false,
-        'message': 'Unable to reset password right now.',
-      };
+      return {'ok': false, 'message': 'Unable to reset password right now.'};
     }
   }
 
@@ -334,8 +329,29 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final cardWidth = screenWidth < 480 ? screenWidth - 32 : 400.0;
+    final screenSize = MediaQuery.of(context).size;
+    final screenWidth = screenSize.width;
+    final screenHeight = screenSize.height;
+    final isCompact = screenWidth < 420;
+    final cardWidth = screenWidth < 480 ? screenWidth - 28 : 430.0;
+    final logoSize = screenHeight < 700
+        ? (isCompact ? 82.0 : 94.0)
+        : screenHeight < 820
+        ? (isCompact ? 92.0 : 108.0)
+        : (isCompact ? 104.0 : 124.0);
+    final logoOverlap = logoSize * 0.46;
+    final cardTopPadding = logoSize * 0.56 + (isCompact ? 20.0 : 24.0);
+    final titleFontSize = screenHeight < 700
+        ? (isCompact ? 31.0 : 38.0)
+        : screenHeight < 820
+        ? (isCompact ? 34.0 : 42.0)
+        : (isCompact ? 38.0 : 48.0);
+    final pageTopPadding = screenHeight < 700
+        ? 28.0
+        : screenHeight < 820
+        ? (isCompact ? 34.0 : 46.0)
+        : (isCompact ? 40.0 : 58.0);
+    final pageBottomPadding = screenHeight < 700 ? 24.0 : 32.0;
     final linkedInMessage = widget.linkedInResult?.message.trim() ?? '';
     final linkedInError = widget.linkedInResult?.error.trim() ?? '';
     return Scaffold(
@@ -344,285 +360,452 @@ class _LoginPageState extends State<LoginPage> {
           Container(
             decoration: const BoxDecoration(
               image: DecorationImage(
-                image: AssetImage('assets/download.png'),
+                image: AssetImage('assets/loginpage_bg.png'),
                 fit: BoxFit.cover,
               ),
             ),
           ),
-          Container(color: Colors.black.withValues(alpha: 0.3)),
-          Center(
-            child: SingleChildScrollView(
-              child: Container(
-                width: cardWidth,
-                padding: const EdgeInsets.all(40),
-                margin: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  color: primaryMaroon.withValues(alpha: 0.95),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.5),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
-                    ),
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  primaryMaroon.withValues(alpha: 0.34),
+                  Colors.black.withValues(alpha: 0.22),
+                  primaryMaroon.withValues(alpha: 0.44),
+                ],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+            ),
+          ),
+          Positioned(
+            top: -80,
+            left: -40,
+            child: Container(
+              width: 220,
+              height: 220,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    accentGold.withValues(alpha: 0.20),
+                    accentGold.withValues(alpha: 0.04),
+                    Colors.transparent,
                   ],
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
+              ),
+            ),
+          ),
+          Positioned(
+            right: -70,
+            bottom: -50,
+            child: Container(
+              width: 260,
+              height: 260,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    Colors.white.withValues(alpha: 0.08),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Center(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(
+                16,
+                pageTopPadding,
+                16,
+                pageBottomPadding,
+              ),
+              child: SizedBox(
+                width: cardWidth,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  alignment: Alignment.topCenter,
                   children: [
                     ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Image.asset(
-                        'assets/jmclogo.png',
-                        height: 72,
-                        width: 72,
-                        fit: BoxFit.contain,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      "ALUMNI TRACER",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 2,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      "Graduate Outcomes Tracking System",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.7),
-                        fontSize: 12,
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                    const SizedBox(height: 40),
-                    if (linkedInMessage.isNotEmpty || linkedInError.isNotEmpty)
-                      Container(
-                        width: double.infinity,
-                        margin: const EdgeInsets.only(bottom: 18),
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: linkedInError.isNotEmpty
-                                ? Colors.orangeAccent.withValues(alpha: 0.45)
-                                : accentGold.withValues(alpha: 0.35),
+                      borderRadius: BorderRadius.circular(32),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                        child: Container(
+                          padding: EdgeInsets.fromLTRB(
+                            isCompact ? 22 : 28,
+                            cardTopPadding,
+                            isCompact ? 22 : 28,
+                            28,
                           ),
-                        ),
-                        child: Text(
-                          linkedInMessage.isNotEmpty
-                              ? linkedInMessage
-                              : 'LinkedIn sign-in could not be completed. Please try again.',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12.5,
-                            height: 1.45,
-                          ),
-                        ),
-                      ),
-                    _buildTextField(
-                      controller: _emailController,
-                      label: "Email",
-                      icon: Icons.email_outlined,
-                    ),
-                    const SizedBox(height: 20),
-                    _buildTextField(
-                      controller: _passwordController,
-                      label: "Password",
-                      icon: Icons.lock_outline,
-                      isPassword: true,
-                    ),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: _isLoading ? null : _showForgotPasswordDialog,
-                        child: Text(
-                          "Forgot Password?",
-                          style: TextStyle(color: accentGold),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton(
-                        onPressed: _isLoading ? null : _handleLogin,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: accentGold,
-                          foregroundColor: primaryMaroon,
-                          elevation: 5,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        child: _isLoading
-                            ? const CircularProgressIndicator(
-                                color: Colors.white,
-                              )
-                            : const Text(
-                                "LOGIN",
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Divider(
-                            color: Colors.white.withValues(alpha: 0.22),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          child: Text(
-                            "ALUMNI SIGN-UP",
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.72),
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.9,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(32),
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.white.withValues(alpha: 0.16),
+                                primaryMaroon.withValues(alpha: 0.84),
+                                primaryMaroon.withValues(alpha: 0.94),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
                             ),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.18),
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.28),
+                                blurRadius: 34,
+                                offset: const Offset(0, 20),
+                              ),
+                            ],
                           ),
-                        ),
-                        Expanded(
-                          child: Divider(
-                            color: Colors.white.withValues(alpha: 0.22),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.05),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: accentGold.withValues(alpha: 0.18),
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          SizedBox(
-                            width: double.infinity,
-                            height: 52,
-                            child: OutlinedButton(
-                              onPressed: _isLinkedInLoading
-                                  ? null
-                                  : _startLinkedInSignUp,
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.white,
-                                side: const BorderSide(color: Color(0xFF0A66C2)),
-                                backgroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const SizedBox(height: 8),
+                              ShaderMask(
+                                shaderCallback: (bounds) => LinearGradient(
+                                  colors: [
+                                    Colors.white.withValues(alpha: 0.98),
+                                    const Color(0xFFF5DFA9),
+                                    Colors.white.withValues(alpha: 0.96),
+                                  ],
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                ).createShader(bounds),
+                                child: Text(
+                                  "Welcome Back",
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: titleFontSize,
+                                    fontWeight: FontWeight.w300,
+                                    letterSpacing: 0.6,
+                                    height: 1,
+                                  ),
                                 ),
                               ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  if (_isLinkedInLoading)
-                                    const SizedBox(
-                                      width: 18,
-                                      height: 18,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Color(0xFF0A66C2),
+                              const SizedBox(height: 10),
+                              Container(
+                                width: 88,
+                                height: 1.2,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      Colors.transparent,
+                                      accentGold.withValues(alpha: 0.88),
+                                      Colors.transparent,
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+                              Text(
+                                "Sign in to access your alumni dashboard",
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.78),
+                                  fontSize: isCompact ? 14 : 14.5,
+                                  height: 1.45,
+                                ),
+                              ),
+                              if (linkedInMessage.isNotEmpty ||
+                                  linkedInError.isNotEmpty) ...[
+                                const SizedBox(height: 20),
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(14),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.08),
+                                    borderRadius: BorderRadius.circular(18),
+                                    border: Border.all(
+                                      color: linkedInError.isNotEmpty
+                                          ? Colors.orangeAccent.withValues(
+                                              alpha: 0.42,
+                                            )
+                                          : accentGold.withValues(alpha: 0.28),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    linkedInMessage.isNotEmpty
+                                        ? linkedInMessage
+                                        : "LinkedIn sign-in could not be completed. Please try again.",
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12.5,
+                                      height: 1.45,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                              const SizedBox(height: 22),
+                              _buildTextField(
+                                controller: _emailController,
+                                label: "Email",
+                                icon: Icons.person_rounded,
+                              ),
+                              const SizedBox(height: 16),
+                              _buildTextField(
+                                controller: _passwordController,
+                                label: "Password",
+                                icon: Icons.lock_rounded,
+                                isPassword: true,
+                              ),
+                              const SizedBox(height: 8),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: TextButton(
+                                  onPressed: _isLoading
+                                      ? null
+                                      : _showForgotPasswordDialog,
+                                  child: Text(
+                                    "Forgot password?",
+                                    style: TextStyle(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.78,
                                       ),
-                                    )
-                                  else
-                                    Container(
-                                      width: 24,
-                                      height: 24,
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFF0A66C2),
-                                        borderRadius: BorderRadius.circular(4),
+                                      fontSize: 13,
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              SizedBox(
+                                width: double.infinity,
+                                height: 60,
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(999),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: accentGold.withValues(
+                                          alpha: 0.16,
+                                        ),
+                                        blurRadius: 22,
+                                        offset: const Offset(0, 10),
                                       ),
-                                      alignment: Alignment.center,
-                                      child: const Text(
-                                        "in",
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w800,
+                                    ],
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        accentGold.withValues(alpha: 0.98),
+                                        const Color(0xFFD5B46B),
+                                        const Color(0xFF8B6C2B),
+                                      ],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                  ),
+                                  child: ElevatedButton(
+                                    onPressed: _isLoading ? null : _handleLogin,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.transparent,
+                                      shadowColor: Colors.transparent,
+                                      foregroundColor: primaryMaroon,
+                                      disabledBackgroundColor:
+                                          Colors.transparent,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(
+                                          999,
                                         ),
                                       ),
                                     ),
-                                  const SizedBox(width: 12),
-                                  Flexible(
-                                    child: Text(
-                                      _isLinkedInLoading
-                                          ? "Starting LinkedIn..."
-                                          : "Continue with LinkedIn",
-                                      textAlign: TextAlign.center,
-                                      style: const TextStyle(
-                                        color: Color(0xFF0F172A),
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 15,
+                                    child: _isLoading
+                                        ? const SizedBox(
+                                            width: 22,
+                                            height: 22,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2.4,
+                                              color: Colors.white,
+                                            ),
+                                          )
+                                        : const Text(
+                                            "SIGN IN",
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w800,
+                                              fontSize: 18,
+                                              letterSpacing: 2,
+                                            ),
+                                          ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+                              Container(
+                                padding: const EdgeInsets.all(18),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.06),
+                                  borderRadius: BorderRadius.circular(24),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.14),
+                                  ),
+                                ),
+                                child: Column(
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Divider(
+                                            color: Colors.white.withValues(
+                                              alpha: 0.18,
+                                            ),
+                                          ),
+                                        ),
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                          ),
+                                          child: Text(
+                                            "ALUMNI SIGN-UP",
+                                            style: TextStyle(
+                                              color: Colors.white.withValues(
+                                                alpha: 0.72,
+                                              ),
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w700,
+                                              letterSpacing: 1.1,
+                                            ),
+                                          ),
+                                        ),
+                                        Expanded(
+                                          child: Divider(
+                                            color: Colors.white.withValues(
+                                              alpha: 0.18,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 16),
+                                    SizedBox(
+                                      width: double.infinity,
+                                      height: 54,
+                                      child: OutlinedButton(
+                                        onPressed: _isLinkedInLoading
+                                            ? null
+                                            : _startLinkedInSignUp,
+                                        style: OutlinedButton.styleFrom(
+                                          foregroundColor: Colors.white,
+                                          side: BorderSide(
+                                            color: Colors.white.withValues(
+                                              alpha: 0.24,
+                                            ),
+                                          ),
+                                          backgroundColor: Colors.white
+                                              .withValues(alpha: 0.08),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              18,
+                                            ),
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            if (_isLinkedInLoading)
+                                              const SizedBox(
+                                                width: 18,
+                                                height: 18,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                      color: Colors.white,
+                                                    ),
+                                              )
+                                            else
+                                              Container(
+                                                width: 24,
+                                                height: 24,
+                                                decoration: BoxDecoration(
+                                                  color: const Color(
+                                                    0xFF0A66C2,
+                                                  ),
+                                                  borderRadius:
+                                                      BorderRadius.circular(6),
+                                                ),
+                                                alignment: Alignment.center,
+                                                child: const Text(
+                                                  "in",
+                                                  style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.w800,
+                                                  ),
+                                                ),
+                                              ),
+                                            const SizedBox(width: 12),
+                                            Flexible(
+                                              child: Text(
+                                                _isLinkedInLoading
+                                                    ? "Starting LinkedIn..."
+                                                    : "Continue with LinkedIn",
+                                                textAlign: TextAlign.center,
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.w700,
+                                                  fontSize: 15,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-                          Wrap(
-                            alignment: WrapAlignment.center,
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            spacing: 4,
-                            runSpacing: 4,
-                            children: [
-                              const Text(
-                                "New Alumni User?",
-                                style: TextStyle(color: Colors.white70),
-                              ),
-                              const Text(
-                                "Register",
-                                style: TextStyle(color: Colors.white70),
-                              ),
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => const RegisterPage(),
+                                    const SizedBox(height: 12),
+                                    Wrap(
+                                      alignment: WrapAlignment.center,
+                                      spacing: 4,
+                                      runSpacing: 4,
+                                      children: [
+                                        Text(
+                                          "New Alumni User?",
+                                          style: TextStyle(
+                                            color: Colors.white.withValues(
+                                              alpha: 0.72,
+                                            ),
+                                          ),
+                                        ),
+                                        TextButton(
+                                          onPressed: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (_) =>
+                                                    const RegisterPage(),
+                                              ),
+                                            );
+                                          },
+                                          style: TextButton.styleFrom(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 6,
+                                              vertical: 4,
+                                            ),
+                                            minimumSize: Size.zero,
+                                            tapTargetSize: MaterialTapTargetSize
+                                                .shrinkWrap,
+                                          ),
+                                          child: Text(
+                                            "Register here",
+                                            style: TextStyle(
+                                              color: accentGold,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                  );
-                                },
-                                style: TextButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                    vertical: 4,
-                                  ),
-                                  minimumSize: Size.zero,
-                                  tapTargetSize:
-                                      MaterialTapTargetSize.shrinkWrap,
-                                ),
-                                child: Text(
-                                  "here",
-                                  style: TextStyle(
-                                    color: accentGold,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                  ],
                                 ),
                               ),
                             ],
                           ),
-                        ],
+                        ),
                       ),
+                    ),
+                    Positioned(
+                      top: -logoOverlap,
+                      child: _buildShieldLogo(size: logoSize),
                     ),
                   ],
                 ),
@@ -646,32 +829,143 @@ class _LoginPageState extends State<LoginPage> {
       style: const TextStyle(color: Colors.white, fontSize: 14),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: Colors.white70, fontSize: 13),
-        prefixIcon: Icon(icon, color: accentGold, size: 20),
+        labelStyle: TextStyle(
+          color: Colors.white.withValues(alpha: 0.72),
+          fontSize: 13,
+        ),
+        prefixIcon: Container(
+          margin: const EdgeInsets.only(left: 10, right: 6),
+          child: Icon(
+            icon,
+            color: accentGold.withValues(alpha: 0.92),
+            size: 21,
+          ),
+        ),
         suffixIcon: isPassword
             ? IconButton(
                 icon: Icon(
                   _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
-                  color: Colors.white70,
+                  color: Colors.white.withValues(alpha: 0.72),
                 ),
                 onPressed: () =>
                     setState(() => _isPasswordVisible = !_isPasswordVisible),
               )
             : null,
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+          borderRadius: BorderRadius.circular(24),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.28)),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: accentGold, width: 2),
+          borderRadius: BorderRadius.circular(24),
+          borderSide: BorderSide(
+            color: accentGold.withValues(alpha: 0.92),
+            width: 1.6,
+          ),
+        ),
+        disabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(24),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.18)),
         ),
         filled: true,
-        fillColor: Colors.white.withValues(alpha: 0.05),
+        fillColor: Colors.white.withValues(alpha: 0.10),
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 18,
+          horizontal: 22,
+          vertical: 22,
         ),
+      ),
+    );
+  }
+
+  Widget _buildShieldLogo({required double size}) {
+    final image = SizedBox(
+      width: size,
+      height: size,
+      child: Image.asset('assets/jmclogo.png', fit: BoxFit.contain),
+    );
+
+    Widget outlinedLayer({
+      required double dx,
+      required double dy,
+      required Color color,
+      required double opacity,
+      double scale = 1.0,
+    }) {
+      return Transform.translate(
+        offset: Offset(dx, dy),
+        child: Transform.scale(
+          scale: scale,
+          child: Opacity(
+            opacity: opacity,
+            child: ColorFiltered(
+              colorFilter: ColorFilter.mode(color, BlendMode.srcATop),
+              child: image,
+            ),
+          ),
+        ),
+      );
+    }
+
+    final outerEdge = size * 0.02;
+    final innerEdge = size * 0.009;
+
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Stack(
+        alignment: Alignment.center,
+        clipBehavior: Clip.none,
+        children: [
+          outlinedLayer(
+            dx: 0,
+            dy: size * 0.05,
+            color: Colors.black,
+            opacity: 0.22,
+            scale: 1.03,
+          ),
+          outlinedLayer(
+            dx: -outerEdge,
+            dy: 0,
+            color: const Color(0xFFFFF4D7),
+            opacity: 0.92,
+            scale: 1.028,
+          ),
+          outlinedLayer(
+            dx: outerEdge,
+            dy: 0,
+            color: const Color(0xFFFFF4D7),
+            opacity: 0.92,
+            scale: 1.028,
+          ),
+          outlinedLayer(
+            dx: 0,
+            dy: -outerEdge,
+            color: const Color(0xFFFFF4D7),
+            opacity: 0.92,
+            scale: 1.028,
+          ),
+          outlinedLayer(
+            dx: 0,
+            dy: outerEdge,
+            color: const Color(0xFFFFF4D7),
+            opacity: 0.92,
+            scale: 1.028,
+          ),
+          outlinedLayer(
+            dx: -innerEdge,
+            dy: -innerEdge,
+            color: accentGold,
+            opacity: 0.96,
+            scale: 1.015,
+          ),
+          outlinedLayer(
+            dx: innerEdge,
+            dy: innerEdge,
+            color: accentGold,
+            opacity: 0.96,
+            scale: 1.015,
+          ),
+          image,
+        ],
       ),
     );
   }

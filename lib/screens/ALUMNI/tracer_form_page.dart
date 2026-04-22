@@ -9,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../services/api_service.dart';
 import '../../services/activity_service.dart';
+import '../../state/user_store.dart';
 
 class TracerFormPageController {
   _TracerFormPageState? _state;
@@ -277,6 +278,7 @@ class _TracerFormPageState extends State<TracerFormPage>
   bool _isReadOnly = false;
   bool _isCareerUpdateMode = false;
   bool _agreeToConsent = false;
+  bool _yearGraduatedLocked = false;
   String _submissionDateIso = '';
   String? _existingSignatureBase64;
   Uint8List? _existingSignatureBytes;
@@ -697,6 +699,7 @@ class _TracerFormPageState extends State<TracerFormPage>
     };
     _submissionDateController = TextEditingController();
     _seedDefaultValues();
+    _prefillFromCurrentUser();
     _loadExistingSubmission();
   }
 
@@ -741,6 +744,52 @@ class _TracerFormPageState extends State<TracerFormPage>
     _multiSelectValues['skills'] = [];
     if (_careerTimeline.isEmpty) {
       _careerTimeline.add(_CareerTimelineEntry(isCurrent: true));
+    }
+  }
+
+  void _prefillFromCurrentUser() {
+    final user = UserStore.value;
+    if (user == null) return;
+
+    final registryGraduateId =
+        int.tryParse(
+          '${user['registryGraduateId'] ?? user['registry_graduate_id'] ?? 0}',
+        ) ??
+        0;
+    _yearGraduatedLocked =
+        user['yearGraduatedLocked'] == true ||
+        user['year_graduated_locked'] == true ||
+        registryGraduateId > 0;
+
+    void setIfEmpty(String key, String value) {
+      final normalized = value.trim();
+      if (normalized.isEmpty) return;
+      final controller = _textControllers[key];
+      if (controller != null && controller.text.trim().isEmpty) {
+        controller.text = normalized;
+      }
+    }
+
+    String readValue(List<String> keys) {
+      for (final key in keys) {
+        final value = user[key]?.toString().trim() ?? '';
+        if (value.isNotEmpty) return value;
+      }
+      return '';
+    }
+
+    setIfEmpty('name', readValue(['name']));
+    setIfEmpty('address', readValue(['address']));
+    setIfEmpty('contact', readValue(['phone', 'email']));
+    setIfEmpty(
+      'year_graduated',
+      readValue(['gradYear', 'year_graduated', 'graduation_year']),
+    );
+
+    final civilStatus = readValue(['civilStatus', 'civil_status']);
+    if (civilStatus.isNotEmpty &&
+        (_dropdownValues['civil_status'] ?? '').isEmpty) {
+      _dropdownValues['civil_status'] = civilStatus;
     }
   }
 
@@ -794,6 +843,21 @@ class _TracerFormPageState extends State<TracerFormPage>
     return _isCurrentlyEmployed ||
         entry.hasMeaningfulValue ||
         _careerTimeline.length == 1;
+  }
+
+  bool _isQuestionReadOnly(_QuestionDef question) {
+    if (_isReadOnly) return true;
+    if (question.key == 'year_graduated' && _yearGraduatedLocked) {
+      return true;
+    }
+    return false;
+  }
+
+  String? _questionHelperText(_QuestionDef question) {
+    if (question.key == 'year_graduated' && _yearGraduatedLocked) {
+      return 'This graduation year was assigned from the official graduate registry.';
+    }
+    return null;
   }
 
   _ProgramConfig _programConfig(String programCode) {
@@ -1424,14 +1488,22 @@ class _TracerFormPageState extends State<TracerFormPage>
     if ((_existingSignatureBase64 ?? '').trim().isNotEmpty) return true;
     if (_signature.isNotEmpty) return true;
     if (_careerTimeline.any((entry) => entry.hasMeaningfulValue)) return true;
-    if (_dropdownValues.values.any((value) => value?.trim().isNotEmpty ?? false)) {
+    if (_dropdownValues.values.any(
+      (value) => value?.trim().isNotEmpty ?? false,
+    )) {
       return true;
     }
-    if (_textControllers.values.any((controller) => controller.text.trim().isNotEmpty)) {
+    if (_textControllers.values.any(
+      (controller) => controller.text.trim().isNotEmpty,
+    )) {
       return true;
     }
-    if (_multiSelectValues.values.any((values) => values.isNotEmpty)) return true;
-    if (_ratingValues.values.any((value) => value > 0)) return true;
+    if (_multiSelectValues.values.any((values) => values.isNotEmpty)) {
+      return true;
+    }
+    if (_ratingValues.values.any((value) => value > 0)) {
+      return true;
+    }
     return false;
   }
 
@@ -2298,12 +2370,13 @@ class _TracerFormPageState extends State<TracerFormPage>
       case _FieldType.text:
       case _FieldType.multiline:
         final controller = _textControllers[question.key]!;
+        final helperText = _questionHelperText(question);
         return _buildQuestionCard(
           label: label,
           minHeight: question.type == _FieldType.multiline ? 194 : 146,
           child: TextFormField(
             controller: controller,
-            readOnly: _isReadOnly,
+            readOnly: _isQuestionReadOnly(question),
             maxLines: question.type == _FieldType.multiline ? 4 : 1,
             minLines: question.type == _FieldType.multiline ? 4 : 1,
             validator: question.required
@@ -2313,7 +2386,7 @@ class _TracerFormPageState extends State<TracerFormPage>
               question.type == _FieldType.multiline
                   ? 'Type your answer here'
                   : 'Enter your answer',
-            ),
+            ).copyWith(helperText: helperText),
           ),
         );
       case _FieldType.dropdown:

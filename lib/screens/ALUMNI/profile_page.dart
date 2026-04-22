@@ -52,6 +52,7 @@ class _ProfilePageState extends State<ProfilePage> {
   late String _selectedCivilStatus;
   late String _selectedGradYear;
   late String _selectedDegree;
+  late bool _yearGraduatedLocked;
   String _currentResumeFileName = '';
   String _currentResumePath = '';
   String? _selectedResumeFileName;
@@ -129,6 +130,15 @@ class _ProfilePageState extends State<ProfilePage> {
       'year_graduated',
       'graduation_year',
     ]).trim();
+    final registryGraduateId =
+        int.tryParse(
+          '${user['registryGraduateId'] ?? user['registry_graduate_id'] ?? 0}',
+        ) ??
+        0;
+    _yearGraduatedLocked =
+        user['yearGraduatedLocked'] == true ||
+        user['year_graduated_locked'] == true ||
+        registryGraduateId > 0;
     _selectedGradYear = _yearOptions.contains(gradYear)
         ? gradYear
         : (_yearOptions.isNotEmpty ? _yearOptions.first : '');
@@ -544,6 +554,10 @@ class _ProfilePageState extends State<ProfilePage> {
                                 label: "Graduation Year",
                                 value: _selectedGradYear,
                                 items: _yearOptions,
+                                enabled: !_yearGraduatedLocked,
+                                helperText: _yearGraduatedLocked
+                                    ? "This value comes from the official graduate registry and cannot be changed here."
+                                    : null,
                                 onChanged: (value) {
                                   if (value != null) {
                                     setState(() => _selectedGradYear = value);
@@ -941,6 +955,8 @@ class _ProfilePageState extends State<ProfilePage> {
     required String value,
     required List<String> items,
     required ValueChanged<String?> onChanged,
+    bool enabled = true,
+    String? helperText,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -953,8 +969,15 @@ class _ProfilePageState extends State<ProfilePage> {
             color: Color(0xFF2D2D2D),
           ),
         ),
+        if (helperText != null) ...[
+          const SizedBox(height: 4),
+          Text(
+            helperText,
+            style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+          ),
+        ],
         const SizedBox(height: 8),
-        _isEditing
+        _isEditing && enabled
             ? DropdownButtonFormField<String>(
                 initialValue: value.isNotEmpty ? value : null,
                 items: items
@@ -1008,7 +1031,9 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget _buildResumeUploadCard() {
     final fileLabel =
         _selectedResumeFileName ??
-        (_currentResumeFileName.isNotEmpty ? _currentResumeFileName : 'No resume/CV uploaded yet');
+        (_currentResumeFileName.isNotEmpty
+            ? _currentResumeFileName
+            : 'No resume/CV uploaded yet');
 
     return Container(
       width: double.infinity,
