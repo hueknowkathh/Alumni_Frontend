@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'login_screen.dart';
 import 'register_screen.dart';
 import '../services/content_service.dart';
@@ -294,13 +295,13 @@ class _LandingPageState extends State<LandingPage>
                 },
               ),
               const SizedBox(width: 12),
-              const Text(
+              Text(
                 "JMCFI ALUMNI HUB",
-                style: TextStyle(
+                style: GoogleFonts.unifrakturCook(
                   color: Colors.white,
+                  fontSize: 20,
                   fontWeight: FontWeight.w700,
-                  fontSize: 18,
-                  letterSpacing: 0.8,
+                  letterSpacing: 0.4,
                 ),
                 overflow: TextOverflow.ellipsis,
               ),
