@@ -29,6 +29,14 @@ class _TracerDataPageState extends State<TracerDataPage> {
   List<Map<String, dynamic>> _filteredList = [];
   List<Map<String, dynamic>> _signedRecords = [];
   Map<String, dynamic>? _reportData;
+  Map<String, dynamic> _summary = {
+    'total_responses': 0,
+    'total_graduates': 0,
+    'employed': 0,
+    'unemployed': 0,
+    'self_employed': 0,
+    'employment_unknown': 0,
+  };
   bool _isLoading = true;
   bool _isExportingPdf = false;
   String _generatedOn = '';
@@ -92,6 +100,9 @@ class _TracerDataPageState extends State<TracerDataPage> {
         final report = reportDecoded is Map
             ? Map<String, dynamic>.from(reportDecoded['report'] ?? const {})
             : <String, dynamic>{};
+        final summary = decoded is Map
+            ? Map<String, dynamic>.from(decoded['summary'] ?? const {})
+            : <String, dynamic>{};
         setState(() {
           _allData = SignedTracerFilter.keepSignedOnly(
             jsonData.map((item) {
@@ -134,6 +145,7 @@ class _TracerDataPageState extends State<TracerDataPage> {
           _filteredList = _allData;
           _signedRecords = signedRecords;
           _reportData = report;
+          _summary = summary;
           _generatedOn = reportDecoded is Map
               ? (reportDecoded['generated_on']?.toString() ?? '')
               : '';
@@ -252,7 +264,9 @@ class _TracerDataPageState extends State<TracerDataPage> {
                           ),
                           const SizedBox(height: 12),
                           FilledButton.icon(
-                            onPressed: _filteredList.isEmpty ? null : _exportCsv,
+                            onPressed: _filteredList.isEmpty
+                                ? null
+                                : _exportCsv,
                             style: FilledButton.styleFrom(
                               backgroundColor: accentGold,
                               foregroundColor: primaryMaroon,
@@ -350,12 +364,12 @@ class _TracerDataPageState extends State<TracerDataPage> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                    AdminAccreditationModule(
-                      reportData: _reportData,
-                      signedRows: _allData,
-                      onGenerateReport: _downloadAccreditationReport,
-                      totalResponses: _allData.length,
-                      employedCount: _employmentCount("Employed"),
+                  AdminAccreditationModule(
+                    reportData: _reportData,
+                    signedRows: _allData,
+                    onGenerateReport: _downloadAccreditationReport,
+                    totalResponses: _allData.length,
+                    employedCount: _employmentCount("Employed"),
                     selfEmployedCount: _employmentCount("Self-Employed"),
                     unemployedCount: _employmentCount("Unemployed"),
                   ),
@@ -426,7 +440,10 @@ class _TracerDataPageState extends State<TracerDataPage> {
                           SizedBox(height: 4),
                           Text(
                             'Separate signed submissions are preserved here for admin review and PDF download.',
-                            style: TextStyle(color: Colors.black54, height: 1.4),
+                            style: TextStyle(
+                              color: Colors.black54,
+                              height: 1.4,
+                            ),
                           ),
                         ],
                       ),
@@ -512,137 +529,134 @@ class _TracerDataPageState extends State<TracerDataPage> {
     final agreementVersion = (record['agreement_version'] ?? 'N/A').toString();
     final pdfUrl = (record['pdf_download_url'] ?? '').toString();
 
-      return LayoutBuilder(
-        builder: (context, constraints) {
-          final isCompact = constraints.maxWidth < 760;
-          final detailsSection = Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  Text(
-                    fullName,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact = constraints.maxWidth < 760;
+        final detailsSection = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Text(
+                  fullName,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(
+                      color: primaryMaroon.withValues(alpha: 0.14),
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
+                  child: Text(
+                    'Signed Record',
+                    style: TextStyle(
+                      color: primaryMaroon,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
                     ),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(999),
-                      border: Border.all(
-                        color: primaryMaroon.withValues(alpha: 0.14),
-                      ),
-                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: borderColor),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.tag_outlined, size: 18, color: primaryMaroon),
+                  const SizedBox(width: 10),
+                  Expanded(
                     child: Text(
-                      'Signed Record',
+                      'Reference ID: $referenceId',
                       style: TextStyle(
                         color: primaryMaroon,
-                        fontSize: 12,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 14),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: borderColor),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.tag_outlined, size: 18, color: primaryMaroon),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        'Reference ID: $referenceId',
-                        style: TextStyle(
-                          color: primaryMaroon,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 14),
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: [
-                  _buildSignedMetaChip(
-                    Icons.school_outlined,
-                    'Program: $program',
-                  ),
-                  _buildSignedMetaChip(
-                    Icons.schedule_outlined,
-                    'Signed: $signedAt',
-                  ),
-                  _buildSignedMetaChip(
-                    Icons.description_outlined,
-                    'Agreement: $agreementVersion',
-                  ),
-                ],
-              ),
-            ],
-          );
-
-          final actionSection = SizedBox(
-            width: isCompact ? double.infinity : 220,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+            ),
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
               children: [
-                FilledButton.icon(
-                  onPressed: pdfUrl.isEmpty ? null : () => _openDownload(pdfUrl),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: primaryMaroon,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 18,
-                      vertical: 16,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  icon: const Icon(Icons.picture_as_pdf_outlined),
-                  label: const Text('Download PDF'),
+                _buildSignedMetaChip(
+                  Icons.school_outlined,
+                  'Program: $program',
                 ),
-                const SizedBox(height: 10),
-                Text(
-                  pdfUrl.isEmpty
-                      ? 'PDF archive is not available yet for this record.'
-                      : 'Ready for admin review and PDF archive download.',
-                  textAlign: isCompact ? TextAlign.left : TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.grey.shade700,
-                    height: 1.45,
-                    fontSize: 12,
-                  ),
+                _buildSignedMetaChip(
+                  Icons.schedule_outlined,
+                  'Signed: $signedAt',
+                ),
+                _buildSignedMetaChip(
+                  Icons.description_outlined,
+                  'Agreement: $agreementVersion',
                 ),
               ],
             ),
-          );
+          ],
+        );
 
-          return Container(
-            margin: const EdgeInsets.only(bottom: 14),
-            padding: const EdgeInsets.all(20),
+        final actionSection = SizedBox(
+          width: isCompact ? double.infinity : 220,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              FilledButton.icon(
+                onPressed: pdfUrl.isEmpty ? null : () => _openDownload(pdfUrl),
+                style: FilledButton.styleFrom(
+                  backgroundColor: primaryMaroon,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 16,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                icon: const Icon(Icons.picture_as_pdf_outlined),
+                label: const Text('Download PDF'),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                pdfUrl.isEmpty
+                    ? 'PDF archive is not available yet for this record.'
+                    : 'Ready for admin review and PDF archive download.',
+                textAlign: isCompact ? TextAlign.left : TextAlign.center,
+                style: TextStyle(
+                  color: Colors.grey.shade700,
+                  height: 1.45,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        );
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 14),
+          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: bgLight,
             borderRadius: BorderRadius.circular(22),
@@ -653,28 +667,28 @@ class _TracerDataPageState extends State<TracerDataPage> {
                 blurRadius: 14,
                 offset: const Offset(0, 6),
               ),
-              ],
-            ),
-            child: isCompact
-                ? Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      detailsSection,
-                      const SizedBox(height: 18),
-                      actionSection,
-                    ],
-                  )
-                : Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Expanded(child: detailsSection),
-                      const SizedBox(width: 20),
-                      actionSection,
-                    ],
-                  ),
-          );
-        },
-      );
+            ],
+          ),
+          child: isCompact
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    detailsSection,
+                    const SizedBox(height: 18),
+                    actionSection,
+                  ],
+                )
+              : Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(child: detailsSection),
+                    const SizedBox(width: 20),
+                    actionSection,
+                  ],
+                ),
+        );
+      },
+    );
   }
 
   Widget _buildSignedMetaChip(IconData icon, String label) {
@@ -723,47 +737,77 @@ class _TracerDataPageState extends State<TracerDataPage> {
 
   // ignore: unused_element
   Widget _buildAnalyticsCards() {
-    int total = _allData.length;
-    int employed = _allData
-        .where((e) => e['employment_status'] == "Employed")
-        .length;
-    int selfEmployed = _allData
-        .where((e) => e['employment_status'] == "Self-Employed")
-        .length;
-    int unemployed = _allData
-        .where((e) => e['employment_status'] == "Unemployed")
-        .length;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = constraints.maxWidth >= 1100
+            ? 3
+            : constraints.maxWidth >= 700
+            ? 2
+            : 1;
+        final totalSpacing = 16.0 * (columns - 1);
+        final cardWidth = (constraints.maxWidth - totalSpacing) / columns;
 
-    return Wrap(
-      spacing: 16,
-      runSpacing: 16,
-      children: [
-        _statCard(
-          "Total Responses",
-          total.toString(),
-          Icons.people,
-          Colors.blue,
-        ),
-        _statCard("Employed", employed.toString(), Icons.work, Colors.green),
-        _statCard(
-          "Self-Employed",
-          selfEmployed.toString(),
-          Icons.storefront,
-          Colors.purple,
-        ),
-        _statCard(
-          "Unemployed",
-          unemployed.toString(),
-          Icons.person_off,
-          Colors.red,
-        ),
-      ],
+        return Wrap(
+          spacing: 16,
+          runSpacing: 16,
+          children: [
+            _statCard(
+              "Total Responses",
+              '${_summary['total_responses'] ?? 0}',
+              Icons.people,
+              Colors.blue,
+              cardWidth,
+            ),
+            _statCard(
+              "Total Graduates",
+              '${_summary['total_graduates'] ?? 0}',
+              Icons.groups,
+              accentGold,
+              cardWidth,
+            ),
+            _statCard(
+              "Employed",
+              '${_summary['employed'] ?? 0}',
+              Icons.work,
+              Colors.green,
+              cardWidth,
+            ),
+            _statCard(
+              "Unemployed",
+              '${_summary['unemployed'] ?? 0}',
+              Icons.person_off,
+              Colors.red,
+              cardWidth,
+            ),
+            _statCard(
+              "Self Employed",
+              '${_summary['self_employed'] ?? 0}',
+              Icons.storefront,
+              Colors.purple,
+              cardWidth,
+            ),
+            _statCard(
+              "Employment Unknown",
+              '${_summary['employment_unknown'] ?? 0}',
+              Icons.help_outline,
+              Colors.orange,
+              cardWidth,
+            ),
+          ],
+        );
+      },
     );
   }
 
-  Widget _statCard(String title, String value, IconData icon, Color color) {
+  Widget _statCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+    double width,
+  ) {
     return SizedBox(
-      width: 240,
+      width: width,
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
@@ -830,31 +874,23 @@ class _TracerDataPageState extends State<TracerDataPage> {
             ),
             SizedBox(
               width: isCompact ? constraints.maxWidth : null,
-              child: _dropdown(
-                "Status",
-                selectedStatus,
-                _statusOptions,
-                (val) {
-                  setState(() {
-                    selectedStatus = val!;
-                    _runFilter();
-                  });
-                },
-              ),
+              child: _dropdown("Status", selectedStatus, _statusOptions, (val) {
+                setState(() {
+                  selectedStatus = val!;
+                  _runFilter();
+                });
+              }),
             ),
             SizedBox(
               width: isCompact ? constraints.maxWidth : null,
-              child: _dropdown(
-                "Related",
-                selectedRelated,
-                _relatedOptions,
-                (val) {
-                  setState(() {
-                    selectedRelated = val!;
-                    _runFilter();
-                  });
-                },
-              ),
+              child: _dropdown("Related", selectedRelated, _relatedOptions, (
+                val,
+              ) {
+                setState(() {
+                  selectedRelated = val!;
+                  _runFilter();
+                });
+              }),
             ),
           ],
         );
@@ -949,7 +985,9 @@ class _TracerDataPageState extends State<TracerDataPage> {
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: borderColor),
               ),
-              child: const Text('No tracer responses matched the current filters.'),
+              child: const Text(
+                'No tracer responses matched the current filters.',
+              ),
             );
           }
 

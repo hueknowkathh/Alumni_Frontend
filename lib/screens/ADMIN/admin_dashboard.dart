@@ -156,10 +156,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-    Widget _buildDashboardContent(double contentWidth) {
+  Widget _buildDashboardContent(double contentWidth) {
     final isNarrow = contentWidth < 900;
-    final horizontalPadding = contentWidth < 600 ? 32.0 : 64.0;
-    final availableWidth = contentWidth - horizontalPadding;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -178,47 +176,67 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
         const SizedBox(height: 32),
 
-        Wrap(
-          spacing: 16,
-          runSpacing: 16,
-          children: [
-            _buildStatCard(
-              "Total Graduates",
-              (liveStats['total_graduates'] ?? liveStats['total_alumni'] ?? 0)
-                  .toString(),
-              Icons.people_outline,
-              Colors.blue,
-              availableWidth,
-            ),
-            _buildStatCard(
-              "Registered Alumni",
-              (liveStats['registered_alumni'] ?? 0).toString(),
-              Icons.verified_user_outlined,
-              Colors.teal,
-              availableWidth,
-            ),
-            _buildStatCard(
-              "Pending Verification",
-              liveStats['pending_users'].toString(),
-              Icons.hourglass_top,
-              Colors.red,
-              availableWidth,
-            ),
-            _buildStatCard(
-              "Tracer Submissions",
-              liveStats['tracer_submissions'].toString(),
-              Icons.assignment_outlined,
-              Colors.green,
-              availableWidth,
-            ),
-            _buildStatCard(
-              "Employment Rate",
-              "${liveStats['employment_rate']}%",
-              Icons.trending_up,
-              accentGold,
-              availableWidth,
-            ),
-          ],
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final cardAreaWidth = constraints.maxWidth;
+            final cards = [
+              _buildStatCard(
+                "Total Graduates",
+                (liveStats['total_graduates'] ?? liveStats['total_alumni'] ?? 0)
+                    .toString(),
+                Icons.people_outline,
+                Colors.blue,
+              ),
+              _buildStatCard(
+                "Registered Alumni",
+                (liveStats['registered_alumni'] ?? 0).toString(),
+                Icons.verified_user_outlined,
+                Colors.teal,
+              ),
+              _buildStatCard(
+                "Pending Verification",
+                liveStats['pending_users'].toString(),
+                Icons.hourglass_top,
+                Colors.red,
+              ),
+              _buildStatCard(
+                "Tracer Submissions",
+                liveStats['tracer_submissions'].toString(),
+                Icons.assignment_outlined,
+                Colors.green,
+              ),
+              _buildStatCard(
+                "Employment Rate",
+                "${liveStats['employment_rate']}%",
+                Icons.trending_up,
+                accentGold,
+              ),
+            ];
+
+            if (cardAreaWidth >= 900) {
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (var i = 0; i < cards.length; i++) ...[
+                    Expanded(child: cards[i]),
+                    if (i != cards.length - 1) const SizedBox(width: 16),
+                  ],
+                ],
+              );
+            }
+
+            final columns = cardAreaWidth >= 600 ? 2 : 1;
+            final totalSpacing = 16.0 * (columns - 1);
+            final cardWidth = (cardAreaWidth - totalSpacing) / columns;
+
+            return Wrap(
+              spacing: 16,
+              runSpacing: 16,
+              children: cards
+                  .map((card) => SizedBox(width: cardWidth, child: card))
+                  .toList(),
+            );
+          },
         ),
 
         const SizedBox(height: 32),
@@ -385,10 +403,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  Widget _buildHeroHeader({
-    required String name,
-    required bool isNarrow,
-  }) {
+  Widget _buildHeroHeader({required String name, required bool isNarrow}) {
     return LuxuryModuleBanner(
       title: 'Welcome back, $name!',
       description:
@@ -429,74 +444,65 @@ class _AdminDashboardState extends State<AdminDashboard> {
       ],
     );
   }
+
   Widget _buildStatCard(
     String label,
     String value,
     IconData icon,
     Color color,
-    double availableWidth,
   ) {
-    return SizedBox(
-      width: availableWidth < 700
-          ? double.infinity
-          : availableWidth >= 1180
-          ? (availableWidth - 48) / 4
-          : availableWidth >= 760
-          ? (availableWidth - 16) / 2
-          : double.infinity,
-      child: Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border(top: BorderSide(color: color, width: 4)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final isCompact = constraints.maxWidth < 110;
-                if (isCompact) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(icon, color: color),
-                      const SizedBox(height: 8),
-                      Text(
-                        value,
-                        style: const TextStyle(
-                          fontSize: 26,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  );
-                }
-
-                return Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border(top: BorderSide(color: color, width: 4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isCompact = constraints.maxWidth < 110;
+              if (isCompact) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Flexible(
-                      child: Text(
-                        value,
-                        style: const TextStyle(
-                          fontSize: 26,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        overflow: TextOverflow.ellipsis,
+                    Icon(icon, color: color),
+                    const SizedBox(height: 8),
+                    Text(
+                      value,
+                      style: const TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Icon(icon, color: color),
                   ],
                 );
-              },
-            ),
-            const SizedBox(height: 8),
-            Text(label, style: TextStyle(color: Colors.grey.shade600)),
-          ],
-        ),
+              }
+
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Flexible(
+                    child: Text(
+                      value,
+                      style: const TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(icon, color: color),
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: 8),
+          Text(label, style: TextStyle(color: Colors.grey.shade600)),
+        ],
       ),
     );
   }

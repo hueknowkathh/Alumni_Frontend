@@ -25,6 +25,12 @@ class _CareerOverviewPageState extends State<CareerOverviewPage> {
 
   Map<String, dynamic> _summary = {
     'total_alumni': 0,
+    'total_graduates': 0,
+    'total_responses': 0,
+    'employed': 0,
+    'unemployed': 0,
+    'self_employed': 0,
+    'employment_unknown': 0,
     'employment_rate': 0,
     'unemployment_rate': 0,
     'submissions': 0,
@@ -267,8 +273,8 @@ class _CareerOverviewPageState extends State<CareerOverviewPage> {
                       const SizedBox(height: 24),
                       LayoutBuilder(
                         builder: (context, constraints) {
-                          final cardWidth = constraints.maxWidth >= 1180
-                              ? (constraints.maxWidth - 48) / 4
+                          final cardWidth = constraints.maxWidth >= 1100
+                              ? (constraints.maxWidth - 32) / 3
                               : constraints.maxWidth >= 760
                               ? (constraints.maxWidth - 16) / 2
                               : constraints.maxWidth;
@@ -277,31 +283,45 @@ class _CareerOverviewPageState extends State<CareerOverviewPage> {
                             runSpacing: 16,
                             children: [
                               _buildSummaryCard(
+                                'Total Responses',
+                                '${_summary['total_responses'] ?? _summary['submissions'] ?? 0}',
+                                Icons.assignment_turned_in_outlined,
+                                accentGold,
+                                cardWidth,
+                              ),
+                              _buildSummaryCard(
                                 'Total Graduates',
-                                '${_summary['total_alumni'] ?? 0}',
+                                '${_summary['total_graduates'] ?? _summary['total_alumni'] ?? 0}',
                                 Icons.groups,
                                 Colors.blue,
                                 cardWidth,
                               ),
                               _buildSummaryCard(
-                                'Employment Rate',
-                                '${_summary['employment_rate'] ?? 0}%',
+                                'Employed',
+                                '${_summary['employed'] ?? 0}',
                                 Icons.work,
                                 Colors.green,
                                 cardWidth,
                               ),
                               _buildSummaryCard(
-                                'Unemployment Rate',
-                                '${_summary['unemployment_rate'] ?? 0}%',
+                                'Unemployed',
+                                '${_summary['unemployed'] ?? 0}',
                                 Icons.person_off,
                                 Colors.red,
                                 cardWidth,
                               ),
                               _buildSummaryCard(
-                                'Tracer Submissions',
-                                '${_summary['submissions'] ?? 0}',
-                                Icons.assignment_turned_in_outlined,
-                                accentGold,
+                                'Self Employed',
+                                '${_summary['self_employed'] ?? 0}',
+                                Icons.storefront_outlined,
+                                Colors.purple,
+                                cardWidth,
+                              ),
+                              _buildSummaryCard(
+                                'Employment Unknown',
+                                '${_summary['employment_unknown'] ?? 0}',
+                                Icons.help_outline,
+                                Colors.orange,
                                 cardWidth,
                               ),
                             ],
@@ -472,7 +492,9 @@ class _CareerOverviewPageState extends State<CareerOverviewPage> {
       ),
       child: const Icon(Icons.refresh_rounded),
     );
-    return expanded ? Align(alignment: Alignment.center, child: button) : button;
+    return expanded
+        ? Align(alignment: Alignment.center, child: button)
+        : button;
   }
 
   Widget _buildSectionCard(String title, Widget child) {
