@@ -7,7 +7,7 @@ RUN flutter pub get
 
 COPY . .
 
-ARG API_BASE_URL=http://localhost:8080/alumni_php
+ARG API_BASE_URL=https://alumni-backend-vjqe.onrender.com
 RUN flutter build web --release --dart-define=API_BASE_URL=${API_BASE_URL}
 
 FROM nginx:alpine

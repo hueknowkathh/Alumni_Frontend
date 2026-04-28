@@ -15,7 +15,7 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        API_BASE_URL: http://localhost/alumni_php
+        API_BASE_URL: https://alumni-backend-vjqe.onrender.com
     image: alumni-frontend:latest
     container_name: alumni_frontend
     restart: unless-stopped
