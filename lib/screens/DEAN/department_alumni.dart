@@ -163,20 +163,28 @@ class _DepartmentAlumniPageState extends State<DepartmentAlumniPage> {
 
   List<List<String>> _buildDepartmentExportRows() {
     final summaryRows = [
-      ['Generated On', _formatReportDate(DateTime.now()), '', '', ''],
-      ['Program Filter', selectedProgram, '', '', ''],
-      ['Batch Filter', selectedBatch, '', '', ''],
-      ['Status Filter', selectedStatus, '', '', ''],
+      ['Generated On', _formatReportDate(DateTime.now()), '', '', '', ''],
+      ['Program Filter', selectedProgram, '', '', '', ''],
+      ['Batch Filter', selectedBatch, '', '', '', ''],
+      ['Status Filter', selectedStatus, '', '', '', ''],
       [
         'Total Graduates',
         '${_summary['total_graduates'] ?? 0}',
         '',
         '',
         '',
+        '',
       ],
-      ['Employment Rate', '${_summary['employment_rate'] ?? '0%'}', '', '', ''],
-      ['Job Alignment', '${_summary['job_alignment'] ?? '0%'}', '', '', ''],
-      ['', '', '', '', ''],
+      [
+        'Employment Rate',
+        '${_summary['employment_rate'] ?? '0%'}',
+        '',
+        '',
+        '',
+        '',
+      ],
+      ['Job Alignment', '${_summary['job_alignment'] ?? '0%'}', '', '', '', ''],
+      ['', '', '', '', '', ''],
     ];
 
     final dataRows = _filteredAlumni
@@ -185,6 +193,7 @@ class _DepartmentAlumniPageState extends State<DepartmentAlumniPage> {
             (alumni['name'] ?? 'N/A').toString(),
             (alumni['year'] ?? 'N/A').toString(),
             (alumni['status'] ?? 'N/A').toString(),
+            (alumni['tracer_status'] ?? 'Not Submitted').toString(),
             (alumni['company'] ?? 'N/A').toString(),
             alumni['alignment'] == true ? 'Aligned' : 'Review Needed',
           ],
@@ -337,14 +346,16 @@ class _DepartmentAlumniPageState extends State<DepartmentAlumniPage> {
                         0: const pw.FlexColumnWidth(2.3),
                         1: const pw.FlexColumnWidth(0.9),
                         2: const pw.FlexColumnWidth(1.3),
-                        3: const pw.FlexColumnWidth(2),
-                        4: const pw.FlexColumnWidth(1.2),
+                        3: const pw.FlexColumnWidth(1.2),
+                        4: const pw.FlexColumnWidth(2),
+                        5: const pw.FlexColumnWidth(1.2),
                       },
                       children: [
                         _pdfRow([
                           'Name',
                           'Year',
                           'Status',
+                          'Tracer',
                           'Company',
                           'Alignment',
                         ], isHeader: true),
@@ -356,6 +367,8 @@ class _DepartmentAlumniPageState extends State<DepartmentAlumniPage> {
                             (alumni['name'] ?? 'N/A').toString(),
                             (alumni['year'] ?? 'N/A').toString(),
                             (alumni['status'] ?? 'N/A').toString(),
+                            (alumni['tracer_status'] ?? 'Not Submitted')
+                                .toString(),
                             (alumni['company'] ?? 'N/A').toString(),
                             alignment,
                           ]);
@@ -464,7 +477,14 @@ class _DepartmentAlumniPageState extends State<DepartmentAlumniPage> {
       final path = await CsvExportService.exportRows(
         filename:
             'department_alumni_${DateTime.now().millisecondsSinceEpoch}.csv',
-        headers: const ['Name', 'Year', 'Status', 'Company', 'Alignment'],
+        headers: const [
+          'Name',
+          'Year',
+          'Status',
+          'Tracer',
+          'Company',
+          'Alignment',
+        ],
         rows: _buildDepartmentExportRows(),
       );
       if (!mounted) return;
@@ -772,6 +792,12 @@ class _DepartmentAlumniPageState extends State<DepartmentAlumniPage> {
                     ),
                     DataColumn(
                       label: Text(
+                        "Tracer",
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    DataColumn(
+                      label: Text(
                         "Company/Organization",
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
@@ -799,6 +825,12 @@ class _DepartmentAlumniPageState extends State<DepartmentAlumniPage> {
                             ),
                             DataCell(Text(a['year'].toString())),
                             DataCell(_buildStatusBadge(a['status'] ?? 'N/A')),
+                            DataCell(
+                              _buildTracerBadge(
+                                (a['tracer_status'] ?? 'Not Submitted')
+                                    .toString(),
+                              ),
+                            ),
                             DataCell(Text(a['company'] ?? 'N/A')),
                             DataCell(
                               Center(
@@ -1090,6 +1122,28 @@ class _DepartmentAlumniPageState extends State<DepartmentAlumniPage> {
     Color color = status == "Employed"
         ? Colors.green
         : (status == "Unemployed" ? Colors.red : Colors.orange);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        status,
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTracerBadge(String status) {
+    final normalized = status.toLowerCase();
+    final color = normalized == 'submitted'
+        ? Colors.green
+        : (normalized == 'form draft' ? accentGold : Colors.grey);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
