@@ -851,7 +851,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
               return PieChartSectionData(
                 value: (data['value'] ?? 0).toDouble(),
-                title: "", // Clean look
+                title: "${(((data['value'] ?? 0) / totalSubmissions) * 100).toStringAsFixed(0)}%",
+                titleStyle: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
                 radius: isTouched ? 60 : 50, // Zoom on hover/tap
                 color: getSectorColor(sectorName), // Use helper function
               );
