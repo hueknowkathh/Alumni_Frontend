@@ -742,31 +742,14 @@ class _GraduateRegistryPageState extends State<GraduateRegistryPage> {
                   return DataRow(
                     cells: [
                       DataCell(
-                        SizedBox(
-                          width: 260,
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                (row['full_name'] ?? 'N/A').toString(),
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                (row['email'] ?? 'No email').toString().isEmpty
-                                    ? 'No email'
-                                    : (row['email'] ?? 'No email').toString(),
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Colors.grey,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
+                       SizedBox(
+                         width: 260,
+                          child: Text(
+                            (row['full_name'] ?? 'N/A').toString(),
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
                       ),
