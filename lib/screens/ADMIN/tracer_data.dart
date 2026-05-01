@@ -76,7 +76,10 @@ class _TracerDataPageState extends State<TracerDataPage> {
     setState(() => _isLoading = true);
     try {
       final response = await http.get(
-        ApiService.uri('get_tracer_submissions.php'),
+        ApiService.uri(
+          'get_tracer_submissions.php',
+          queryParameters: {'include_drafts': '1'},
+        ),
         headers: ApiService.authHeaders(),
       );
       final reportResponse = await http.get(

@@ -250,6 +250,20 @@ class _LandingPageState extends State<LandingPage>
         : screenWidth < 1000
         ? 24.0
         : 40.0;
+    final brandTitleSize = screenWidth < 420
+        ? 15.0
+        : screenWidth < 640
+        ? 17.5
+        : screenWidth < 1000
+        ? 20.0
+        : 22.5;
+    final brandSubtitleSize = screenWidth < 420
+        ? 9.0
+        : screenWidth < 640
+        ? 10.5
+        : screenWidth < 1000
+        ? 12.0
+        : 13.0;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       height: 80,
@@ -283,29 +297,55 @@ class _LandingPageState extends State<LandingPage>
       child: Row(
         children: [
           // Logo Section
-          Row(
-            children: [
-              Image.asset(
-                'assets/jmclogo.png',
-                height: 52,
-                width: 52,
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) {
-                  return Icon(Icons.school, color: accentGold, size: 38);
-                },
-              ),
-              const SizedBox(width: 12),
-              Text(
-                "JMCFI ALUMNI HUB",
-                style: GoogleFonts.unifrakturCook(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.4,
+          Flexible(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Image.asset(
+                  'assets/jmclogo.png',
+                  height: 52,
+                  width: 52,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Icon(Icons.school, color: accentGold, size: 38);
+                  },
                 ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
+                const SizedBox(width: 12),
+                Flexible(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        "JOSE MARIA COLLEGE",
+                        maxLines: 1,
+                        style: GoogleFonts.unifrakturCook(
+                          color: Colors.white,
+                          fontSize: brandTitleSize,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.35,
+                          height: 1,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        "FOUNDATION, INC.",
+                        maxLines: 1,
+                        style: GoogleFonts.cinzel(
+                          color: Colors.white,
+                          fontSize: brandSubtitleSize,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.9,
+                          height: 1.1,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
           const Spacer(),
           if (isMobile)
