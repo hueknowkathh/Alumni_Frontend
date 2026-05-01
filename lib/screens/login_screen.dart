@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -142,32 +143,94 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Future<Map<String, dynamic>> _requestForgotPassword({
+  Future<Map<String, dynamic>> _sendPasswordResetCode({
     required String email,
+  }) async {
+    try {
+      final response = await http.post(
+        ApiService.uri('forgot_password.php'),
+        headers: ApiService.jsonHeaders(),
+        body: jsonEncode({'email': email.trim(), 'action': 'request'}),
+      );
+
+      Map<String, dynamic> data = <String, dynamic>{};
+      try {
+        final decoded = jsonDecode(response.body);
+        data = decoded is Map<String, dynamic> ? decoded : <String, dynamic>{};
+      } catch (decodeError) {
+        debugPrint('Forgot password decode error: $decodeError');
+        final message = response.body.trim().isNotEmpty
+            ? 'Server returned invalid JSON: ${response.body.trim()}'
+            : 'Server returned an invalid response.';
+        return {'ok': false, 'message': message};
+      }
+
+      final bool success =
+          response.statusCode == 200 &&
+          (data['status']?.toString().toLowerCase() == 'success' ||
+              data['message'] != null);
+      return {
+        'ok': success,
+        'message':
+            data['message']?.toString() ??
+            (response.statusCode == 200
+                ? 'A verification code was sent if the account exists.'
+                : 'Unable to send reset code.'),
+      };
+    } catch (e) {
+      debugPrint('Forgot password request error: $e');
+      return {
+        'ok': false,
+        'message': 'Unable to send reset code right now. Error: $e',
+      };
+    }
+  }
+
+  Future<Map<String, dynamic>> _submitPasswordReset({
+    required String email,
+    required String verificationCode,
     required String newPassword,
   }) async {
     try {
       final response = await http.post(
         ApiService.uri('forgot_password.php'),
         headers: ApiService.jsonHeaders(),
-        body: jsonEncode({"email": email.trim(), "newPassword": newPassword}),
+        body: jsonEncode({
+          'email': email.trim(),
+          'verification_code': verificationCode.trim(),
+          'newPassword': newPassword,
+        }),
       );
 
-      final decoded = jsonDecode(response.body);
-      final data = decoded is Map<String, dynamic>
-          ? decoded
-          : <String, dynamic>{};
+      Map<String, dynamic> data = <String, dynamic>{};
+      try {
+        final decoded = jsonDecode(response.body);
+        data = decoded is Map<String, dynamic> ? decoded : <String, dynamic>{};
+      } catch (decodeError) {
+        debugPrint('Submit password decode error: $decodeError');
+        final message = response.body.trim().isNotEmpty
+            ? 'Server returned invalid JSON: ${response.body.trim()}'
+            : 'Server returned an invalid response.';
+        return {'ok': false, 'message': message};
+      }
+
+      final bool success =
+          response.statusCode == 200 &&
+          data['status']?.toString().toLowerCase() == 'success';
       return {
-        'ok': response.statusCode == 200,
+        'ok': success,
         'message':
             data['message']?.toString() ??
             (response.statusCode == 200
-                ? "Password reset successful."
-                : "Unable to reset password."),
+                ? 'Password reset successful.'
+                : 'Unable to reset password.'),
       };
     } catch (e) {
-      debugPrint("Forgot password error: $e");
-      return {'ok': false, 'message': 'Unable to reset password right now.'};
+      debugPrint('Submit password request error: $e');
+      return {
+        'ok': false,
+        'message': 'Unable to reset password right now. Error: $e',
+      };
     }
   }
 
@@ -175,125 +238,416 @@ class _LoginPageState extends State<LoginPage> {
     final emailController = TextEditingController(
       text: _emailController.text.trim(),
     );
+    final verificationCodeController = TextEditingController();
     final newPasswordController = TextEditingController();
     final confirmPasswordController = TextEditingController();
     final formKey = GlobalKey<FormState>();
     bool isPasswordVisible = false;
     bool isSubmitting = false;
+    bool codeSent = false;
+    bool statusIsError = false;
+    String statusMessage =
+        'Enter your email and we will send a verification code to reset your password.';
 
     showDialog(
       context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (dialogInnerContext, setDialogState) => AlertDialog(
-          title: const Text("Forgot Password"),
-          content: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(labelText: "Email"),
-                  validator: (value) => EmailValidator.validate(value ?? ''),
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: newPasswordController,
-                  obscureText: !isPasswordVisible,
-                  decoration: InputDecoration(
-                    labelText: "New Password",
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        isPasswordVisible
-                            ? Icons.visibility
-                            : Icons.visibility_off,
-                      ),
-                      onPressed: () => setDialogState(
-                        () => isPasswordVisible = !isPasswordVisible,
-                      ),
-                    ),
-                  ),
-                  validator: (value) => PasswordPolicy.validate(
-                    value ?? '',
-                    fieldLabel: 'New password',
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: confirmPasswordController,
-                  obscureText: !isPasswordVisible,
-                  decoration: const InputDecoration(
-                    labelText: "Confirm New Password",
-                  ),
-                  validator: (value) {
-                    if ((value ?? '').trim().isEmpty) {
-                      return 'Confirm password is required.';
-                    }
-                    if (value != newPasswordController.text) {
-                      return 'Passwords do not match.';
-                    }
-                    return null;
-                  },
-                ),
-              ],
-            ),
+      builder: (dialogContext) {
+        final dialogWidth = min(
+          540.0,
+          MediaQuery.of(dialogContext).size.width - 48.0,
+        );
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 24.0,
+            vertical: 24.0,
           ),
-          actions: [
-            TextButton(
-              onPressed: isSubmitting
-                  ? null
-                  : () => Navigator.pop(dialogContext),
-              child: const Text("Cancel"),
-            ),
-            ElevatedButton(
-              onPressed: isSubmitting
-                  ? null
-                  : () async {
-                      if (!formKey.currentState!.validate()) return;
-                      setDialogState(() => isSubmitting = true);
-                      final result = await _requestForgotPassword(
-                        email: emailController.text,
-                        newPassword: newPasswordController.text,
-                      );
-                      if (!mounted) return;
-                      if (dialogContext.mounted) {
-                        Navigator.pop(dialogContext);
-                      }
-                      showDialog(
-                        context: context,
-                        builder: (_) => AlertDialog(
-                          title: Text(
-                            result['ok'] == true
-                                ? "Password Reset"
-                                : "Reset Failed",
-                          ),
-                          content: Text(
-                            result['message']?.toString() ??
-                                'Unable to reset password.',
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: const Text("OK"),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: dialogWidth),
+            child: StatefulBuilder(
+              builder: (dialogInnerContext, setDialogState) {
+                final titleText = codeSent
+                    ? 'Confirm Reset Code'
+                    : 'Forgot Password';
+                final subtitleText = codeSent
+                    ? 'Enter the code sent to your email and choose a new password.'
+                    : 'Submit your email to receive a verification code.';
+
+                return Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(28.0),
+                    color: primaryMaroon,
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.18),
+                      width: 1.2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.32),
+                        blurRadius: 24,
+                        offset: const Offset(0, 14),
+                      ),
+                    ],
+                  ),
+                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 18),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                titleText,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            IconButton(
+                              icon: Icon(
+                                Icons.close,
+                                color: Colors.white.withValues(alpha: 0.8),
+                              ),
+                              onPressed: isSubmitting
+                                  ? null
+                                  : () => Navigator.pop(dialogContext),
                             ),
                           ],
                         ),
-                      );
-                    },
-              child: isSubmitting
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text("Reset Password"),
+                        const SizedBox(height: 6),
+                        Text(
+                          subtitleText,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.80),
+                            fontSize: 13.5,
+                            height: 1.4,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Form(
+                          key: formKey,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              TextFormField(
+                                controller: emailController,
+                                keyboardType: TextInputType.emailAddress,
+                                style: const TextStyle(color: Colors.white),
+                                decoration: InputDecoration(
+                                  labelText: 'Email',
+                                  labelStyle: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.72),
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.white.withValues(
+                                    alpha: 0.08,
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                    borderSide: BorderSide(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.18,
+                                      ),
+                                    ),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                    borderSide: BorderSide(
+                                      color: accentGold.withValues(alpha: 0.92),
+                                      width: 1.4,
+                                    ),
+                                  ),
+                                ),
+                                validator: (value) =>
+                                    EmailValidator.validate(value ?? ''),
+                              ),
+                              if (codeSent) ...[
+                                const SizedBox(height: 14),
+                                TextFormField(
+                                  controller: verificationCodeController,
+                                  keyboardType: TextInputType.number,
+                                  style: const TextStyle(color: Colors.white),
+                                  decoration: InputDecoration(
+                                    labelText: 'Verification Code',
+                                    labelStyle: TextStyle(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.72,
+                                      ),
+                                    ),
+                                    filled: true,
+                                    fillColor: Colors.white.withValues(
+                                      alpha: 0.08,
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(20),
+                                      borderSide: BorderSide(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.18,
+                                        ),
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(20),
+                                      borderSide: BorderSide(
+                                        color: accentGold.withValues(
+                                          alpha: 0.92,
+                                        ),
+                                        width: 1.4,
+                                      ),
+                                    ),
+                                  ),
+                                  validator: (value) {
+                                    if ((value ?? '').trim().isEmpty) {
+                                      return 'Verification code is required.';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                                const SizedBox(height: 14),
+                                TextFormField(
+                                  controller: newPasswordController,
+                                  obscureText: !isPasswordVisible,
+                                  style: const TextStyle(color: Colors.white),
+                                  decoration: InputDecoration(
+                                    labelText: 'New Password',
+                                    labelStyle: TextStyle(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.72,
+                                      ),
+                                    ),
+                                    filled: true,
+                                    fillColor: Colors.white.withValues(
+                                      alpha: 0.08,
+                                    ),
+                                    suffixIcon: IconButton(
+                                      icon: Icon(
+                                        isPasswordVisible
+                                            ? Icons.visibility
+                                            : Icons.visibility_off,
+                                        color: Colors.white.withValues(
+                                          alpha: 0.72,
+                                        ),
+                                      ),
+                                      onPressed: () => setDialogState(
+                                        () => isPasswordVisible =
+                                            !isPasswordVisible,
+                                      ),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(20),
+                                      borderSide: BorderSide(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.18,
+                                        ),
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(20),
+                                      borderSide: BorderSide(
+                                        color: accentGold.withValues(
+                                          alpha: 0.92,
+                                        ),
+                                        width: 1.4,
+                                      ),
+                                    ),
+                                  ),
+                                  validator: (value) => PasswordPolicy.validate(
+                                    value ?? '',
+                                    fieldLabel: 'New password',
+                                  ),
+                                ),
+                                const SizedBox(height: 14),
+                                TextFormField(
+                                  controller: confirmPasswordController,
+                                  obscureText: !isPasswordVisible,
+                                  style: const TextStyle(color: Colors.white),
+                                  decoration: InputDecoration(
+                                    labelText: 'Confirm New Password',
+                                    labelStyle: TextStyle(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.72,
+                                      ),
+                                    ),
+                                    filled: true,
+                                    fillColor: Colors.white.withValues(
+                                      alpha: 0.08,
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(20),
+                                      borderSide: BorderSide(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.18,
+                                        ),
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(20),
+                                      borderSide: BorderSide(
+                                        color: accentGold.withValues(
+                                          alpha: 0.92,
+                                        ),
+                                        width: 1.4,
+                                      ),
+                                    ),
+                                  ),
+                                  validator: (value) {
+                                    if ((value ?? '').trim().isEmpty) {
+                                      return 'Confirm password is required.';
+                                    }
+                                    if (value != newPasswordController.text) {
+                                      return 'Passwords do not match.';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                              ],
+                              const SizedBox(height: 18),
+                              Text(
+                                statusMessage,
+                                style: TextStyle(
+                                  color: statusIsError
+                                      ? Colors.redAccent
+                                      : Colors.white.withValues(alpha: 0.78),
+                                  fontSize: 13,
+                                  height: 1.35,
+                                ),
+                              ),
+                              const SizedBox(height: 18),
+                            ],
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: isSubmitting
+                                    ? null
+                                    : () => Navigator.pop(dialogContext),
+                                style: OutlinedButton.styleFrom(
+                                  side: BorderSide(
+                                    color: Colors.white.withValues(alpha: 0.28),
+                                  ),
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 16,
+                                  ),
+                                ),
+                                child: const Text('Cancel'),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: isSubmitting
+                                    ? null
+                                    : () async {
+                                        if (!formKey.currentState!.validate()) {
+                                          return;
+                                        }
+                                        setDialogState(() {
+                                          isSubmitting = true;
+                                          statusMessage = '';
+                                        });
+
+                                        if (!codeSent) {
+                                          final result =
+                                              await _sendPasswordResetCode(
+                                                email: emailController.text,
+                                              );
+                                          if (!dialogContext.mounted) return;
+                                          setDialogState(() {
+                                            isSubmitting = false;
+                                            codeSent = result['ok'] == true;
+                                            statusIsError =
+                                                result['ok'] != true;
+                                            statusMessage =
+                                                result['message']?.toString() ??
+                                                'If the account exists, a code has been sent.';
+                                          });
+                                          return;
+                                        }
+
+                                        final result =
+                                            await _submitPasswordReset(
+                                              email: emailController.text,
+                                              verificationCode:
+                                                  verificationCodeController
+                                                      .text
+                                                      .trim(),
+                                              newPassword:
+                                                  newPasswordController.text,
+                                            );
+                                        if (!dialogContext.mounted) return;
+                                        Navigator.pop(dialogContext);
+                                        showDialog(
+                                          context: dialogContext,
+                                          builder: (_) => AlertDialog(
+                                            title: Text(
+                                              result['ok'] == true
+                                                  ? 'Password Reset'
+                                                  : 'Reset Failed',
+                                            ),
+                                            content: Text(
+                                              result['message']?.toString() ??
+                                                  'Unable to reset password.',
+                                            ),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () =>
+                                                    Navigator.pop(context),
+                                                child: const Text('OK'),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: accentGold,
+                                  foregroundColor: primaryMaroon,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 16,
+                                  ),
+                                ),
+                                child: isSubmitting
+                                    ? const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
+                                      )
+                                    : Text(
+                                        codeSent
+                                            ? 'Submit New Password'
+                                            : 'Send Code',
+                                      ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     ).then((_) {
       emailController.dispose();
+      verificationCodeController.dispose();
       newPasswordController.dispose();
       confirmPasswordController.dispose();
     });

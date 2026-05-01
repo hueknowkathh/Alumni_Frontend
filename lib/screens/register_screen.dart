@@ -32,6 +32,8 @@ class _RegisterPageState extends State<RegisterPage> {
 
   String? selectedProgram;
   bool isLoading = false;
+  bool _isPasswordVisible = false;
+  bool _isConfirmPasswordVisible = false;
 
   final List<String> programs = ['BSIT', 'BSSW'];
 
@@ -516,6 +518,11 @@ class _RegisterPageState extends State<RegisterPage> {
                                     "Password",
                                     Icons.lock_rounded,
                                     isPass: true,
+                                    passwordVisible: _isPasswordVisible,
+                                    onTogglePassword: () => setState(
+                                      () => _isPasswordVisible =
+                                          !_isPasswordVisible,
+                                    ),
                                     isSmallScreen: isSmallScreen,
                                   ),
                                   SizedBox(height: fieldGap),
@@ -524,6 +531,11 @@ class _RegisterPageState extends State<RegisterPage> {
                                     "Confirm Password",
                                     Icons.lock_clock_rounded,
                                     isPass: true,
+                                    passwordVisible: _isConfirmPasswordVisible,
+                                    onTogglePassword: () => setState(
+                                      () => _isConfirmPasswordVisible =
+                                          !_isConfirmPasswordVisible,
+                                    ),
                                     isSmallScreen: isSmallScreen,
                                   ),
                                 ] else
@@ -537,6 +549,11 @@ class _RegisterPageState extends State<RegisterPage> {
                                           "Password",
                                           Icons.lock_rounded,
                                           isPass: true,
+                                          passwordVisible: _isPasswordVisible,
+                                          onTogglePassword: () => setState(
+                                            () => _isPasswordVisible =
+                                                !_isPasswordVisible,
+                                          ),
                                           isSmallScreen: isSmallScreen,
                                         ),
                                       ),
@@ -547,6 +564,12 @@ class _RegisterPageState extends State<RegisterPage> {
                                           "Confirm Password",
                                           Icons.lock_clock_rounded,
                                           isPass: true,
+                                          passwordVisible:
+                                              _isConfirmPasswordVisible,
+                                          onTogglePassword: () => setState(
+                                            () => _isConfirmPasswordVisible =
+                                                !_isConfirmPasswordVisible,
+                                          ),
                                           isSmallScreen: isSmallScreen,
                                         ),
                                       ),
@@ -705,10 +728,12 @@ class _RegisterPageState extends State<RegisterPage> {
     bool isPass = false,
     bool readOnly = false,
     bool isSmallScreen = false,
+    bool passwordVisible = false,
+    VoidCallback? onTogglePassword,
   }) {
     return TextFormField(
       controller: controller,
-      obscureText: isPass,
+      obscureText: isPass && !passwordVisible,
       readOnly: readOnly,
       style: TextStyle(
         color: Colors.white,
@@ -733,7 +758,17 @@ class _RegisterPageState extends State<RegisterPage> {
         ),
         suffixIcon: readOnly
             ? Icon(Icons.lock_outline, color: accentGold.withValues(alpha: 0.9))
-            : null,
+            : isPass
+                ? IconButton(
+                    icon: Icon(
+                      passwordVisible
+                          ? Icons.visibility
+                          : Icons.visibility_off,
+                      color: Colors.white.withValues(alpha: 0.72),
+                    ),
+                    onPressed: onTogglePassword,
+                  )
+                : null,
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(isSmallScreen ? 20.0 : 24.0),
           borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.28)),
