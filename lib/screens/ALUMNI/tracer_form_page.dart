@@ -116,6 +116,7 @@ class _ProgramConfig {
 
 class _CareerTimelineEntry {
   _CareerTimelineEntry({
+    this.employmentStatus = 'Employed',
     String? position,
     String? employer,
     String? employmentType,
@@ -152,10 +153,14 @@ class _CareerTimelineEntry {
   final TextEditingController salaryRangeController;
   final TextEditingController relatedToDegreeController;
   final TextEditingController notesController;
+  String employmentStatus;
   bool isCurrent;
 
   factory _CareerTimelineEntry.fromMap(Map<String, dynamic> map) {
     return _CareerTimelineEntry(
+      employmentStatus: _stringOrEmpty(map['employment_status']).isEmpty
+          ? 'Employed'
+          : _stringOrEmpty(map['employment_status']),
       position: _stringOrEmpty(map['position'] ?? map['job_title']),
       employer: _stringOrEmpty(
         map['employer'] ?? map['company'] ?? map['company_name'],
@@ -171,7 +176,7 @@ class _CareerTimelineEntry {
       relatedToDegree: _stringOrEmpty(
         map['related_to_degree'] ?? map['related_job'] ?? map['job_related'],
       ),
-      notes: _stringOrEmpty(map['notes'] ?? map['employment_status']),
+      notes: _stringOrEmpty(map['notes'] ?? map['remarks']),
       isCurrent: map['is_current'] == true || map['is_current'] == 'true',
     );
   }
@@ -209,14 +214,16 @@ class _CareerTimelineEntry {
       'related_job': relatedToDegree,
       'job_related': relatedToDegree,
       'notes': notes,
-      'employment_status': notes,
+      'employment_status': employmentStatus,
       'is_current': isCurrent,
     };
   }
 
   bool get hasMeaningfulValue =>
+      employmentStatus.trim().isNotEmpty ||
       positionController.text.trim().isNotEmpty ||
       employerController.text.trim().isNotEmpty ||
+      notesController.text.trim().isNotEmpty ||
       startDateController.text.trim().isNotEmpty;
 
   void dispose() {
@@ -845,6 +852,23 @@ class _TracerFormPageState extends State<TracerFormPage>
         _careerTimeline.length == 1;
   }
 
+  bool _timelineEntryUsesJobFields(_CareerTimelineEntry entry) {
+    final status = entry.employmentStatus.trim();
+    return status != 'Unemployed';
+  }
+
+  String _timelineEmployerLabel(_CareerTimelineEntry entry) {
+    return entry.employmentStatus == 'Self-Employed'
+        ? 'Business / Organization'
+        : 'Employer / Organization';
+  }
+
+  String _timelinePositionLabel(_CareerTimelineEntry entry) {
+    return entry.employmentStatus == 'Self-Employed'
+        ? 'Role / Occupation'
+        : 'Job Title / Position';
+  }
+
   bool _isQuestionReadOnly(_QuestionDef question) {
     if (_isReadOnly) return true;
     if (question.key == 'year_graduated' && _yearGraduatedLocked) {
@@ -1311,16 +1335,36 @@ class _TracerFormPageState extends State<TracerFormPage>
   }
 
   void _startCareerUpdate() {
+    final defaultStatus = _dropdownValues['employment_status'] == 'Unemployed'
+        ? 'Unemployed'
+        : (_dropdownValues['employment_status'] == 'Self-Employed'
+              ? 'Self-Employed'
+              : 'Employed');
     setState(() {
       _isReadOnly = false;
       _isCareerUpdateMode = true;
-      _careerTimeline.add(_CareerTimelineEntry(isCurrent: true));
+      _careerTimeline.add(
+        _CareerTimelineEntry(
+          isCurrent: defaultStatus != 'Unemployed',
+          employmentStatus: defaultStatus,
+        ),
+      );
     });
   }
 
   void _addTimelineEntry() {
+    final defaultStatus = _dropdownValues['employment_status'] == 'Unemployed'
+        ? 'Unemployed'
+        : (_dropdownValues['employment_status'] == 'Self-Employed'
+              ? 'Self-Employed'
+              : 'Employed');
     setState(() {
-      _careerTimeline.add(_CareerTimelineEntry(isCurrent: false));
+      _careerTimeline.add(
+        _CareerTimelineEntry(
+          isCurrent: defaultStatus != 'Unemployed',
+          employmentStatus: defaultStatus,
+        ),
+      );
     });
   }
 
@@ -2792,7 +2836,7 @@ class _TracerFormPageState extends State<TracerFormPage>
                     side: const BorderSide(color: _maroon),
                   ),
                   icon: const Icon(Icons.add),
-                  label: const Text('Add Job Entry'),
+                  label: const Text('Add Timeline Entry'),
                 ),
             ],
           ),
@@ -2900,65 +2944,106 @@ class _TracerFormPageState extends State<TracerFormPage>
                 children: [
                   SizedBox(
                     width: threeColumnWidth,
-                    child: TextFormField(
-                      controller: entry.positionController,
-                      readOnly: _isReadOnly,
+                    child: DropdownButtonFormField<String>(
+                      initialValue: entry.employmentStatus,
+                      isExpanded: true,
+                      decoration: _inputDecoration('Employment Status'),
+                      items: const ['Employed', 'Self-Employed', 'Unemployed']
+                          .map(
+                            (option) => DropdownMenuItem(
+                              value: option,
+                              child: Text(option),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: _isReadOnly
+                          ? null
+                          : (value) => setState(() {
+                              entry.employmentStatus =
+                                  (value ?? 'Employed').trim().isEmpty
+                                  ? 'Employed'
+                                  : value!;
+                              if (entry.employmentStatus == 'Unemployed') {
+                                entry.positionController.clear();
+                                entry.employerController.clear();
+                                entry.employmentTypeController.clear();
+                                entry.salaryRangeController.clear();
+                                entry.relatedToDegreeController.clear();
+                              } else if (entry.endDateController.text.trim().isEmpty) {
+                                entry.isCurrent = true;
+                              }
+                            }),
                       validator: (value) => _timelineEntryNeedsValidation(entry)
-                          ? _requiredFieldValidator(
-                              value,
-                              'job title / position',
-                            )
+                          ? _requiredFieldValidator(value, 'employment status')
                           : null,
-                      decoration: _inputDecoration('Job Title / Position'),
                     ),
                   ),
-                  SizedBox(
-                    width: threeColumnWidth,
-                    child: TextFormField(
-                      controller: entry.employerController,
-                      readOnly: _isReadOnly,
-                      validator: (value) => _timelineEntryNeedsValidation(entry)
-                          ? _requiredFieldValidator(
-                              value,
-                              'employer / organization',
-                            )
-                          : null,
-                      decoration: _inputDecoration('Employer / Organization'),
+                  if (_timelineEntryUsesJobFields(entry))
+                    SizedBox(
+                      width: threeColumnWidth,
+                      child: TextFormField(
+                        controller: entry.positionController,
+                        readOnly: _isReadOnly,
+                        validator: (value) => _timelineEntryNeedsValidation(entry)
+                            ? _requiredFieldValidator(
+                                value,
+                                'job title / position',
+                              )
+                            : null,
+                        decoration: _inputDecoration(_timelinePositionLabel(entry)),
+                      ),
                     ),
-                  ),
-                  SizedBox(
-                    width: threeColumnWidth,
-                    child: TextFormField(
-                      controller: entry.employmentTypeController,
-                      readOnly: _isReadOnly,
-                      validator: (value) => _timelineEntryNeedsValidation(entry)
-                          ? _requiredFieldValidator(value, 'employment type')
-                          : null,
-                      decoration: _inputDecoration('Employment Type'),
+                  if (_timelineEntryUsesJobFields(entry))
+                    SizedBox(
+                      width: threeColumnWidth,
+                      child: TextFormField(
+                        controller: entry.employerController,
+                        readOnly: _isReadOnly,
+                        validator: (value) => _timelineEntryNeedsValidation(entry)
+                            ? _requiredFieldValidator(
+                                value,
+                                'employer / organization',
+                              )
+                            : null,
+                        decoration: _inputDecoration(_timelineEmployerLabel(entry)),
+                      ),
                     ),
-                  ),
-                  SizedBox(
-                    width: fourColumnWidth,
-                    child: TextFormField(
-                      controller: entry.sectorController,
-                      readOnly: _isReadOnly,
-                      validator: (value) => _timelineEntryNeedsValidation(entry)
-                          ? _requiredFieldValidator(value, 'sector')
-                          : null,
-                      decoration: _inputDecoration('Sector'),
+                  if (_timelineEntryUsesJobFields(entry))
+                    SizedBox(
+                      width: threeColumnWidth,
+                      child: TextFormField(
+                        controller: entry.employmentTypeController,
+                        readOnly: _isReadOnly,
+                        validator: (value) => _timelineEntryNeedsValidation(entry)
+                            ? _requiredFieldValidator(value, 'employment type')
+                            : null,
+                        decoration: _inputDecoration('Employment Type'),
+                      ),
                     ),
-                  ),
-                  SizedBox(
-                    width: fourColumnWidth,
-                    child: TextFormField(
-                      controller: entry.locationController,
-                      readOnly: _isReadOnly,
-                      validator: (value) => _timelineEntryNeedsValidation(entry)
-                          ? _requiredFieldValidator(value, 'country / location')
-                          : null,
-                      decoration: _inputDecoration('Country / Location'),
+                  if (_timelineEntryUsesJobFields(entry))
+                    SizedBox(
+                      width: fourColumnWidth,
+                      child: TextFormField(
+                        controller: entry.sectorController,
+                        readOnly: _isReadOnly,
+                        validator: (value) => _timelineEntryNeedsValidation(entry)
+                            ? _requiredFieldValidator(value, 'sector')
+                            : null,
+                        decoration: _inputDecoration('Sector'),
+                      ),
                     ),
-                  ),
+                  if (_timelineEntryUsesJobFields(entry))
+                    SizedBox(
+                      width: fourColumnWidth,
+                      child: TextFormField(
+                        controller: entry.locationController,
+                        readOnly: _isReadOnly,
+                        validator: (value) => _timelineEntryNeedsValidation(entry)
+                            ? _requiredFieldValidator(value, 'country / location')
+                            : null,
+                        decoration: _inputDecoration('Country / Location'),
+                      ),
+                    ),
                   SizedBox(
                     width: fourColumnWidth,
                     child: TextFormField(
@@ -2998,35 +3083,41 @@ class _TracerFormPageState extends State<TracerFormPage>
                       ),
                     ),
                   ),
-                  SizedBox(
-                    width: twoColumnWidth,
-                    child: TextFormField(
-                      controller: entry.salaryRangeController,
-                      readOnly: _isReadOnly,
-                      validator: (value) => _timelineEntryNeedsValidation(entry)
-                          ? _requiredFieldValidator(value, 'salary range')
-                          : null,
-                      decoration: _inputDecoration('Salary Range'),
+                  if (_timelineEntryUsesJobFields(entry))
+                    SizedBox(
+                      width: twoColumnWidth,
+                      child: TextFormField(
+                        controller: entry.salaryRangeController,
+                        readOnly: _isReadOnly,
+                        validator: (value) => _timelineEntryNeedsValidation(entry)
+                            ? _requiredFieldValidator(value, 'salary range')
+                            : null,
+                        decoration: _inputDecoration('Salary Range'),
+                      ),
                     ),
-                  ),
-                  SizedBox(
-                    width: twoColumnWidth,
-                    child: TextFormField(
-                      controller: entry.relatedToDegreeController,
-                      readOnly: _isReadOnly,
-                      validator: (value) => _timelineEntryNeedsValidation(entry)
-                          ? _requiredFieldValidator(value, 'related to degree')
-                          : null,
-                      decoration: _inputDecoration('Related to Degree'),
+                  if (_timelineEntryUsesJobFields(entry))
+                    SizedBox(
+                      width: twoColumnWidth,
+                      child: TextFormField(
+                        controller: entry.relatedToDegreeController,
+                        readOnly: _isReadOnly,
+                        validator: (value) => _timelineEntryNeedsValidation(entry)
+                            ? _requiredFieldValidator(value, 'related to degree')
+                            : null,
+                        decoration: _inputDecoration('Related to Degree'),
+                      ),
                     ),
-                  ),
                   SizedBox(
                     width: availableWidth,
                     child: TextFormField(
                       controller: entry.notesController,
                       readOnly: _isReadOnly,
                       maxLines: 3,
-                      decoration: _inputDecoration('Notes / Milestones'),
+                      decoration: _inputDecoration(
+                        _timelineEntryUsesJobFields(entry)
+                            ? 'Notes / Milestones'
+                            : 'Reason / Notes',
+                      ),
                     ),
                   ),
                 ],
@@ -3044,9 +3135,11 @@ class _TracerFormPageState extends State<TracerFormPage>
                 ),
                 child: SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text(
-                    'This is my current job',
-                    style: TextStyle(fontWeight: FontWeight.w600),
+                  title: Text(
+                    _timelineEntryUsesJobFields(entry)
+                        ? 'This is my current job'
+                        : 'This is my current status',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                   value: entry.isCurrent,
                   onChanged: _isReadOnly
