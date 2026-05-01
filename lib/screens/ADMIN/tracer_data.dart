@@ -104,44 +104,44 @@ class _TracerDataPageState extends State<TracerDataPage> {
             ? Map<String, dynamic>.from(decoded['summary'] ?? const {})
             : <String, dynamic>{};
         setState(() {
-          _allData = SignedTracerFilter.keepSignedOnly(
-            jsonData.map((item) {
-              final map = Map<String, dynamic>.from(item);
-              map['full_name'] = map['full_name'] ?? map['name'] ?? 'N/A';
-              map['job_related'] =
-                  map['job_related'] ?? map['related_job'] ?? 'N/A';
-              map['company_name'] =
-                  map['company_name'] ?? map['employer'] ?? 'N/A';
-              map['contact_number'] =
-                  map['contact_number'] ?? map['contact'] ?? 'N/A';
-              map['honors'] = map['honors'] ?? map['honors_awards'] ?? 'N/A';
-              map['pre_grad_experience'] =
-                  map['pre_grad_experience'] ?? map['pre_grad_exp'] ?? 'N/A';
-              map['first_job_timing'] =
-                  map['first_job_timing'] ?? map['time_to_first_job'] ?? 'N/A';
-              map['employment_type'] =
-                  map['employment_type'] ?? map['job_type'] ?? 'N/A';
-              map['income_range'] =
-                  map['income_range'] ?? map['monthly_income'] ?? 'N/A';
-              map['not_related_reason'] =
-                  map['not_related_reason'] ??
-                  map['underutilized_reason'] ??
-                  'N/A';
-              map['job_duration'] =
-                  map['job_duration'] ?? map['employment_duration'] ?? 'N/A';
-              map['promotion'] = map['promotion'] ?? map['promoted'] ?? 'N/A';
-              map['classification'] =
-                  map['classification'] ??
-                  map['employment_classification'] ??
-                  'N/A';
-              map['satisfaction'] =
-                  map['satisfaction'] ?? map['job_satisfaction'] ?? 'N/A';
-              map['submitted_at'] =
-                  map['submitted_at'] ?? map['date_submitted'] ?? 'N/A';
-              return map;
-            }).toList(),
-            signedRecords: signedRecords,
-          );
+          _allData = jsonData.map((item) {
+            final map = Map<String, dynamic>.from(item);
+            map['full_name'] = map['full_name'] ?? map['name'] ?? 'N/A';
+            map['job_related'] =
+                map['job_related'] ?? map['related_job'] ?? 'N/A';
+            map['company_name'] =
+                map['company_name'] ?? map['employer'] ?? 'N/A';
+            map['contact_number'] =
+                map['contact_number'] ?? map['contact'] ?? 'N/A';
+            map['honors'] = map['honors'] ?? map['honors_awards'] ?? 'N/A';
+            map['pre_grad_experience'] =
+                map['pre_grad_experience'] ?? map['pre_grad_exp'] ?? 'N/A';
+            map['first_job_timing'] =
+                map['first_job_timing'] ?? map['time_to_first_job'] ?? 'N/A';
+            map['employment_type'] =
+                map['employment_type'] ?? map['job_type'] ?? 'N/A';
+            map['income_range'] =
+                map['income_range'] ?? map['monthly_income'] ?? 'N/A';
+            map['not_related_reason'] =
+                map['not_related_reason'] ??
+                map['underutilized_reason'] ??
+                'N/A';
+            map['job_duration'] =
+                map['job_duration'] ?? map['employment_duration'] ?? 'N/A';
+            map['promotion'] = map['promotion'] ?? map['promoted'] ?? 'N/A';
+            map['classification'] =
+                map['classification'] ??
+                map['employment_classification'] ??
+                'N/A';
+            map['satisfaction'] =
+                map['satisfaction'] ?? map['job_satisfaction'] ?? 'N/A';
+            map['submitted_at'] =
+                map['submitted_at'] ?? map['date_submitted'] ?? 'N/A';
+            map['has_signed_submission'] =
+                SignedTracerFilter.keepSignedOnly([map], signedRecords: signedRecords)
+                    .isNotEmpty;
+            return map;
+          }).toList();
           _filteredList = _allData;
           _signedRecords = signedRecords;
           _reportData = report;
