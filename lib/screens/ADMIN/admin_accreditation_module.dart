@@ -222,8 +222,8 @@ class AdminAccreditationModule extends StatelessWidget {
                 ),
                 _chartCard(
                   context,
-                  "BSIT vs BSSW",
-                  _comparison(report, comparisonFallback),
+                  "BSIT Outcomes",
+                  _bsitSnapshot(report, comparisonFallback),
                   chartCardWidth,
                 ),
               ],
@@ -434,7 +434,7 @@ class AdminAccreditationModule extends StatelessWidget {
     );
   }
 
-  Widget _comparison(
+  Widget _bsitSnapshot(
     _AccreditationReport report,
     _ProgramComparisonFallback fallback,
   ) {
@@ -446,34 +446,30 @@ class AdminAccreditationModule extends StatelessWidget {
 
     final rows = usesPlaceholderComparison
         ? <List<String>>[
-            const ['Metric', 'BSIT', 'BSSW'],
-            ['Signed Responses', fallback.bsitSigned, fallback.bsswSigned],
-            ['Employment', fallback.bsitEmployment, fallback.bsswEmployment],
-            ['Relevance', fallback.bsitRelevance, fallback.bsswRelevance],
-            ['Scope', '0', '0'],
+            const ['Metric', 'BSIT'],
+            ['Signed Responses', fallback.bsitSigned],
+            ['Employment', fallback.bsitEmployment],
+            ['Relevance', fallback.bsitRelevance],
+            ['Scope', fallback.bsitSigned],
           ]
         : <List<String>>[
-            const ['Metric', 'BSIT', 'BSSW'],
-            ['Employment', report.bsitEmployment, report.bsswEmployment],
-            ['Relevance', report.bsitRelevance, report.bsswRelevance],
-            ['Skills', report.bsitSkills, report.bsswSkills],
-            ['PEO', report.bsitPeo, report.bsswPeo],
-            ['Growth', report.bsitGrowth, report.bsswGrowth],
+            const ['Metric', 'BSIT'],
+            ['Employment', report.bsitEmployment],
+            ['Relevance', report.bsitRelevance],
+            ['Skills', report.bsitSkills],
+            ['PEO', report.bsitPeo],
+            ['Growth', report.bsitGrowth],
           ];
 
     return Column(
       children: rows.asMap().entries.map((entry) {
         final row = entry.value;
-        return _comparisonRow(row[0], [row[1], row[2]], header: entry.key == 0);
+        return _comparisonRow(row[0], row[1], header: entry.key == 0);
       }).toList(),
     );
   }
 
-  Widget _comparisonRow(
-    String label,
-    List<String> values, {
-    bool header = false,
-  }) {
+  Widget _comparisonRow(String label, String value, {bool header = false}) {
     final style = TextStyle(
       fontWeight: header ? FontWeight.w700 : FontWeight.w500,
       color: header ? const Color(0xFF4A152C) : Colors.black87,
@@ -496,16 +492,7 @@ class AdminAccreditationModule extends StatelessWidget {
           ),
           Expanded(
             child: Text(
-              values[0],
-              style: style,
-              textAlign: TextAlign.center,
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          Expanded(
-            child: Text(
-              values[1],
+              value,
               style: style,
               textAlign: TextAlign.center,
               maxLines: 3,

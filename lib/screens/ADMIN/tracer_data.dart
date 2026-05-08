@@ -107,43 +107,40 @@ class _TracerDataPageState extends State<TracerDataPage> {
             ? Map<String, dynamic>.from(decoded['summary'] ?? const {})
             : <String, dynamic>{};
         final normalizedData = jsonData.map((item) {
-            final map = Map<String, dynamic>.from(item);
-            map['full_name'] = map['full_name'] ?? map['name'] ?? 'N/A';
-            map['job_related'] =
-                map['job_related'] ?? map['related_job'] ?? 'N/A';
-            map['company_name'] =
-                map['company_name'] ?? map['employer'] ?? 'N/A';
-            map['contact_number'] =
-                map['contact_number'] ?? map['contact'] ?? 'N/A';
-            map['honors'] = map['honors'] ?? map['honors_awards'] ?? 'N/A';
-            map['pre_grad_experience'] =
-                map['pre_grad_experience'] ?? map['pre_grad_exp'] ?? 'N/A';
-            map['first_job_timing'] =
-                map['first_job_timing'] ?? map['time_to_first_job'] ?? 'N/A';
-            map['employment_type'] =
-                map['employment_type'] ?? map['job_type'] ?? 'N/A';
-            map['income_range'] =
-                map['income_range'] ?? map['monthly_income'] ?? 'N/A';
-            map['not_related_reason'] =
-                map['not_related_reason'] ??
-                map['underutilized_reason'] ??
-                'N/A';
-            map['job_duration'] =
-                map['job_duration'] ?? map['employment_duration'] ?? 'N/A';
-            map['promotion'] = map['promotion'] ?? map['promoted'] ?? 'N/A';
-            map['classification'] =
-                map['classification'] ??
-                map['employment_classification'] ??
-                'N/A';
-            map['satisfaction'] =
-                map['satisfaction'] ?? map['job_satisfaction'] ?? 'N/A';
-            map['submitted_at'] =
-                map['submitted_at'] ?? map['date_submitted'] ?? 'N/A';
-            map['has_signed_submission'] =
-                SignedTracerFilter.keepSignedOnly([map], signedRecords: signedRecords)
-                    .isNotEmpty;
-            return map;
-          }).toList();
+          final map = Map<String, dynamic>.from(item);
+          map['full_name'] = map['full_name'] ?? map['name'] ?? 'N/A';
+          map['job_related'] =
+              map['job_related'] ?? map['related_job'] ?? 'N/A';
+          map['company_name'] = map['company_name'] ?? map['employer'] ?? 'N/A';
+          map['contact_number'] =
+              map['contact_number'] ?? map['contact'] ?? 'N/A';
+          map['honors'] = map['honors'] ?? map['honors_awards'] ?? 'N/A';
+          map['pre_grad_experience'] =
+              map['pre_grad_experience'] ?? map['pre_grad_exp'] ?? 'N/A';
+          map['first_job_timing'] =
+              map['first_job_timing'] ?? map['time_to_first_job'] ?? 'N/A';
+          map['employment_type'] =
+              map['employment_type'] ?? map['job_type'] ?? 'N/A';
+          map['income_range'] =
+              map['income_range'] ?? map['monthly_income'] ?? 'N/A';
+          map['not_related_reason'] =
+              map['not_related_reason'] ?? map['underutilized_reason'] ?? 'N/A';
+          map['job_duration'] =
+              map['job_duration'] ?? map['employment_duration'] ?? 'N/A';
+          map['promotion'] = map['promotion'] ?? map['promoted'] ?? 'N/A';
+          map['classification'] =
+              map['classification'] ??
+              map['employment_classification'] ??
+              'N/A';
+          map['satisfaction'] =
+              map['satisfaction'] ?? map['job_satisfaction'] ?? 'N/A';
+          map['submitted_at'] =
+              map['submitted_at'] ?? map['date_submitted'] ?? 'N/A';
+          map['has_signed_submission'] = SignedTracerFilter.keepSignedOnly([
+            map,
+          ], signedRecords: signedRecords).isNotEmpty;
+          return map;
+        }).toList();
         setState(() {
           _allData = normalizedData;
           _filteredList = _allData;
@@ -193,6 +190,7 @@ class _TracerDataPageState extends State<TracerDataPage> {
     final screenWidth = MediaQuery.of(context).size.width;
     final horizontalPadding = screenWidth < 600 ? 16.0 : 32.0;
     final isNarrow = screenWidth < 960;
+    final bsitRows = _programRows(_allData, 'BSIT');
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -370,12 +368,15 @@ class _TracerDataPageState extends State<TracerDataPage> {
                   const SizedBox(height: 24),
                   AdminAccreditationModule(
                     reportData: _reportData,
-                    signedRows: _allData,
+                    signedRows: bsitRows,
                     onGenerateReport: _downloadAccreditationReport,
-                    totalResponses: _allData.length,
-                    employedCount: _employmentCount("Employed"),
-                    selfEmployedCount: _employmentCount("Self-Employed"),
-                    unemployedCount: _employmentCount("Unemployed"),
+                    totalResponses: bsitRows.length,
+                    employedCount: _employmentCount("Employed", bsitRows),
+                    selfEmployedCount: _employmentCount(
+                      "Self-Employed",
+                      bsitRows,
+                    ),
+                    unemployedCount: _employmentCount("Unemployed", bsitRows),
                   ),
                   const SizedBox(height: 24),
                   _buildSignedSubmissionSection(),
@@ -1247,7 +1248,6 @@ class _TracerDataPageState extends State<TracerDataPage> {
     final kpis = _asMap(report['kpis']);
     final comparison = _asMap(report['comparison']);
     final bsit = _asMap(comparison['bsit']);
-    final bssw = _asMap(comparison['bssw']);
     final findings = _asStringList(report['findings']);
     final actions = _asStringList(report['actions']);
     final generatedOn = _generatedOn.isNotEmpty
@@ -1316,7 +1316,7 @@ class _TracerDataPageState extends State<TracerDataPage> {
                   ),
                   pw.SizedBox(height: 8),
                   pw.Text(
-                    'This report summarizes graduate employability, curriculum relevance, PEO attainment, side-by-side program comparison, and recommended improvement actions for accreditation use.',
+                    'This report summarizes BSIT graduate employability, curriculum relevance, PEO attainment, and recommended improvement actions for accreditation use.',
                     style: const pw.TextStyle(
                       color: PdfColors.white,
                       fontSize: 11,
@@ -1356,7 +1356,7 @@ class _TracerDataPageState extends State<TracerDataPage> {
             _pdfMetricTable(filterSummaryRows),
             pw.SizedBox(height: 18),
             pw.Text(
-              'Program Comparison',
+              'BSIT Program Snapshot',
               style: pw.TextStyle(
                 fontWeight: pw.FontWeight.bold,
                 fontSize: 16,
@@ -1365,32 +1365,12 @@ class _TracerDataPageState extends State<TracerDataPage> {
             ),
             pw.SizedBox(height: 10),
             _pdfMetricTable([
-              ['Metric', 'BSIT', 'BSSW'],
-              [
-                'Employment',
-                _asString(bsit['employment']),
-                _asString(bssw['employment']),
-              ],
-              [
-                'Job Relevance',
-                _asString(bsit['relevance']),
-                _asString(bssw['relevance']),
-              ],
-              [
-                'Skills Utilization',
-                _asString(bsit['skills']),
-                _asString(bssw['skills']),
-              ],
-              [
-                'PEO Attainment',
-                _asString(bsit['peo']),
-                _asString(bssw['peo']),
-              ],
-              [
-                'Career Growth',
-                _asString(bsit['growth']),
-                _asString(bssw['growth']),
-              ],
+              ['Metric', 'BSIT'],
+              ['Employment', _asString(bsit['employment'])],
+              ['Job Relevance', _asString(bsit['relevance'])],
+              ['Skills Utilization', _asString(bsit['skills'])],
+              ['PEO Attainment', _asString(bsit['peo'])],
+              ['Career Growth', _asString(bsit['growth'])],
             ], header: true),
             pw.SizedBox(height: 18),
             pw.Text(
@@ -1410,7 +1390,7 @@ class _TracerDataPageState extends State<TracerDataPage> {
                       'Job relevance is ${relevanceRate.toStringAsFixed(1)}%, supporting curriculum and labor market alignment.',
                       'Average skills utilization is ${skillsAverage.toStringAsFixed(1)}/5, showing how much alumni use college-acquired skills at work.',
                       'Average PEO attainment is ${peoAverage.toStringAsFixed(1)}/5, which can be used as outcomes-based compliance evidence.',
-                      'BSIT and BSSW comparison provides accreditation-ready program analysis instead of isolated statistics.',
+                      'BSIT program analytics provide accreditation-ready evidence instead of isolated statistics.',
                     ],
             ),
             pw.SizedBox(height: 18),
@@ -1427,7 +1407,7 @@ class _TracerDataPageState extends State<TracerDataPage> {
               'The tracer results indicate how the institution contributes to graduate readiness for employment, professional practice, and long-term career growth.',
               'Employment, job relevance, and skills utilization metrics show the extent to which the curriculum, faculty guidance, and practicum experiences translate into workplace competence.',
               'PEO attainment evidence demonstrates whether the academic program is achieving its intended educational objectives among graduates.',
-              'Program comparison data helps the school identify which interventions are working well in BSIT and BSSW and where targeted improvement is still needed.',
+              'BSIT program data helps the school identify which interventions are working well and where targeted improvement is still needed.',
               'These findings support continuous quality assurance by linking graduate outcomes to curriculum review, partnerships, student support services, and accreditation action planning.',
             ]),
             pw.SizedBox(height: 18),
@@ -1569,8 +1549,17 @@ class _TracerDataPageState extends State<TracerDataPage> {
         .toList();
   }
 
-  int _employmentCount(String status) {
-    return _allData
+  List<Map<String, dynamic>> _programRows(
+    List<Map<String, dynamic>> rows,
+    String program,
+  ) {
+    return rows.where((item) {
+      return (item['program'] ?? '').toString().toUpperCase() == program;
+    }).toList();
+  }
+
+  int _employmentCount(String status, [List<Map<String, dynamic>>? rows]) {
+    return (rows ?? _allData)
         .where((item) => item['employment_status']?.toString() == status)
         .length;
   }
@@ -1609,10 +1598,9 @@ class _TracerDataPageState extends State<TracerDataPage> {
 
   String _normalizedEmploymentStatus(dynamic value) {
     final normalized = value?.toString().trim().toLowerCase() ?? '';
-    final dashed = normalized.replaceAll('_', '-').replaceAll(
-      RegExp(r'\s+'),
-      ' ',
-    );
+    final dashed = normalized
+        .replaceAll('_', '-')
+        .replaceAll(RegExp(r'\s+'), ' ');
     final compact = dashed.replaceAll(RegExp(r'[\s-]+'), '');
 
     if (compact == 'selfemployed') return 'self-employed';

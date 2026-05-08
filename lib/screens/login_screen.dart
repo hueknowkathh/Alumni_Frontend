@@ -12,11 +12,29 @@ import '../services/linkedin_auth_service.dart';
 import '../utils/email_validator.dart';
 import '../utils/password_policy.dart';
 
+typedef PasswordResetCodeSender =
+    Future<Map<String, dynamic>> Function({required String email});
+
+typedef PasswordResetSubmitter =
+    Future<Map<String, dynamic>> Function({
+      required String email,
+      required String verificationCode,
+      required String newPassword,
+    });
+
 class LoginPage extends StatefulWidget {
-  const LoginPage({super.key, this.linkedInResult, this.googleResult});
+  const LoginPage({
+    super.key,
+    this.linkedInResult,
+    this.googleResult,
+    this.passwordResetCodeSender,
+    this.passwordResetSubmitter,
+  });
 
   final LinkedInAuthResult? linkedInResult;
   final GoogleAuthResult? googleResult;
+  final PasswordResetCodeSender? passwordResetCodeSender;
+  final PasswordResetSubmitter? passwordResetSubmitter;
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -207,6 +225,11 @@ class _LoginPageState extends State<LoginPage> {
   Future<Map<String, dynamic>> _sendPasswordResetCode({
     required String email,
   }) async {
+    final override = widget.passwordResetCodeSender;
+    if (override != null) {
+      return override(email: email);
+    }
+
     try {
       final response = await http.post(
         ApiService.uri('forgot_password.php'),
@@ -252,6 +275,15 @@ class _LoginPageState extends State<LoginPage> {
     required String verificationCode,
     required String newPassword,
   }) async {
+    final override = widget.passwordResetSubmitter;
+    if (override != null) {
+      return override(
+        email: email,
+        verificationCode: verificationCode,
+        newPassword: newPassword,
+      );
+    }
+
     try {
       final response = await http.post(
         ApiService.uri('forgot_password.php'),

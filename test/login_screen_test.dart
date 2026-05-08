@@ -10,6 +10,8 @@ void main() {
     Future<void> pumpLoginPage(
       WidgetTester tester, {
       LinkedInAuthResult? linkedInResult,
+      PasswordResetCodeSender? passwordResetCodeSender,
+      PasswordResetSubmitter? passwordResetSubmitter,
     }) async {
       tester.view.physicalSize = const Size(1440, 900);
       tester.view.devicePixelRatio = 1.0;
@@ -17,7 +19,13 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
 
       await tester.pumpWidget(
-        MaterialApp(home: LoginPage(linkedInResult: linkedInResult)),
+        MaterialApp(
+          home: LoginPage(
+            linkedInResult: linkedInResult,
+            passwordResetCodeSender: passwordResetCodeSender,
+            passwordResetSubmitter: passwordResetSubmitter,
+          ),
+        ),
       );
       await tester.pumpAndSettle();
     }
@@ -73,24 +81,24 @@ void main() {
       await pumpLoginPage(tester);
 
       final passwordField = find.widgetWithText(TextField, 'Password');
-      expect(
-        tester.widget<TextField>(passwordField).obscureText,
-        isTrue,
-      );
+      expect(tester.widget<TextField>(passwordField).obscureText, isTrue);
 
       await tester.tap(find.byIcon(Icons.visibility_off));
       await tester.pumpAndSettle();
 
-      expect(
-        tester.widget<TextField>(passwordField).obscureText,
-        isFalse,
-      );
+      expect(tester.widget<TextField>(passwordField).obscureText, isFalse);
     });
 
     testWidgets('forgot password dialog validates mismatched passwords', (
       tester,
     ) async {
-      await pumpLoginPage(tester);
+      await pumpLoginPage(
+        tester,
+        passwordResetCodeSender: ({required email}) async => {
+          'ok': true,
+          'message': 'Code sent.',
+        },
+      );
 
       await tester.tap(find.text('Forgot password?'));
       await tester.pumpAndSettle();
@@ -98,6 +106,14 @@ void main() {
       await tester.enterText(
         find.widgetWithText(TextFormField, 'Email'),
         'alum@example.com',
+      );
+
+      await tester.tap(find.text('Send Code'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Verification Code'),
+        '123456',
       );
       await tester.enterText(
         find.widgetWithText(TextFormField, 'New Password'),
@@ -108,7 +124,7 @@ void main() {
         'Password2',
       );
 
-      await tester.tap(find.text('Reset Password'));
+      await tester.tap(find.text('Submit New Password'));
       await tester.pumpAndSettle();
 
       expect(find.text('Passwords do not match.'), findsOneWidget);
