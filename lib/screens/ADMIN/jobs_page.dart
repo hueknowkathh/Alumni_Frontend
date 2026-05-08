@@ -957,7 +957,9 @@ class _JobsPageState extends State<JobsPage> {
                                 style: OutlinedButton.styleFrom(
                                   foregroundColor: primaryMaroon,
                                   side: BorderSide(
-                                    color: primaryMaroon.withValues(alpha: 0.18),
+                                    color: primaryMaroon.withValues(
+                                      alpha: 0.18,
+                                    ),
                                   ),
                                   padding: const EdgeInsets.symmetric(
                                     vertical: 16,
@@ -968,9 +970,7 @@ class _JobsPageState extends State<JobsPage> {
                                 ),
                                 child: const Text(
                                   'Cancel',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                  ),
+                                  style: TextStyle(fontWeight: FontWeight.w700),
                                 ),
                               ),
                             ),
@@ -981,7 +981,9 @@ class _JobsPageState extends State<JobsPage> {
                                     ? null
                                     : () async {
                                         if (titleController.text.isEmpty ||
-                                            descriptionController.text.isEmpty ||
+                                            descriptionController
+                                                .text
+                                                .isEmpty ||
                                             companyController.text.isEmpty ||
                                             locationController.text.isEmpty ||
                                             contactEmailController
@@ -1106,21 +1108,14 @@ class _JobsPageState extends State<JobsPage> {
       hintText: hintText,
       filled: true,
       fillColor: const Color(0xFFFCF8F5),
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 14,
-      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(
-          color: borderColor.withValues(alpha: 0.9),
-        ),
+        borderSide: BorderSide(color: borderColor.withValues(alpha: 0.9)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(
-          color: borderColor.withValues(alpha: 0.9),
-        ),
+        borderSide: BorderSide(color: borderColor.withValues(alpha: 0.9)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),

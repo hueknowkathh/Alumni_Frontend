@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'services/auth_service.dart';
 import 'state/user_store.dart';
+import 'services/google_auth_service.dart';
 import 'services/linkedin_auth_service.dart';
 import 'screens/landing_page.dart';
 import 'screens/login_screen.dart';
@@ -16,6 +17,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final linkedInResult = LinkedInAuthService.currentResult();
+    final googleResult = GoogleAuthService.currentResult();
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -29,8 +31,14 @@ class MyApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: linkedInResult?.isLoginSuccess == true
-          ? _LinkedInLoginBootstrap(user: linkedInResult!.user!)
+      home: googleResult?.isLoginSuccess == true
+          ? _SocialLoginBootstrap(user: googleResult!.user!)
+          : linkedInResult?.isLoginSuccess == true
+          ? _SocialLoginBootstrap(user: linkedInResult!.user!)
+          : googleResult?.isRegistrationPrefill == true
+          ? RegisterPage(googlePrefill: googleResult!.prefill)
+          : googleResult?.shouldOpenLoginPage == true
+          ? LoginPage(googleResult: googleResult)
           : linkedInResult?.isRegistrationPrefill == true
           ? RegisterPage(linkedInPrefill: linkedInResult!.prefill)
           : linkedInResult?.shouldOpenLoginPage == true
@@ -56,17 +64,16 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class _LinkedInLoginBootstrap extends StatefulWidget {
-  const _LinkedInLoginBootstrap({required this.user});
+class _SocialLoginBootstrap extends StatefulWidget {
+  const _SocialLoginBootstrap({required this.user});
 
   final Map<String, dynamic> user;
 
   @override
-  State<_LinkedInLoginBootstrap> createState() =>
-      _LinkedInLoginBootstrapState();
+  State<_SocialLoginBootstrap> createState() => _SocialLoginBootstrapState();
 }
 
-class _LinkedInLoginBootstrapState extends State<_LinkedInLoginBootstrap> {
+class _SocialLoginBootstrapState extends State<_SocialLoginBootstrap> {
   late final Future<void> _bootstrapFuture;
 
   @override

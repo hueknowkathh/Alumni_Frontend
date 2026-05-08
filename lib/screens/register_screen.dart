@@ -5,14 +5,16 @@ import 'dart:convert';
 import 'login_screen.dart';
 import '../services/activity_service.dart';
 import '../services/api_service.dart';
+import '../services/google_auth_service.dart';
 import '../services/linkedin_auth_service.dart';
 import '../utils/email_validator.dart';
 import '../utils/password_policy.dart';
 
 class RegisterPage extends StatefulWidget {
-  const RegisterPage({super.key, this.linkedInPrefill});
+  const RegisterPage({super.key, this.linkedInPrefill, this.googlePrefill});
 
   final LinkedInRegistrationPrefill? linkedInPrefill;
+  final GoogleRegistrationPrefill? googlePrefill;
 
   @override
   State<RegisterPage> createState() => _RegisterPageState();
@@ -39,16 +41,27 @@ class _RegisterPageState extends State<RegisterPage> {
 
   bool get _hasLinkedInPrefill =>
       widget.linkedInPrefill != null && widget.linkedInPrefill!.hasImportedName;
+  bool get _hasGooglePrefill =>
+      widget.googlePrefill != null && widget.googlePrefill!.hasImportedName;
+  bool get _hasSocialPrefill => _hasLinkedInPrefill || _hasGooglePrefill;
+  String get _socialProviderName => _hasGooglePrefill ? 'Google' : 'LinkedIn';
 
   @override
   void initState() {
     super.initState();
-    final prefill = widget.linkedInPrefill;
-    if (prefill != null) {
-      firstNameController.text = prefill.firstName;
-      lastNameController.text = prefill.lastName;
-      if (prefill.email.isNotEmpty) {
-        emailController.text = prefill.email;
+    final googlePrefill = widget.googlePrefill;
+    final linkedInPrefill = widget.linkedInPrefill;
+    if (googlePrefill != null) {
+      firstNameController.text = googlePrefill.firstName;
+      lastNameController.text = googlePrefill.lastName;
+      if (googlePrefill.email.isNotEmpty) {
+        emailController.text = googlePrefill.email;
+      }
+    } else if (linkedInPrefill != null) {
+      firstNameController.text = linkedInPrefill.firstName;
+      lastNameController.text = linkedInPrefill.lastName;
+      if (linkedInPrefill.email.isNotEmpty) {
+        emailController.text = linkedInPrefill.email;
       }
     }
   }
@@ -86,6 +99,12 @@ class _RegisterPageState extends State<RegisterPage> {
               "linkedin_sub": widget.linkedInPrefill!.linkedInSub,
               "linkedin_email": widget.linkedInPrefill!.email,
               "auth_provider": widget.linkedInPrefill!.source,
+            },
+            if (widget.googlePrefill != null) ...{
+              "google_sub": widget.googlePrefill!.googleSub,
+              "google_email": widget.googlePrefill!.email,
+              "google_email_verified": widget.googlePrefill!.emailVerified,
+              "auth_provider": widget.googlePrefill!.source,
             },
           }),
         );
@@ -412,7 +431,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                     ],
                                   ),
                                 ),
-                                if (_hasLinkedInPrefill) ...[
+                                if (_hasSocialPrefill) ...[
                                   SizedBox(height: isSmallScreen ? 14.0 : 18.0),
                                   Container(
                                     width: double.infinity,
@@ -444,11 +463,12 @@ class _RegisterPageState extends State<RegisterPage> {
                                         const SizedBox(width: 10),
                                         Expanded(
                                           child: Text(
-                                            "Your name was imported from LinkedIn. Complete the remaining fields below to finish your alumni registration.",
+                                            "Your name was imported from $_socialProviderName. Complete the remaining fields below to finish your alumni registration.",
                                             style: TextStyle(
                                               color: Colors.white,
-                                              fontSize:
-                                                  isSmallScreen ? 12.0 : 12.5,
+                                              fontSize: isSmallScreen
+                                                  ? 12.0
+                                                  : 12.5,
                                               height: 1.45,
                                             ),
                                           ),
@@ -467,7 +487,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                     firstNameController,
                                     "First Name",
                                     Icons.person_outline,
-                                    readOnly: _hasLinkedInPrefill,
+                                    readOnly: _hasSocialPrefill,
                                     isSmallScreen: isSmallScreen,
                                   ),
                                   SizedBox(height: fieldGap),
@@ -475,7 +495,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                     lastNameController,
                                     "Last Name",
                                     Icons.badge_outlined,
-                                    readOnly: _hasLinkedInPrefill,
+                                    readOnly: _hasSocialPrefill,
                                     isSmallScreen: isSmallScreen,
                                   ),
                                 ] else
@@ -488,7 +508,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                           firstNameController,
                                           "First Name",
                                           Icons.person_outline,
-                                          readOnly: _hasLinkedInPrefill,
+                                          readOnly: _hasSocialPrefill,
                                           isSmallScreen: isSmallScreen,
                                         ),
                                       ),
@@ -498,7 +518,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                           lastNameController,
                                           "Last Name",
                                           Icons.badge_outlined,
-                                          readOnly: _hasLinkedInPrefill,
+                                          readOnly: _hasSocialPrefill,
                                           isSmallScreen: isSmallScreen,
                                         ),
                                       ),
@@ -639,15 +659,17 @@ class _RegisterPageState extends State<RegisterPage> {
                                               ),
                                             )
                                           : Text(
-                                              _hasLinkedInPrefill
+                                              _hasSocialPrefill
                                                   ? "COMPLETE REGISTRATION"
                                                   : "REGISTER",
                                               style: TextStyle(
                                                 fontWeight: FontWeight.w800,
-                                                fontSize:
-                                                    isSmallScreen ? 15.0 : 16.0,
-                                                letterSpacing:
-                                                    isSmallScreen ? 1.2 : 1.6,
+                                                fontSize: isSmallScreen
+                                                    ? 15.0
+                                                    : 16.0,
+                                                letterSpacing: isSmallScreen
+                                                    ? 1.2
+                                                    : 1.6,
                                               ),
                                             ),
                                     ),
@@ -759,16 +781,14 @@ class _RegisterPageState extends State<RegisterPage> {
         suffixIcon: readOnly
             ? Icon(Icons.lock_outline, color: accentGold.withValues(alpha: 0.9))
             : isPass
-                ? IconButton(
-                    icon: Icon(
-                      passwordVisible
-                          ? Icons.visibility
-                          : Icons.visibility_off,
-                      color: Colors.white.withValues(alpha: 0.72),
-                    ),
-                    onPressed: onTogglePassword,
-                  )
-                : null,
+            ? IconButton(
+                icon: Icon(
+                  passwordVisible ? Icons.visibility : Icons.visibility_off,
+                  color: Colors.white.withValues(alpha: 0.72),
+                ),
+                onPressed: onTogglePassword,
+              )
+            : null,
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(isSmallScreen ? 20.0 : 24.0),
           borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.28)),
@@ -827,9 +847,9 @@ class _RegisterPageState extends State<RegisterPage> {
   Widget _buildDropdown(
     String hint,
     List<String> items,
-    Function(String?) onChanged,
-    {bool isSmallScreen = false,}
-  ) {
+    Function(String?) onChanged, {
+    bool isSmallScreen = false,
+  }) {
     return DropdownButtonFormField<String>(
       dropdownColor: primaryMaroon,
       style: TextStyle(

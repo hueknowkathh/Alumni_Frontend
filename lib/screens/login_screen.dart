@@ -1,20 +1,23 @@
 import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'register_screen.dart';
 import '../services/activity_service.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
+import '../services/google_auth_service.dart';
 import '../services/linkedin_auth_service.dart';
 import '../utils/email_validator.dart';
 import '../utils/password_policy.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({super.key, this.linkedInResult});
+  const LoginPage({super.key, this.linkedInResult, this.googleResult});
 
   final LinkedInAuthResult? linkedInResult;
+  final GoogleAuthResult? googleResult;
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -29,12 +32,16 @@ class _LoginPageState extends State<LoginPage> {
   bool _isLoading = false;
   bool _isPasswordVisible = false;
   bool _isLinkedInLoading = false;
+  bool _isGoogleLoading = false;
 
   @override
   void initState() {
     super.initState();
     final linkedInEmail = widget.linkedInResult?.email.trim() ?? '';
-    if (linkedInEmail.isNotEmpty) {
+    final googleEmail = widget.googleResult?.email.trim() ?? '';
+    if (googleEmail.isNotEmpty) {
+      _emailController.text = googleEmail;
+    } else if (linkedInEmail.isNotEmpty) {
       _emailController.text = linkedInEmail;
     }
   }
@@ -674,6 +681,27 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+  Future<void> _startGoogleSignUp() async {
+    setState(() => _isGoogleLoading = true);
+    try {
+      final launched = await GoogleAuthService.startRegistration();
+      if (!launched && mounted) {
+        _showError(
+          "Google sign-up could not be started. Please verify your backend Google endpoint first.",
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        _showError(
+          "Google sign-up is not ready yet. Please configure the Google Cloud OAuth client and backend callback first.",
+        );
+      }
+      debugPrint("Google sign-up error: $e");
+    } finally {
+      if (mounted) setState(() => _isGoogleLoading = false);
+    }
+  }
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -708,6 +736,12 @@ class _LoginPageState extends State<LoginPage> {
     final pageBottomPadding = screenHeight < 700 ? 24.0 : 32.0;
     final linkedInMessage = widget.linkedInResult?.message.trim() ?? '';
     final linkedInError = widget.linkedInResult?.error.trim() ?? '';
+    final googleMessage = widget.googleResult?.message.trim() ?? '';
+    final googleError = widget.googleResult?.error.trim() ?? '';
+    final socialMessage = googleMessage.isNotEmpty
+        ? googleMessage
+        : linkedInMessage;
+    final socialError = googleError.isNotEmpty ? googleError : linkedInError;
     return Scaffold(
       body: Stack(
         children: [
@@ -864,8 +898,8 @@ class _LoginPageState extends State<LoginPage> {
                                   height: 1.45,
                                 ),
                               ),
-                              if (linkedInMessage.isNotEmpty ||
-                                  linkedInError.isNotEmpty) ...[
+                              if (socialMessage.isNotEmpty ||
+                                  socialError.isNotEmpty) ...[
                                 const SizedBox(height: 20),
                                 Container(
                                   width: double.infinity,
@@ -874,7 +908,7 @@ class _LoginPageState extends State<LoginPage> {
                                     color: Colors.white.withValues(alpha: 0.08),
                                     borderRadius: BorderRadius.circular(18),
                                     border: Border.all(
-                                      color: linkedInError.isNotEmpty
+                                      color: socialError.isNotEmpty
                                           ? Colors.orangeAccent.withValues(
                                               alpha: 0.42,
                                             )
@@ -882,9 +916,9 @@ class _LoginPageState extends State<LoginPage> {
                                     ),
                                   ),
                                   child: Text(
-                                    linkedInMessage.isNotEmpty
-                                        ? linkedInMessage
-                                        : "LinkedIn sign-in could not be completed. Please try again.",
+                                    socialMessage.isNotEmpty
+                                        ? socialMessage
+                                        : "Social sign-in could not be completed. Please try again.",
                                     style: const TextStyle(
                                       color: Colors.white,
                                       fontSize: 12.5,
@@ -1036,7 +1070,71 @@ class _LoginPageState extends State<LoginPage> {
                                       width: double.infinity,
                                       height: 54,
                                       child: OutlinedButton(
-                                        onPressed: _isLinkedInLoading
+                                        onPressed:
+                                            (_isGoogleLoading ||
+                                                _isLinkedInLoading)
+                                            ? null
+                                            : _startGoogleSignUp,
+                                        style: OutlinedButton.styleFrom(
+                                          foregroundColor: Colors.white,
+                                          side: BorderSide(
+                                            color: Colors.white.withValues(
+                                              alpha: 0.24,
+                                            ),
+                                          ),
+                                          backgroundColor: Colors.white
+                                              .withValues(alpha: 0.08),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              18,
+                                            ),
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            if (_isGoogleLoading)
+                                              const SizedBox(
+                                                width: 18,
+                                                height: 18,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                      color: Colors.white,
+                                                    ),
+                                              )
+                                            else
+                                              const FaIcon(
+                                                FontAwesomeIcons.google,
+                                                size: 20,
+                                                color: Color(0xFF4285F4),
+                                              ),
+                                            const SizedBox(width: 12),
+                                            Flexible(
+                                              child: Text(
+                                                _isGoogleLoading
+                                                    ? "Starting Google..."
+                                                    : "Continue with Google",
+                                                textAlign: TextAlign.center,
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.w700,
+                                                  fontSize: 15,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    SizedBox(
+                                      width: double.infinity,
+                                      height: 54,
+                                      child: OutlinedButton(
+                                        onPressed:
+                                            (_isGoogleLoading ||
+                                                _isLinkedInLoading)
                                             ? null
                                             : _startLinkedInSignUp,
                                         style: OutlinedButton.styleFrom(

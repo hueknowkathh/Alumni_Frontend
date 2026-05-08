@@ -106,8 +106,7 @@ class _TracerDataPageState extends State<TracerDataPage> {
         final summary = decoded is Map
             ? Map<String, dynamic>.from(decoded['summary'] ?? const {})
             : <String, dynamic>{};
-        setState(() {
-          _allData = jsonData.map((item) {
+        final normalizedData = jsonData.map((item) {
             final map = Map<String, dynamic>.from(item);
             map['full_name'] = map['full_name'] ?? map['name'] ?? 'N/A';
             map['job_related'] =
@@ -145,10 +144,12 @@ class _TracerDataPageState extends State<TracerDataPage> {
                     .isNotEmpty;
             return map;
           }).toList();
+        setState(() {
+          _allData = normalizedData;
           _filteredList = _allData;
           _signedRecords = signedRecords;
           _reportData = report;
-          _summary = summary;
+          _summary = _summaryFromTracerRows(summary, normalizedData);
           _generatedOn = reportDecoded is Map
               ? (reportDecoded['generated_on']?.toString() ?? '')
               : '';
@@ -1572,6 +1573,51 @@ class _TracerDataPageState extends State<TracerDataPage> {
     return _allData
         .where((item) => item['employment_status']?.toString() == status)
         .length;
+  }
+
+  Map<String, dynamic> _summaryFromTracerRows(
+    Map<String, dynamic> backendSummary,
+    List<Map<String, dynamic>> rows,
+  ) {
+    var employed = 0;
+    var unemployed = 0;
+    var selfEmployed = 0;
+    var formDrafts = 0;
+
+    for (final row in rows) {
+      final status = _normalizedEmploymentStatus(row['employment_status']);
+      if (status == 'self-employed') {
+        selfEmployed++;
+      } else if (status == 'employed' || status == 'employer') {
+        employed++;
+      } else if (status == 'unemployed') {
+        unemployed++;
+      } else if (status == 'form-draft') {
+        formDrafts++;
+      }
+    }
+
+    return {
+      ...backendSummary,
+      'employed': employed,
+      'unemployed': unemployed,
+      'self_employed': selfEmployed,
+      'employment_unknown': unemployed + formDrafts,
+      'form_drafts': formDrafts,
+    };
+  }
+
+  String _normalizedEmploymentStatus(dynamic value) {
+    final normalized = value?.toString().trim().toLowerCase() ?? '';
+    final dashed = normalized.replaceAll('_', '-').replaceAll(
+      RegExp(r'\s+'),
+      ' ',
+    );
+    final compact = dashed.replaceAll(RegExp(r'[\s-]+'), '');
+
+    if (compact == 'selfemployed') return 'self-employed';
+    if (compact == 'formdraft') return 'form-draft';
+    return dashed;
   }
 
   Map<String, dynamic> _asMap(dynamic value) {

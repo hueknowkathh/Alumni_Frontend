@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import '../../services/api_service.dart';
+import '../../services/google_auth_service.dart';
 import '../../services/linkedin_auth_service.dart';
 import '../../state/user_store.dart';
 import '../widgets/luxury_module_banner.dart';
@@ -29,6 +30,7 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _emailReminders = true;
   bool _eventInvitations = false;
   bool _isLinkingLinkedIn = false;
+  bool _isLinkingGoogle = false;
 
   static const Color primaryMaroon = Color(0xFF4A152C);
   static const Color cardBorder = Color(0xFFE5E7EB);
@@ -299,7 +301,13 @@ class _SettingsPageState extends State<SettingsPage> {
                 _buildSectionCard(
                   title: "Connected Accounts",
                   icon: Icons.link_outlined,
-                  child: _buildLinkedInSection(),
+                  child: Column(
+                    children: [
+                      _buildGoogleSection(),
+                      const SizedBox(height: 14),
+                      _buildLinkedInSection(),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 24),
                 _buildSectionCard(
@@ -318,7 +326,10 @@ class _SettingsPageState extends State<SettingsPage> {
                       const SizedBox(height: 8),
                       Text(
                         _lastLoginText(),
-                        style: const TextStyle(color: Colors.grey, fontSize: 13),
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 13,
+                        ),
                       ),
                       const SizedBox(height: 20),
                       const Text(
@@ -698,6 +709,153 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
+  Widget _buildGoogleSection() {
+    final googleSub =
+        (widget.user['google_sub'] ?? UserStore.value?['google_sub'] ?? '')
+            .toString()
+            .trim();
+    final googleEmail =
+        (widget.user['google_email'] ??
+                UserStore.value?['google_email'] ??
+                widget.user['email'])
+            .toString()
+            .trim();
+    final isLinked = googleSub.isNotEmpty;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: cardBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: cardBorder),
+                ),
+                alignment: Alignment.center,
+                child: const Text(
+                  'G',
+                  style: TextStyle(
+                    color: Color(0xFF4285F4),
+                    fontWeight: FontWeight.w800,
+                    fontSize: 18,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Google',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      isLinked
+                          ? 'Your alumni account is linked and can use Continue with Google for future sign-in.'
+                          : 'Link a verified Google email so notification delivery and sign-in stay aligned.',
+                      style: const TextStyle(
+                        color: Colors.grey,
+                        fontSize: 12.5,
+                        height: 1.45,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: cardBorder),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  isLinked ? Icons.verified_outlined : Icons.info_outline,
+                  color: isLinked ? Colors.green : primaryMaroon,
+                  size: 18,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    isLinked
+                        ? 'Linked to ${googleEmail.isNotEmpty ? googleEmail : 'your Google account'}'
+                        : 'Not linked yet',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          if (isLinked)
+            const Text(
+              'No further action is needed. Continue with Google will automatically recognize this account after approval.',
+              style: TextStyle(color: Colors.grey, fontSize: 12),
+            )
+          else
+            ElevatedButton(
+              onPressed: _isLinkingGoogle ? null : _startGoogleLink,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF4285F4),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 14,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_isLinkingGoogle)
+                    const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  else
+                    const Icon(Icons.link, size: 18),
+                  const SizedBox(width: 10),
+                  Text(
+                    _isLinkingGoogle
+                        ? 'Starting Google...'
+                        : 'Link Google Account',
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _startLinkedInLink() async {
     final userId = int.tryParse('${widget.user['id']}') ?? 0;
     if (userId <= 0) {
@@ -738,5 +896,43 @@ class _SettingsPageState extends State<SettingsPage> {
       }
     }
   }
-}
 
+  Future<void> _startGoogleLink() async {
+    final userId = int.tryParse('${widget.user['id']}') ?? 0;
+    if (userId <= 0) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to determine the current user.')),
+      );
+      return;
+    }
+
+    setState(() => _isLinkingGoogle = true);
+    try {
+      final launched = await GoogleAuthService.startAccountLink(userId: userId);
+      if (!launched && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Google linking could not be started. Please verify the backend endpoint.',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Google linking is not ready yet. Please verify the backend configuration.',
+          ),
+        ),
+      );
+      debugPrint('Google link error: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLinkingGoogle = false);
+      }
+    }
+  }
+}
