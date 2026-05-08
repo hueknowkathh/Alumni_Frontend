@@ -437,7 +437,7 @@ class _CareerReportsPageState extends State<CareerReportsPage> {
                   ),
                 ),
               ),
-      ),
+            ),
     );
   }
 
@@ -525,7 +525,11 @@ class _CareerReportsPageState extends State<CareerReportsPage> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.filter_alt_outlined, color: accentGold, size: 18),
+                    Icon(
+                      Icons.filter_alt_outlined,
+                      color: accentGold,
+                      size: 18,
+                    ),
                     const SizedBox(width: 8),
                     Text(
                       'FILTERS',
@@ -540,7 +544,9 @@ class _CareerReportsPageState extends State<CareerReportsPage> {
                 ),
               ),
               if (_assignedProgram == null)
-                _buildDropdown('Program', selectedProgram, _programOptions, (v) {
+                _buildDropdown('Program', selectedProgram, _programOptions, (
+                  v,
+                ) {
                   if (v == null) return;
                   setState(() {
                     selectedProgram = v;
@@ -606,6 +612,7 @@ class _CareerReportsPageState extends State<CareerReportsPage> {
       ),
     );
   }
+
   Widget _buildDropdown(
     String label,
     String value,

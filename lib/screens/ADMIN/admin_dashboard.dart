@@ -851,7 +851,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
               return PieChartSectionData(
                 value: (data['value'] ?? 0).toDouble(),
-                title: "${(((data['value'] ?? 0) / totalSubmissions) * 100).toStringAsFixed(0)}%",
+                title:
+                    "${(((data['value'] ?? 0) / totalSubmissions) * 100).toStringAsFixed(0)}%",
                 titleStyle: const TextStyle(
                   color: Colors.white,
                   fontSize: 11,

@@ -23,6 +23,61 @@ class LoginPage extends StatefulWidget {
   State<LoginPage> createState() => _LoginPageState();
 }
 
+class _GoogleLogo extends StatelessWidget {
+  const _GoogleLogo({required this.size});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: CustomPaint(painter: _GoogleLogoPainter()),
+    );
+  }
+}
+
+class _GoogleLogoPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final strokeWidth = size.width * 0.18;
+    final rect = Rect.fromLTWH(
+      strokeWidth / 2,
+      strokeWidth / 2,
+      size.width - strokeWidth,
+      size.height - strokeWidth,
+    );
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.butt;
+
+    void drawArc(Color color, double start, double sweep) {
+      paint.color = color;
+      canvas.drawArc(rect, start, sweep, false, paint);
+    }
+
+    drawArc(const Color(0xFF4285F4), -0.15, 1.45);
+    drawArc(const Color(0xFF34A853), 1.30, 1.35);
+    drawArc(const Color(0xFFFBBC05), 2.65, 0.95);
+    drawArc(const Color(0xFFEA4335), 3.60, 1.55);
+
+    paint
+      ..color = const Color(0xFF4285F4)
+      ..strokeCap = StrokeCap.square;
+    final centerY = size.height * 0.52;
+    canvas.drawLine(
+      Offset(size.width * 0.54, centerY),
+      Offset(size.width * 0.92, centerY),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
 class _LoginPageState extends State<LoginPage> {
   final Color primaryMaroon = const Color(0xFF4A152C);
   final Color accentGold = const Color(0xFFC5A046);
@@ -1105,11 +1160,7 @@ class _LoginPageState extends State<LoginPage> {
                                                     ),
                                               )
                                             else
-                                              const FaIcon(
-                                                FontAwesomeIcons.google,
-                                                size: 20,
-                                                color: Color(0xFF4285F4),
-                                              ),
+                                              const _GoogleLogo(size: 20),
                                             const SizedBox(width: 12),
                                             Flexible(
                                               child: Text(
