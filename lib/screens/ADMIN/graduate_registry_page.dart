@@ -477,11 +477,7 @@ class _GraduateRegistryPageState extends State<GraduateRegistryPage> {
     Color color,
     double availableWidth,
   ) {
-    final cardWidth = availableWidth >= 1440
-        ? (availableWidth - 80) / 6
-        : availableWidth >= 1100
-        ? (availableWidth - 32) / 3
-        : availableWidth >= 620
+    final cardWidth = availableWidth >= 620
         ? (availableWidth - 16) / 2
         : availableWidth;
 
