@@ -20,6 +20,7 @@ class TracerDataPage extends StatefulWidget {
 }
 
 class _TracerDataPageState extends State<TracerDataPage> {
+  static const String _activeProgram = 'BSIT';
   final Color primaryMaroon = const Color(0xFF4A152C);
   final Color accentGold = const Color(0xFFC5A046);
   final Color bgLight = const Color(0xFFF8F9FA);
@@ -78,7 +79,10 @@ class _TracerDataPageState extends State<TracerDataPage> {
       final response = await http.get(
         ApiService.uri(
           'get_tracer_submissions.php',
-          queryParameters: {'include_drafts': '1'},
+          queryParameters: {
+            'include_drafts': '1',
+            'program': _activeProgram,
+          },
         ),
         headers: ApiService.authHeaders(),
       );
@@ -99,6 +103,7 @@ class _TracerDataPageState extends State<TracerDataPage> {
         final signedRecords = signedRecordData
             .whereType<Map>()
             .map((item) => Map<String, dynamic>.from(item))
+            .where((item) => _isActiveProgram(item['program']))
             .toList();
         final report = reportDecoded is Map
             ? Map<String, dynamic>.from(reportDecoded['report'] ?? const {})
@@ -140,7 +145,7 @@ class _TracerDataPageState extends State<TracerDataPage> {
             map,
           ], signedRecords: signedRecords).isNotEmpty;
           return map;
-        }).toList();
+        }).where((item) => _isActiveProgram(item['program'])).toList();
         setState(() {
           _allData = normalizedData;
           _filteredList = _allData;
@@ -213,9 +218,9 @@ class _TracerDataPageState extends State<TracerDataPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   LuxuryModuleBanner(
-                    title: 'Tracer Governance & Report Oversight',
-                    description:
-                        'Review signed tracer records, validate institutional data quality, and manage accreditation-ready reporting in one workspace.',
+                  title: 'Tracer Governance & Report Oversight',
+                  description:
+                        'Review signed BSIT tracer records, validate institutional data quality, and manage accreditation-ready reporting in one workspace.',
                     icon: Icons.analytics_outlined,
                     compact: isNarrow,
                     chips: [
@@ -764,7 +769,7 @@ class _TracerDataPageState extends State<TracerDataPage> {
               cardWidth,
             ),
             _statCard(
-              "Total Graduates",
+              "Total BSIT Graduates",
               '${_summary['total_graduates'] ?? 0}',
               Icons.groups,
               accentGold,
@@ -1556,6 +1561,10 @@ class _TracerDataPageState extends State<TracerDataPage> {
     return rows.where((item) {
       return (item['program'] ?? '').toString().toUpperCase() == program;
     }).toList();
+  }
+
+  bool _isActiveProgram(dynamic program) {
+    return program?.toString().trim().toUpperCase() == _activeProgram;
   }
 
   int _employmentCount(String status, [List<Map<String, dynamic>>? rows]) {

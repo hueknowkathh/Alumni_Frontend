@@ -19,6 +19,7 @@ class GraduateRegistryPage extends StatefulWidget {
 }
 
 class _GraduateRegistryPageState extends State<GraduateRegistryPage> {
+  static const String _activeProgram = 'BSIT';
   static const Color primaryMaroon = Color(0xFF4A152C);
   static const Color accentGold = Color(0xFFC5A046);
   static const Color bgLight = Color(0xFFF8F9FA);
@@ -46,14 +47,6 @@ class _GraduateRegistryPageState extends State<GraduateRegistryPage> {
 
   int get _totalGraduates => _allGraduates.length;
 
-  int _programCount(String program) {
-    final normalized = program.trim().toUpperCase();
-    return _allGraduates.where((row) {
-      return (row['program'] ?? '').toString().trim().toUpperCase() ==
-          normalized;
-    }).length;
-  }
-
   @override
   void initState() {
     super.initState();
@@ -78,7 +71,10 @@ class _GraduateRegistryPageState extends State<GraduateRegistryPage> {
 
     try {
       final response = await http.get(
-        ApiService.uri('get_graduate_registry.php'),
+        ApiService.uri(
+          'get_graduate_registry.php',
+          queryParameters: {'program': _activeProgram},
+        ),
         headers: ApiService.authHeaders(),
       );
 
@@ -96,15 +92,9 @@ class _GraduateRegistryPageState extends State<GraduateRegistryPage> {
       final graduates = ((decoded['graduates'] ?? const []) as List)
           .whereType<Map>()
           .map((row) => row.map((key, value) => MapEntry('$key', value)))
+          .where((row) => _isActiveProgram(row['program']))
           .toList();
 
-      final programs =
-          graduates
-              .map((row) => (row['program'] ?? '').toString().trim())
-              .where((value) => value.isNotEmpty)
-              .toSet()
-              .toList()
-            ..sort();
       final years =
           graduates
               .map((row) => (row['year_graduated'] ?? '').toString().trim())
@@ -116,7 +106,7 @@ class _GraduateRegistryPageState extends State<GraduateRegistryPage> {
       setState(() {
         _allGraduates = graduates;
         _summary = Map<String, dynamic>.from(decoded['summary'] ?? const {});
-        _programOptions = ['All Programs', ...programs];
+        _programOptions = const ['All Programs', _activeProgram];
         _yearOptions = ['All Batches', ...years];
 
         if (!_programOptions.contains(_selectedProgram)) {
@@ -152,13 +142,18 @@ class _GraduateRegistryPageState extends State<GraduateRegistryPage> {
           name.contains(search) ||
           email.contains(search) ||
           studentNumber.contains(search);
+      final matchesActiveProgram = _isActiveProgram(program);
       final matchesProgram =
           _selectedProgram == 'All Programs' || program == _selectedProgram;
       final matchesYear =
           _selectedYear == 'All Batches' || year == _selectedYear;
 
-      return matchesSearch && matchesProgram && matchesYear;
+      return matchesActiveProgram && matchesSearch && matchesProgram && matchesYear;
     }).toList();
+  }
+
+  bool _isActiveProgram(dynamic program) {
+    return program?.toString().trim().toUpperCase() == _activeProgram;
   }
 
   Future<void> _pickAndUploadFile() async {
@@ -258,11 +253,6 @@ class _GraduateRegistryPageState extends State<GraduateRegistryPage> {
             'Juan Santos Dela Cruz',
             'BSIT',
             '2021',
-          ],
-          [
-            'Ana Reyes',
-            'BSSW',
-            '2020',
           ],
         ],
       );
@@ -443,24 +433,10 @@ class _GraduateRegistryPageState extends State<GraduateRegistryPage> {
               final availableWidth = constraints.maxWidth;
               final cards = [
                 _buildAnalysisMetricCard(
-                  'Total Graduates',
+                  'Total BSIT Graduates',
                   '$_totalGraduates',
                   Icons.groups_2_outlined,
                   Colors.blue,
-                  availableWidth,
-                ),
-                _buildAnalysisMetricCard(
-                  'BSIT Graduates',
-                  '${_programCount('BSIT')}',
-                  Icons.computer_outlined,
-                  Colors.indigo,
-                  availableWidth,
-                ),
-                _buildAnalysisMetricCard(
-                  'BSSW Graduates',
-                  '${_programCount('BSSW')}',
-                  Icons.volunteer_activism_outlined,
-                  Colors.teal,
                   availableWidth,
                 ),
                 _buildAnalysisMetricCard(

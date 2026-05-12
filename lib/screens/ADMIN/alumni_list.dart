@@ -17,6 +17,7 @@ class AlumniList extends StatefulWidget {
 }
 
 class _AlumniListState extends State<AlumniList> {
+  static const String _activeProgram = 'BSIT';
   final Color primaryMaroon = const Color(0xFF4A152C);
   final Color bgLight = const Color(0xFFF8F9FA);
   final Color borderColor = const Color(0xFFE0E0E0);
@@ -51,7 +52,7 @@ class _AlumniListState extends State<AlumniList> {
       final options = await FilterOptionsService.fetch();
       if (!mounted) return;
       setState(() {
-        _programOptions = ['All Programs', ...options.programs];
+        _programOptions = const ['All Programs', _activeProgram];
         _yearOptions = ['All Years', ...options.years];
         if (!_programOptions.contains(selectedProgram)) {
           selectedProgram = _programOptions.first;
@@ -71,12 +72,20 @@ class _AlumniListState extends State<AlumniList> {
       setState(() => isLoading = true);
     }
     try {
-      final response = await http.get(ApiService.uri('get_alumni_list.php'));
+      final response = await http.get(
+        ApiService.uri(
+          'get_alumni_list.php',
+          queryParameters: {'program': _activeProgram},
+        ),
+      );
       if (!mounted) return;
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
         setState(() {
-          allAlumni = data;
+          allAlumni = data.where((alumni) {
+            if (alumni is! Map) return false;
+            return _isActiveProgram(alumni['program']);
+          }).toList();
           _applyFilters();
           isLoading = false;
         });
@@ -366,12 +375,17 @@ class _AlumniListState extends State<AlumniList> {
         final matchesProgram =
             selectedProgram == "All Programs" ||
             alumni['program'] == selectedProgram;
+        final matchesActiveProgram = _isActiveProgram(alumni['program']);
         final matchesYear =
             selectedYear == "All Years" ||
             alumni['year'].toString() == selectedYear;
-        return matchesSearch && matchesProgram && matchesYear;
+        return matchesActiveProgram && matchesSearch && matchesProgram && matchesYear;
       }).toList();
     });
+  }
+
+  bool _isActiveProgram(dynamic program) {
+    return program?.toString().trim().toUpperCase() == _activeProgram;
   }
 
   void _showSnackBar(String msg, Color color) {
