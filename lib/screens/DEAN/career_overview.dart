@@ -54,10 +54,7 @@ class _CareerOverviewPageState extends State<CareerOverviewPage> {
 
   String? _normalizeProgram(dynamic value) {
     final normalized = value?.toString().trim().toUpperCase() ?? '';
-    if (normalized == 'BSIT' || normalized == 'BSSW') {
-      return normalized;
-    }
-    return null;
+    return normalized.isEmpty || normalized == 'ALL' ? null : normalized;
   }
 
   Future<void> _loadFilterOptions() async {

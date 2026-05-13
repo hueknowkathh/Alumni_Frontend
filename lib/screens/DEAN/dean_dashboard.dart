@@ -64,10 +64,7 @@ class _DeanDashboardState extends State<DeanDashboard> {
 
   String? _normalizeProgram(dynamic value) {
     final normalized = value?.toString().trim().toUpperCase() ?? '';
-    if (normalized == 'BSIT' || normalized == 'BSSW') {
-      return normalized;
-    }
-    return null;
+    return normalized.isEmpty || normalized == 'ALL' ? null : normalized;
   }
 
   String get _roleLabel => _assignedProgram == null

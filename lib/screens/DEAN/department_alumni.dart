@@ -64,10 +64,7 @@ class _DepartmentAlumniPageState extends State<DepartmentAlumniPage> {
 
   String? _normalizeProgram(dynamic value) {
     final normalized = value?.toString().trim().toUpperCase() ?? '';
-    if (normalized == 'BSIT' || normalized == 'BSSW') {
-      return normalized;
-    }
-    return null;
+    return normalized.isEmpty || normalized == 'ALL' ? null : normalized;
   }
 
   Future<void> _loadFilterOptions() async {
@@ -129,7 +126,9 @@ class _DepartmentAlumniPageState extends State<DepartmentAlumniPage> {
       if (!mounted) return;
       final summary = Map<String, dynamic>.from(_defaultSummary)
         ..addAll(
-          Map<String, dynamic>.from(data['summary'] ?? const <String, dynamic>{}),
+          Map<String, dynamic>.from(
+            data['summary'] ?? const <String, dynamic>{},
+          ),
         );
       setState(() {
         _filteredAlumni = List<dynamic>.from(data['alumni'] ?? const []);

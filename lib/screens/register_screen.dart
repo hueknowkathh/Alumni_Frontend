@@ -7,6 +7,7 @@ import '../services/activity_service.dart';
 import '../services/api_service.dart';
 import '../services/google_auth_service.dart';
 import '../services/linkedin_auth_service.dart';
+import '../services/program_service.dart';
 import '../utils/email_validator.dart';
 import '../utils/password_policy.dart';
 
@@ -37,7 +38,7 @@ class _RegisterPageState extends State<RegisterPage> {
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
 
-  final List<String> programs = ['BSIT', 'BSSW'];
+  List<String> programs = const ['BSIT', 'BSSW'];
 
   bool get _hasLinkedInPrefill =>
       widget.linkedInPrefill != null && widget.linkedInPrefill!.hasImportedName;
@@ -49,6 +50,7 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   void initState() {
     super.initState();
+    _loadPrograms();
     final googlePrefill = widget.googlePrefill;
     final linkedInPrefill = widget.linkedInPrefill;
     if (googlePrefill != null) {
@@ -63,6 +65,21 @@ class _RegisterPageState extends State<RegisterPage> {
       if (linkedInPrefill.email.isNotEmpty) {
         emailController.text = linkedInPrefill.email;
       }
+    }
+  }
+
+  Future<void> _loadPrograms() async {
+    try {
+      final activePrograms = await ProgramService.fetch(activeOnly: true);
+      if (!mounted || activePrograms.isEmpty) return;
+      setState(() {
+        programs = activePrograms.map((program) => program.code).toList();
+        if (selectedProgram != null && !programs.contains(selectedProgram)) {
+          selectedProgram = null;
+        }
+      });
+    } catch (_) {
+      // Keep the local defaults when the program directory is unavailable.
     }
   }
 

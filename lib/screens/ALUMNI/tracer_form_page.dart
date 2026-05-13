@@ -9,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../services/api_service.dart';
 import '../../services/activity_service.dart';
+import '../../services/program_service.dart';
 import '../../state/user_store.dart';
 
 part 'tracer_form_configs.dart';
@@ -121,6 +122,79 @@ class _ProgramConfig {
   final String recommendationLabel;
   final String reputationLabel;
   final String feedbackCompetenciesLabel;
+
+  factory _ProgramConfig.fromTemplate(
+    TracerTemplateConfig template,
+    _ProgramConfig fallback,
+  ) {
+    List<String> listOrFallback(List<String> value, List<String> fallbackList) {
+      return value.isEmpty ? fallbackList : value;
+    }
+
+    String textOrFallback(String value, String fallbackText) {
+      final trimmed = value.trim();
+      return trimmed.isEmpty ? fallbackText : trimmed;
+    }
+
+    return _ProgramConfig(
+      programCode: textOrFallback(
+        template.code,
+        fallback.programCode,
+      ).toUpperCase(),
+      programTitle: textOrFallback(
+        template.programTitle,
+        fallback.programTitle,
+      ),
+      programSubtitle: textOrFallback(
+        template.programSubtitle,
+        fallback.programSubtitle,
+      ),
+      currentJobRelatedLabel: textOrFallback(
+        template.currentJobRelatedLabel,
+        fallback.currentJobRelatedLabel,
+      ),
+      studyTypeOptions: listOrFallback(
+        template.studyTypeOptions,
+        fallback.studyTypeOptions,
+      ),
+      licensureLabel: textOrFallback(
+        template.licensureLabel,
+        fallback.licensureLabel,
+      ),
+      licensureTypeLabel: textOrFallback(
+        template.licensureTypeLabel,
+        fallback.licensureTypeLabel,
+      ),
+      licensureResultLabel: textOrFallback(
+        template.licensureResultLabel,
+        fallback.licensureResultLabel,
+      ),
+      skillsOptions: listOrFallback(
+        template.skillsOptions,
+        fallback.skillsOptions,
+      ),
+      peoStatements: listOrFallback(
+        template.peoStatements,
+        fallback.peoStatements,
+      ),
+      curriculumSatisfactionLabel: textOrFallback(
+        template.curriculumSatisfactionLabel,
+        fallback.curriculumSatisfactionLabel,
+      ),
+      recommendationLabel: textOrFallback(
+        template.recommendationLabel,
+        fallback.recommendationLabel,
+      ),
+      reputationLabel: textOrFallback(
+        template.reputationLabel,
+        fallback.reputationLabel,
+      ),
+      feedbackCompetenciesLabel: textOrFallback(
+        template.feedbackCompetenciesLabel,
+        fallback.feedbackCompetenciesLabel,
+      ),
+    );
+  }
 }
 
 class _CareerTimelineEntry {
@@ -254,11 +328,13 @@ class TracerFormPage extends StatefulWidget {
     super.key,
     required this.userId,
     required this.programCode,
+    this.submissionProgramCode,
     this.controller,
   });
 
   final int userId;
   final String programCode;
+  final String? submissionProgramCode;
   final TracerFormPageController? controller;
 
   @override
@@ -304,7 +380,7 @@ class _TracerFormPageState extends State<TracerFormPage>
   int _signedSubmissionCount = 0;
   bool _isAutoSavingDraft = false;
 
-  late final _ProgramConfig _config;
+  late _ProgramConfig _config;
   late final Map<String, TextEditingController> _textControllers;
   late final TextEditingController _submissionDateController;
   final Map<String, String?> _dropdownValues = {};
@@ -717,6 +793,30 @@ class _TracerFormPageState extends State<TracerFormPage>
     _seedDefaultValues();
     _prefillFromCurrentUser();
     _loadExistingSubmission();
+    _loadRemoteTracerTemplate();
+  }
+
+  Future<void> _loadRemoteTracerTemplate() async {
+    try {
+      final template = await ProgramService.fetchTracerTemplate(
+        widget.programCode,
+      );
+      if (!mounted || template == null) return;
+      setState(() {
+        _config = _ProgramConfig.fromTemplate(
+          template,
+          _programConfig(widget.programCode),
+        );
+        _seedPeoDefaults();
+      });
+    } catch (_) {
+      // Keep bundled template config when the backend template is unavailable.
+    }
+  }
+
+  String get _submissionProgramCode {
+    final program = widget.submissionProgramCode?.trim().toUpperCase() ?? '';
+    return program.isNotEmpty ? program : _config.programCode;
   }
 
   List<String> get _textFieldKeys => const [
@@ -754,12 +854,16 @@ class _TracerFormPageState extends State<TracerFormPage>
       'satisfaction_admin': 4,
       'satisfaction_overall': 4,
     });
-    for (var i = 0; i < _config.peoStatements.length; i++) {
-      _ratingValues['peo_${i + 1}'] = 4;
-    }
+    _seedPeoDefaults();
     _multiSelectValues['skills'] = [];
     if (_careerTimeline.isEmpty) {
       _careerTimeline.add(_CareerTimelineEntry(isCurrent: true));
+    }
+  }
+
+  void _seedPeoDefaults() {
+    for (var i = 0; i < _config.peoStatements.length; i++) {
+      _ratingValues.putIfAbsent('peo_${i + 1}', () => 4);
     }
   }
 
@@ -1394,7 +1498,7 @@ class _TracerFormPageState extends State<TracerFormPage>
 
     return {
       'user_id': widget.userId,
-      'program': _config.programCode,
+      'program': _submissionProgramCode,
       'name': _text('name'),
       'tracer_batch': _dropdownValues['tracer_batch'] ?? '',
       'sex': _dropdownValues['sex'] ?? '',
@@ -1710,7 +1814,7 @@ class _TracerFormPageState extends State<TracerFormPage>
           targetId: result['reference_id']?.toString(),
           targetType: 'tracer_submission',
           metadata: {
-            'program': _config.programCode,
+            'program': _submissionProgramCode,
             'employment_status': data['employment_status'],
             'submission_timestamp': result['submission_timestamp'] ?? isoDate,
             'reference_id': result['reference_id'],
@@ -2009,7 +2113,7 @@ class _TracerFormPageState extends State<TracerFormPage>
                   const SizedBox(height: 14),
                   _buildHeroMetaRow('Institution', 'Jose Maria College'),
                   const SizedBox(height: 10),
-                  _buildHeroMetaRow('Program', _config.programCode),
+                  _buildHeroMetaRow('Program', _submissionProgramCode),
                   const SizedBox(height: 10),
                   _buildHeroMetaRow(
                     'Mode',

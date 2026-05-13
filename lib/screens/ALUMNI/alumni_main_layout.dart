@@ -34,11 +34,13 @@ class _AlumniMainLayoutState extends State<AlumniMainLayout> {
   final Color borderColor = const Color(0xFFE0E0E0);
   final TracerFormPageController _tracerController = TracerFormPageController();
   String _assignedTracerFormType = 'GENERIC';
+  String _alumniProgramCode = '';
 
   @override
   void initState() {
     super.initState();
     if (UserStore.value == null) UserStore.set(widget.user);
+    _alumniProgramCode = _currentUserProgramCode();
     _assignedTracerFormType = _fallbackTracerFormType();
     _loadAssignedTracerFormType();
     _fetchNotifications();
@@ -60,18 +62,21 @@ class _AlumniMainLayoutState extends State<AlumniMainLayout> {
       TracerFormPage(
         userId: int.tryParse('${widget.user['id']}') ?? 0,
         programCode: _assignedTracerFormType,
+        submissionProgramCode: _alumniProgramCode,
         controller: _tracerController,
       ),
     ];
   }
 
   String _fallbackTracerFormType() {
-    final currentUser = UserStore.currentUser.value ?? widget.user;
-    final program = _normalizeProgram(
-      currentUser['program'] ?? currentUser['degree'],
-    );
+    final program = _currentUserProgramCode();
     if (program == 'BSIT' || program == 'BSSW') return program;
     return 'GENERIC';
+  }
+
+  String _currentUserProgramCode() {
+    final currentUser = UserStore.currentUser.value ?? widget.user;
+    return _normalizeProgram(currentUser['program'] ?? currentUser['degree']);
   }
 
   String _normalizeProgram(dynamic rawProgram) {
@@ -102,10 +107,12 @@ class _AlumniMainLayoutState extends State<AlumniMainLayout> {
           break;
         }
       }
-      if (match == null || !mounted) return;
+      final matchedProgram = match;
+      if (matchedProgram == null || !mounted) return;
 
       setState(() {
-        _assignedTracerFormType = match!.tracerFormType.toUpperCase();
+        _alumniProgramCode = matchedProgram.code.toUpperCase();
+        _assignedTracerFormType = matchedProgram.tracerFormType.toUpperCase();
       });
     } catch (_) {
       // Keep the local fallback if the program directory is unavailable.
