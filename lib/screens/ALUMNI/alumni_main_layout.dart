@@ -1,14 +1,13 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../services/content_service.dart';
+import '../../services/program_service.dart';
 import '../widgets/sidebar.dart';
 import 'alumni_dashboard.dart';
 import 'profile_page.dart';
 import 'announcement_page.dart';
 import 'jobs_page.dart';
 import 'settings_page.dart';
-import 'bsit_tracer.dart';
-import 'bssw_tracer.dart';
 import 'tracer_form_page.dart';
 import '../../state/user_store.dart';
 
@@ -21,8 +20,7 @@ class AlumniMainLayout extends StatefulWidget {
 }
 
 class _AlumniMainLayoutState extends State<AlumniMainLayout> {
-  static const int _bsswTracerIndex = 5;
-  static const int _bsitTracerIndex = 6;
+  static const int _tracerIndex = 5;
   int _selectedIndex = 0;
   bool _isSidebarCollapsed = false;
   bool _hasInitializedLayout = false;
@@ -34,18 +32,23 @@ class _AlumniMainLayoutState extends State<AlumniMainLayout> {
   final Color primaryMaroon = const Color(0xFF4A152C);
   final Color accentGold = const Color(0xFFC5A046);
   final Color borderColor = const Color(0xFFE0E0E0);
-  final TracerFormPageController _bsswTracerController =
-      TracerFormPageController();
-  final TracerFormPageController _bsitTracerController =
-      TracerFormPageController();
-
-  late final List<Widget> _pages;
+  final TracerFormPageController _tracerController = TracerFormPageController();
+  String _assignedTracerFormType = 'GENERIC';
 
   @override
   void initState() {
     super.initState();
     if (UserStore.value == null) UserStore.set(widget.user);
-    _pages = [
+    _assignedTracerFormType = _fallbackTracerFormType();
+    _loadAssignedTracerFormType();
+    _fetchNotifications();
+    _notificationTimer = Timer.periodic(const Duration(seconds: 20), (_) {
+      _fetchNotifications();
+    });
+  }
+
+  List<Widget> _buildPages() {
+    return [
       AlumniDashboard(
         user: widget.user,
         onModuleSelected: _handleModuleSelection,
@@ -54,19 +57,59 @@ class _AlumniMainLayoutState extends State<AlumniMainLayout> {
       AnnouncementPage(user: widget.user),
       AlumniJobsPage(user: widget.user),
       SettingsPage(user: widget.user),
-      BSSWTracerPage(
-        userId: widget.user['id'],
-        controller: _bsswTracerController,
-      ),
-      BSITTracerPage(
-        userId: widget.user['id'],
-        controller: _bsitTracerController,
+      TracerFormPage(
+        userId: int.tryParse('${widget.user['id']}') ?? 0,
+        programCode: _assignedTracerFormType,
+        controller: _tracerController,
       ),
     ];
-    _fetchNotifications();
-    _notificationTimer = Timer.periodic(const Duration(seconds: 20), (_) {
-      _fetchNotifications();
-    });
+  }
+
+  String _fallbackTracerFormType() {
+    final currentUser = UserStore.currentUser.value ?? widget.user;
+    final program = _normalizeProgram(
+      currentUser['program'] ?? currentUser['degree'],
+    );
+    if (program == 'BSIT' || program == 'BSSW') return program;
+    return 'GENERIC';
+  }
+
+  String _normalizeProgram(dynamic rawProgram) {
+    final value = rawProgram?.toString().trim() ?? '';
+    final upper = value.toUpperCase();
+    if (upper.contains('BSIT') || upper.contains('INFORMATION TECHNOLOGY')) {
+      return 'BSIT';
+    }
+    if (upper.contains('BSSW') || upper.contains('SOCIAL WORK')) {
+      return 'BSSW';
+    }
+    return upper;
+  }
+
+  Future<void> _loadAssignedTracerFormType() async {
+    try {
+      final currentUser = UserStore.currentUser.value ?? widget.user;
+      final userProgram = _normalizeProgram(
+        currentUser['program'] ?? currentUser['degree'],
+      );
+      if (userProgram.isEmpty) return;
+
+      final programs = await ProgramService.fetch(activeOnly: true);
+      AlumniProgram? match;
+      for (final program in programs) {
+        if (program.code.toUpperCase() == userProgram) {
+          match = program;
+          break;
+        }
+      }
+      if (match == null || !mounted) return;
+
+      setState(() {
+        _assignedTracerFormType = match!.tracerFormType.toUpperCase();
+      });
+    } catch (_) {
+      // Keep the local fallback if the program directory is unavailable.
+    }
   }
 
   Future<void> _fetchNotifications() async {
@@ -94,15 +137,11 @@ class _AlumniMainLayoutState extends State<AlumniMainLayout> {
     super.dispose();
   }
 
-  bool _isTracerIndex(int index) =>
-      index == _bsswTracerIndex || index == _bsitTracerIndex;
+  bool _isTracerIndex(int index) => index == _tracerIndex;
 
   Future<void> _autoSaveActiveTracer({required String reason}) async {
     if (!_isTracerIndex(_selectedIndex)) return;
-    final controller = _selectedIndex == _bsswTracerIndex
-        ? _bsswTracerController
-        : _bsitTracerController;
-    await controller.saveDraftSilently(reason: reason);
+    await _tracerController.saveDraftSilently(reason: reason);
   }
 
   Future<void> _handleModuleSelection(int index) async {
@@ -178,7 +217,8 @@ class _AlumniMainLayoutState extends State<AlumniMainLayout> {
                               ),
                             ),
                             TextButton(
-                              onPressed: () => Navigator.of(dialogContext).pop(),
+                              onPressed: () =>
+                                  Navigator.of(dialogContext).pop(),
                               child: const Text('Close'),
                             ),
                           ],
@@ -197,7 +237,9 @@ class _AlumniMainLayoutState extends State<AlumniMainLayout> {
                                 ),
                               )
                             : ListView.separated(
-                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 8,
+                                ),
                                 itemCount: _notifications.length,
                                 separatorBuilder: (_, _) =>
                                     const Divider(height: 1),
@@ -229,7 +271,8 @@ class _AlumniMainLayoutState extends State<AlumniMainLayout> {
                                       ),
                                     ),
                                     title: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         Text(
@@ -334,7 +377,10 @@ class _AlumniMainLayoutState extends State<AlumniMainLayout> {
               children: [
                 _buildHeader(isMobile),
                 Expanded(
-                  child: IndexedStack(index: _selectedIndex, children: _pages),
+                  child: IndexedStack(
+                    index: _selectedIndex,
+                    children: _buildPages(),
+                  ),
                 ),
               ],
             ),
@@ -465,4 +511,3 @@ class _AlumniMainLayoutState extends State<AlumniMainLayout> {
     );
   }
 }
-

@@ -182,6 +182,13 @@ class _DeanDashboardState extends State<DeanDashboard> {
                               accentGold,
                               contentWidth,
                             ),
+                            _buildStatCard(
+                              "PEO Attainment",
+                              "${_summary['peo_average'] ?? 0}/5",
+                              Icons.stars_outlined,
+                              Colors.purple,
+                              contentWidth,
+                            ),
                           ],
                         ),
                         const SizedBox(height: 32),
@@ -322,6 +329,11 @@ class _DeanDashboardState extends State<DeanDashboard> {
                                           "Batch employment is grouped from year_graduated.",
                                           style: TextStyle(color: Colors.grey),
                                         ),
+                                        SizedBox(height: 8),
+                                        Text(
+                                          "PEO attainment is the mean of all numeric PEO ratings (PEO 1-11) from signed tracer submissions, using the 1-5 scale.",
+                                          style: TextStyle(color: Colors.grey),
+                                        ),
                                       ],
                                     ),
                                   ),
@@ -366,6 +378,11 @@ class _DeanDashboardState extends State<DeanDashboard> {
                                         "Batch employment is grouped from year_graduated.",
                                         style: TextStyle(color: Colors.grey),
                                       ),
+                                      SizedBox(height: 8),
+                                      Text(
+                                        "PEO attainment is the mean of all numeric PEO ratings (PEO 1-11) from signed tracer submissions, using the 1-5 scale.",
+                                        style: TextStyle(color: Colors.grey),
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -407,9 +424,7 @@ class _DeanDashboardState extends State<DeanDashboard> {
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.14),
-        ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
       ),
       child: _assignedProgram == null
           ? DropdownButtonHideUnderline(
@@ -438,21 +453,22 @@ class _DeanDashboardState extends State<DeanDashboard> {
           : Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                  Icon(Icons.lock_outline, color: accentGold, size: 18),
-                  const SizedBox(width: 10),
-                  Text(
-                    _assignedProgram,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
+                Icon(Icons.lock_outline, color: accentGold, size: 18),
+                const SizedBox(width: 10),
+                Text(
+                  _assignedProgram,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ],
-              ),
-      );
+            ),
+    );
 
     return expanded ? SizedBox(width: double.infinity, child: badge) : badge;
   }
+
   Widget _buildEmptyState(String message) {
     return Center(
       child: Text(

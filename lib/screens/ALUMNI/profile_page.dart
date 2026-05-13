@@ -57,6 +57,10 @@ class _ProfilePageState extends State<ProfilePage> {
   String _currentResumePath = '';
   String? _selectedResumeFileName;
   Uint8List? _selectedResumeBytes;
+  String _currentProfilePhotoFileName = '';
+  String _currentProfilePhotoPath = '';
+  String? _selectedProfilePhotoFileName;
+  Uint8List? _selectedProfilePhotoBytes;
 
   List<String> get _yearOptions =>
       List.generate(35, (index) => (DateTime.now().year - index).toString());
@@ -119,6 +123,14 @@ class _ProfilePageState extends State<ProfilePage> {
       'resume_filename',
     ]).trim();
     _currentResumePath = _readValue(user, ['resumePath', 'resume_path']).trim();
+    _currentProfilePhotoFileName = _readValue(user, [
+      'profilePhotoFilename',
+      'profile_photo_filename',
+    ]).trim();
+    _currentProfilePhotoPath = _readValue(user, [
+      'profilePhotoPath',
+      'profile_photo_path',
+    ]).trim();
 
     final civilStatus = _readCivilStatus(user);
     _selectedCivilStatus = _civilStatuses.contains(civilStatus)
@@ -250,6 +262,41 @@ class _ProfilePageState extends State<ProfilePage> {
     setState(() {
       _selectedResumeBytes = fileBytes;
       _selectedResumeFileName = file.name;
+    });
+  }
+
+  Future<void> _pickProfilePhoto() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+      withData: true,
+      withReadStream: true,
+    );
+    if (result == null || result.files.isEmpty) return;
+
+    final file = result.files.single;
+    Uint8List? fileBytes = file.bytes;
+
+    if ((fileBytes == null || fileBytes.isEmpty) && file.readStream != null) {
+      final collected = <int>[];
+      await for (final chunk in file.readStream!) {
+        collected.addAll(chunk);
+      }
+      if (collected.isNotEmpty) {
+        fileBytes = Uint8List.fromList(collected);
+      }
+    }
+
+    if (fileBytes == null || fileBytes.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to read the selected photo.')),
+      );
+      return;
+    }
+
+    setState(() {
+      _selectedProfilePhotoBytes = fileBytes;
+      _selectedProfilePhotoFileName = file.name;
     });
   }
 
@@ -451,6 +498,8 @@ class _ProfilePageState extends State<ProfilePage> {
                     title: "Personal Information",
                     icon: Icons.person_outline,
                     children: [
+                      _buildProfilePhotoCard(),
+                      const SizedBox(height: 20),
                       if (isNarrow)
                         Column(
                           children: [
@@ -726,6 +775,12 @@ class _ProfilePageState extends State<ProfilePage> {
       'resume_filename': _selectedResumeFileName ?? _currentResumeFileName,
       'resumePath': _currentResumePath,
       'resume_path': _currentResumePath,
+      'profilePhotoFilename':
+          _selectedProfilePhotoFileName ?? _currentProfilePhotoFileName,
+      'profile_photo_filename':
+          _selectedProfilePhotoFileName ?? _currentProfilePhotoFileName,
+      'profilePhotoPath': _currentProfilePhotoPath,
+      'profile_photo_path': _currentProfilePhotoPath,
     };
 
     UserStore.patch(localPatch);
@@ -749,6 +804,12 @@ class _ProfilePageState extends State<ProfilePage> {
             if (_selectedResumeBytes != null &&
                 (_selectedResumeFileName ?? '').isNotEmpty)
               "resume_file_name": _selectedResumeFileName,
+            if (_selectedProfilePhotoBytes != null &&
+                (_selectedProfilePhotoFileName ?? '').isNotEmpty)
+              "profile_photo_base64": base64Encode(_selectedProfilePhotoBytes!),
+            if (_selectedProfilePhotoBytes != null &&
+                (_selectedProfilePhotoFileName ?? '').isNotEmpty)
+              "profile_photo_file_name": _selectedProfilePhotoFileName,
           }),
         );
 
@@ -775,6 +836,18 @@ class _ProfilePageState extends State<ProfilePage> {
                       .toString();
               _selectedResumeBytes = null;
               _selectedResumeFileName = null;
+              _currentProfilePhotoFileName =
+                  (updatedUser['profile_photo_filename'] ??
+                          updatedUser['profilePhotoFilename'] ??
+                          '')
+                      .toString();
+              _currentProfilePhotoPath =
+                  (updatedUser['profile_photo_path'] ??
+                          updatedUser['profilePhotoPath'] ??
+                          '')
+                      .toString();
+              _selectedProfilePhotoBytes = null;
+              _selectedProfilePhotoFileName = null;
               await ActivityService.logImportantFlow(
                 action: 'profile_update',
                 title:
@@ -789,6 +862,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   'graduation_year': gradYear,
                   'civil_status': civilStatus,
                   'resume_filename': _currentResumeFileName,
+                  'profile_photo_filename': _currentProfilePhotoFileName,
                 },
               );
             } else if (status != null && status != 'success') {
@@ -1099,6 +1173,96 @@ class _ProfilePageState extends State<ProfilePage> {
               style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
             ),
           ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfilePhotoCard() {
+    final fileLabel =
+        _selectedProfilePhotoFileName ??
+        (_currentProfilePhotoFileName.isNotEmpty
+            ? _currentProfilePhotoFileName
+            : 'No profile photo uploaded yet');
+    final selectedBytes = _selectedProfilePhotoBytes;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: lightBackground,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CircleAvatar(
+            radius: 34,
+            backgroundColor: primaryMaroon.withValues(alpha: 0.10),
+            backgroundImage: selectedBytes == null
+                ? null
+                : MemoryImage(selectedBytes),
+            child: selectedBytes == null
+                ? Icon(Icons.person_outline, color: primaryMaroon, size: 30)
+                : null,
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Profile Photo',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Used for profile presentation and future alumni ID generation.',
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  fileLabel,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: fileLabel == 'No profile photo uploaded yet'
+                        ? Colors.grey.shade700
+                        : Colors.black87,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                if (_isEditing) ...[
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: _pickProfilePhoto,
+                        icon: const Icon(Icons.add_a_photo_outlined, size: 18),
+                        label: Text(
+                          _selectedProfilePhotoFileName == null
+                              ? 'Upload Photo'
+                              : 'Replace Photo',
+                        ),
+                      ),
+                      if (_selectedProfilePhotoFileName != null)
+                        TextButton(
+                          onPressed: () {
+                            setState(() {
+                              _selectedProfilePhotoFileName = null;
+                              _selectedProfilePhotoBytes = null;
+                            });
+                          },
+                          child: const Text('Clear Selection'),
+                        ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
         ],
       ),
     );

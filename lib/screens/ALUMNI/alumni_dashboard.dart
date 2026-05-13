@@ -180,7 +180,6 @@ class _AlumniDashboardState extends State<AlumniDashboard> {
     );
   }
 
-
   Widget _tracerCard(BuildContext context) {
     final isSubmitted = tracerInfo != null && tracerInfo!['submitted'] == "Yes";
     final hasDraft = tracerInfo != null && tracerInfo!['draft_saved'] == "Yes";
@@ -597,11 +596,7 @@ class _AlumniDashboardState extends State<AlumniDashboard> {
           widget.user['program'] ??
           widget.user['degree'],
     );
-    final tracerIndex = switch (program) {
-      "BSSW" => 5,
-      "BSIT" => 6,
-      _ => -1,
-    };
+    final tracerIndex = program.isEmpty ? -1 : 5;
 
     if (tracerIndex != -1) {
       widget.onModuleSelected?.call(tracerIndex);

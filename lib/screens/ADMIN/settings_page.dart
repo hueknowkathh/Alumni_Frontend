@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 
 import '../../services/activity_service.dart';
 import '../../services/api_service.dart';
+import '../../services/program_service.dart';
 import '../../state/user_store.dart';
 import '../widgets/luxury_module_banner.dart';
 
@@ -32,6 +33,7 @@ class _AdminSettingsState extends State<AdminSettings> {
   late final TextEditingController _newUserPasswordController;
 
   List<Map<String, dynamic>> _privilegedUsers = [];
+  List<String> _programOptions = const ['BSIT', 'BSSW'];
   final Set<int> _deletingPrivilegedUserIds = <int>{};
   bool _emailAnnouncements = true;
   bool _emailReminders = true;
@@ -71,6 +73,7 @@ class _AdminSettingsState extends State<AdminSettings> {
     _newUserEmailController = TextEditingController();
     _newUserPasswordController = TextEditingController();
     _fetchPrivilegedUsers();
+    _fetchProgramOptions();
 
     _emailAnnouncements =
         _boolFromUser(
@@ -132,26 +135,27 @@ class _AdminSettingsState extends State<AdminSettings> {
         ? (item['metadata'] as Map).map((key, value) => MapEntry('$key', value))
         : const <String, dynamic>{};
     final targetId = _toInt(item['target_id'] ?? metadata['target_id']);
-    final createdRole = (metadata['created_role'] ??
-            item['target_type'] ??
-            item['role'] ??
-            '')
-        .toString()
-        .trim()
-        .toLowerCase();
+    final createdRole =
+        (metadata['created_role'] ?? item['target_type'] ?? item['role'] ?? '')
+            .toString()
+            .trim()
+            .toLowerCase();
 
     return {
       'id': targetId,
-      'name': (metadata['target_user_name'] ??
-              item['target_name'] ??
-              item['title'] ??
-              'Created account')
-          .toString(),
+      'name':
+          (metadata['target_user_name'] ??
+                  item['target_name'] ??
+                  item['title'] ??
+                  'Created account')
+              .toString(),
       'email': (metadata['email'] ?? item['user_email'] ?? '').toString(),
       'role': createdRole,
       'program': (metadata['program'] ?? '').toString(),
-      'created_at': (item['occurred_at'] ?? item['created_at'] ?? '').toString(),
-      'user_name': (item['user_name'] ?? metadata['actor_name'] ?? '').toString(),
+      'created_at': (item['occurred_at'] ?? item['created_at'] ?? '')
+          .toString(),
+      'user_name': (item['user_name'] ?? metadata['actor_name'] ?? '')
+          .toString(),
       'metadata': metadata,
       'source_type': 'activity',
       'can_delete': targetId > 0,
@@ -276,7 +280,8 @@ class _AdminSettingsState extends State<AdminSettings> {
                             const SizedBox(height: 6),
                             Text(
                               [
-                                if (accountEmail.trim().isNotEmpty) accountEmail,
+                                if (accountEmail.trim().isNotEmpty)
+                                  accountEmail,
                                 if (accountRole.trim().isNotEmpty) accountRole,
                               ].join(' | '),
                               style: TextStyle(
@@ -298,8 +303,11 @@ class _AdminSettingsState extends State<AdminSettings> {
                     child: FutureBuilder<List<Map<String, dynamic>>>(
                       future: _fetchPrivilegedUserHistory(account),
                       builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return const Center(child: CircularProgressIndicator());
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
                         }
 
                         if (snapshot.hasError) {
@@ -330,11 +338,12 @@ class _AdminSettingsState extends State<AdminSettings> {
                             final title = (entry['title'] ?? 'Activity')
                                 .toString();
                             final subtitle = _historyEventSubtitle(entry);
-                            final time = (entry['time'] ??
-                                    entry['occurred_at'] ??
-                                    entry['created_at'] ??
-                                    '')
-                                .toString();
+                            final time =
+                                (entry['time'] ??
+                                        entry['occurred_at'] ??
+                                        entry['created_at'] ??
+                                        '')
+                                    .toString();
 
                             return Container(
                               padding: const EdgeInsets.all(16),
@@ -598,9 +607,10 @@ class _AdminSettingsState extends State<AdminSettings> {
 
     final firstName = _newUserFirstNameController.text.trim();
     final lastName = _newUserLastNameController.text.trim();
-    final fullName = [firstName, lastName]
-        .where((value) => value.isNotEmpty)
-        .join(' ');
+    final fullName = [
+      firstName,
+      lastName,
+    ].where((value) => value.isNotEmpty).join(' ');
     final role = _provisionRole;
     final program = role == 'dean' ? _provisionProgram : '';
 
@@ -686,6 +696,22 @@ class _AdminSettingsState extends State<AdminSettings> {
     }
   }
 
+  Future<void> _fetchProgramOptions() async {
+    try {
+      final programs = await ProgramService.fetch(activeOnly: true);
+      if (!mounted || programs.isEmpty) return;
+      final options = programs.map((program) => program.code).toList();
+      setState(() {
+        _programOptions = options;
+        if (!_programOptions.contains(_provisionProgram)) {
+          _provisionProgram = _programOptions.first;
+        }
+      });
+    } catch (_) {
+      // Keep the built-in defaults if the program directory is unavailable.
+    }
+  }
+
   Future<void> _fetchPrivilegedUsers() async {
     if (_isLoadingPrivilegedUsers) return;
     setState(() => _isLoadingPrivilegedUsers = true);
@@ -706,11 +732,13 @@ class _AdminSettingsState extends State<AdminSettings> {
             decoded['users'] is List) {
           rawUsers = (decoded['users'] as List)
               .whereType<Map>()
-              .map((item) => {
-                    ...Map<String, dynamic>.from(item),
-                    'source_type': 'directory',
-                    'can_delete': false,
-                  })
+              .map(
+                (item) => {
+                  ...Map<String, dynamic>.from(item),
+                  'source_type': 'directory',
+                  'can_delete': false,
+                },
+              )
               .toList();
           loadedFromDirectory = true;
         }
@@ -774,7 +802,9 @@ class _AdminSettingsState extends State<AdminSettings> {
               child: const Text('Cancel'),
             ),
             FilledButton(
-              style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.red.shade700,
+              ),
               onPressed: () => Navigator.of(dialogContext).pop(true),
               child: const Text('Delete'),
             ),
@@ -1425,7 +1455,7 @@ class _AdminSettingsState extends State<AdminSettings> {
                         _buildDropdownField(
                           label: 'Assigned Program',
                           value: _provisionProgram,
-                          items: const ['BSIT', 'BSSW'],
+                          items: _programOptions,
                           onChanged: (value) {
                             if (value == null) return;
                             setState(() => _provisionProgram = value);
@@ -1453,7 +1483,7 @@ class _AdminSettingsState extends State<AdminSettings> {
                           child: _buildDropdownField(
                             label: 'Assigned Program',
                             value: _provisionProgram,
-                            items: const ['BSIT', 'BSSW'],
+                            items: _programOptions,
                             onChanged: (value) {
                               if (value == null) return;
                               setState(() => _provisionProgram = value);
@@ -1490,7 +1520,9 @@ class _AdminSettingsState extends State<AdminSettings> {
           Align(
             alignment: Alignment.centerRight,
             child: TextButton.icon(
-              onPressed: _isLoadingPrivilegedUsers ? null : _fetchPrivilegedUsers,
+              onPressed: _isLoadingPrivilegedUsers
+                  ? null
+                  : _fetchPrivilegedUsers,
               icon: const Icon(Icons.refresh_rounded, size: 18),
               label: const Text('Refresh'),
             ),
@@ -1518,33 +1550,40 @@ class _AdminSettingsState extends State<AdminSettings> {
                         (key, value) => MapEntry('$key', value),
                       )
                     : const <String, dynamic>{};
-                final createdName = (event['name'] ??
-                        metadata['target_user_name'] ??
-                        event['target_name'] ??
-                        event['title'] ??
-                        'Created account')
-                    .toString();
-                final role = (event['role'] ??
-                        metadata['created_role'] ??
-                        event['target_type'] ??
-                        '')
-                    .toString()
-                    .toUpperCase();
-                final actorName = (event['user_name'] ??
-                        metadata['actor_name'] ??
-                        _readValue(['name']) ??
-                        'Administrator')
-                    .toString();
-                final email =
-                    (event['email'] ?? metadata['email'] ?? event['user_email'] ?? '')
+                final createdName =
+                    (event['name'] ??
+                            metadata['target_user_name'] ??
+                            event['target_name'] ??
+                            event['title'] ??
+                            'Created account')
                         .toString();
-                final program =
-                    (event['program'] ?? metadata['program'] ?? '').toString();
-                final time = (event['time'] ??
-                        event['occurred_at'] ??
-                        event['created_at'] ??
-                        '')
+                final role =
+                    (event['role'] ??
+                            metadata['created_role'] ??
+                            event['target_type'] ??
+                            '')
+                        .toString()
+                        .toUpperCase();
+                final actorName =
+                    (event['user_name'] ??
+                            metadata['actor_name'] ??
+                            _readValue(['name']) ??
+                            'Administrator')
+                        .toString();
+                final email =
+                    (event['email'] ??
+                            metadata['email'] ??
+                            event['user_email'] ??
+                            '')
+                        .toString();
+                final program = (event['program'] ?? metadata['program'] ?? '')
                     .toString();
+                final time =
+                    (event['time'] ??
+                            event['occurred_at'] ??
+                            event['created_at'] ??
+                            '')
+                        .toString();
                 final accountId =
                     int.tryParse((event['id'] ?? '').toString()) ?? 0;
                 final isCurrentUser = accountId > 0 && accountId == _userId;

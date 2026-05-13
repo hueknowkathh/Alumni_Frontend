@@ -8,6 +8,7 @@ import 'tracer_data.dart';
 import 'pending_users.dart';
 import 'announcements_page.dart';
 import 'jobs_page.dart';
+import 'programs_page.dart';
 import 'settings_page.dart';
 import 'latest_registrations.dart';
 import 'dart:convert';
@@ -67,7 +68,7 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
   void initState() {
     super.initState();
     if (UserStore.value == null) UserStore.set(widget.user);
-    _pageCache = List<Widget?>.filled(10, null);
+    _pageCache = List<Widget?>.filled(11, null);
     fetchFullActivity();
     fetchAllUsers();
     _dashboardRealtimeTimer = Timer.periodic(const Duration(seconds: 10), (_) {
@@ -376,7 +377,7 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
           user: widget.user,
           onActionSelected: (target) => setState(() => _selectedIndex = target),
           onOpenRecentActivity: _openRecentActivityPage,
-          onOpenLatestUsers: () => setState(() => _selectedIndex = 9),
+          onOpenLatestUsers: () => setState(() => _selectedIndex = 10),
         );
       case 1:
         return const AlumniList();
@@ -391,15 +392,17 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
       case 6:
         return const JobsPage();
       case 7:
-        return const AdminSettings();
+        return const ProgramsPage();
       case 8:
+        return const AdminSettings();
+      case 9:
         return RecentActivityPage(
           activities: _allActivities,
           isLoading: _isLoadingActivity,
           onBack: () => setState(() => _selectedIndex = dashboard),
           onRefresh: fetchFullActivity,
         );
-      case 9:
+      case 10:
         return UserRegistrationsPage(
           users: _allUsers,
           isLoading: _isLoadingUsers,

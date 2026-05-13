@@ -552,6 +552,7 @@ class _SidebarState extends State<Sidebar> {
           {'title': 'Verify Users', 'icon': Icons.verified_user_outlined},
           {'title': 'Announcements', 'icon': Icons.campaign_outlined},
           {'title': 'Jobs', 'icon': Icons.work_outline},
+          {'title': 'Programs', 'icon': Icons.account_tree_outlined},
           {'title': 'Settings', 'icon': Icons.settings_outlined},
         ];
       case 'dean':

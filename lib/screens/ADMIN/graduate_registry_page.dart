@@ -42,8 +42,14 @@ class _GraduateRegistryPageState extends State<GraduateRegistryPage> {
 
   String _selectedProgram = 'All Programs';
   String _selectedYear = 'All Batches';
+  String _selectedRegistrationStatus = 'All Statuses';
   List<String> _programOptions = const ['All Programs'];
   List<String> _yearOptions = const ['All Batches'];
+  static const List<String> _registrationStatusOptions = [
+    'All Statuses',
+    'Registered',
+    'Not Registered',
+  ];
 
   int get _totalGraduates => _allGraduates.length;
 
@@ -136,6 +142,7 @@ class _GraduateRegistryPageState extends State<GraduateRegistryPage> {
           .toLowerCase();
       final program = (row['program'] ?? '').toString();
       final year = (row['year_graduated'] ?? '').toString();
+      final isRegistered = (row['is_registered'] ?? false) == true;
 
       final matchesSearch =
           search.isEmpty ||
@@ -147,8 +154,16 @@ class _GraduateRegistryPageState extends State<GraduateRegistryPage> {
           _selectedProgram == 'All Programs' || program == _selectedProgram;
       final matchesYear =
           _selectedYear == 'All Batches' || year == _selectedYear;
+      final matchesRegistrationStatus =
+          _selectedRegistrationStatus == 'All Statuses' ||
+          (_selectedRegistrationStatus == 'Registered' && isRegistered) ||
+          (_selectedRegistrationStatus == 'Not Registered' && !isRegistered);
 
-      return matchesActiveProgram && matchesSearch && matchesProgram && matchesYear;
+      return matchesActiveProgram &&
+          matchesSearch &&
+          matchesProgram &&
+          matchesYear &&
+          matchesRegistrationStatus;
     }).toList();
   }
 
@@ -243,17 +258,9 @@ class _GraduateRegistryPageState extends State<GraduateRegistryPage> {
     try {
       final path = await CsvExportService.exportRows(
         filename: 'graduate_registry_template.csv',
-        headers: const [
-          'full_name',
-          'program',
-          'year_graduated',
-        ],
+        headers: const ['full_name', 'program', 'year_graduated'],
         rows: const [
-          [
-            'Juan Santos Dela Cruz',
-            'BSIT',
-            '2021',
-          ],
+          ['Juan Santos Dela Cruz', 'BSIT', '2021'],
         ],
       );
 
@@ -572,6 +579,17 @@ class _GraduateRegistryPageState extends State<GraduateRegistryPage> {
                     });
                   },
                 ),
+                const SizedBox(height: 12),
+                _buildDropdown(
+                  value: _selectedRegistrationStatus,
+                  items: _registrationStatusOptions,
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedRegistrationStatus = value!;
+                      _applyFilters();
+                    });
+                  },
+                ),
               ],
             )
           : Row(
@@ -598,6 +616,19 @@ class _GraduateRegistryPageState extends State<GraduateRegistryPage> {
                     onChanged: (value) {
                       setState(() {
                         _selectedYear = value!;
+                        _applyFilters();
+                      });
+                    },
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildDropdown(
+                    value: _selectedRegistrationStatus,
+                    items: _registrationStatusOptions,
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedRegistrationStatus = value!;
                         _applyFilters();
                       });
                     },
@@ -714,14 +745,12 @@ class _GraduateRegistryPageState extends State<GraduateRegistryPage> {
                   return DataRow(
                     cells: [
                       DataCell(
-                       SizedBox(
-                         width: 260,
+                        SizedBox(
+                          width: 260,
                           child: Text(
                             (row['full_name'] ?? 'N/A').toString(),
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w700,
-                            ),
+                            style: const TextStyle(fontWeight: FontWeight.w700),
                           ),
                         ),
                       ),

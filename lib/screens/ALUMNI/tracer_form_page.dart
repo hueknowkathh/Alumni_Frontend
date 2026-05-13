@@ -11,6 +11,8 @@ import '../../services/api_service.dart';
 import '../../services/activity_service.dart';
 import '../../state/user_store.dart';
 
+part 'tracer_form_configs.dart';
+
 class TracerFormPageController {
   _TracerFormPageState? _state;
 
@@ -885,6 +887,11 @@ class _TracerFormPageState extends State<TracerFormPage>
   }
 
   _ProgramConfig _programConfig(String programCode) {
+    return _tracerConfigForProgram(programCode);
+  }
+
+  // ignore: unused_element
+  _ProgramConfig _legacyProgramConfig(String programCode) {
     if (programCode == 'BSSW') {
       return const _ProgramConfig(
         programCode: 'BSSW',
@@ -2969,7 +2976,9 @@ class _TracerFormPageState extends State<TracerFormPage>
                                 entry.employmentTypeController.clear();
                                 entry.salaryRangeController.clear();
                                 entry.relatedToDegreeController.clear();
-                              } else if (entry.endDateController.text.trim().isEmpty) {
+                              } else if (entry.endDateController.text
+                                  .trim()
+                                  .isEmpty) {
                                 entry.isCurrent = true;
                               }
                             }),
@@ -2984,13 +2993,16 @@ class _TracerFormPageState extends State<TracerFormPage>
                       child: TextFormField(
                         controller: entry.positionController,
                         readOnly: _isReadOnly,
-                        validator: (value) => _timelineEntryNeedsValidation(entry)
+                        validator: (value) =>
+                            _timelineEntryNeedsValidation(entry)
                             ? _requiredFieldValidator(
                                 value,
                                 'job title / position',
                               )
                             : null,
-                        decoration: _inputDecoration(_timelinePositionLabel(entry)),
+                        decoration: _inputDecoration(
+                          _timelinePositionLabel(entry),
+                        ),
                       ),
                     ),
                   if (_timelineEntryUsesJobFields(entry))
@@ -2999,13 +3011,16 @@ class _TracerFormPageState extends State<TracerFormPage>
                       child: TextFormField(
                         controller: entry.employerController,
                         readOnly: _isReadOnly,
-                        validator: (value) => _timelineEntryNeedsValidation(entry)
+                        validator: (value) =>
+                            _timelineEntryNeedsValidation(entry)
                             ? _requiredFieldValidator(
                                 value,
                                 'employer / organization',
                               )
                             : null,
-                        decoration: _inputDecoration(_timelineEmployerLabel(entry)),
+                        decoration: _inputDecoration(
+                          _timelineEmployerLabel(entry),
+                        ),
                       ),
                     ),
                   if (_timelineEntryUsesJobFields(entry))
@@ -3014,7 +3029,8 @@ class _TracerFormPageState extends State<TracerFormPage>
                       child: TextFormField(
                         controller: entry.employmentTypeController,
                         readOnly: _isReadOnly,
-                        validator: (value) => _timelineEntryNeedsValidation(entry)
+                        validator: (value) =>
+                            _timelineEntryNeedsValidation(entry)
                             ? _requiredFieldValidator(value, 'employment type')
                             : null,
                         decoration: _inputDecoration('Employment Type'),
@@ -3026,7 +3042,8 @@ class _TracerFormPageState extends State<TracerFormPage>
                       child: TextFormField(
                         controller: entry.sectorController,
                         readOnly: _isReadOnly,
-                        validator: (value) => _timelineEntryNeedsValidation(entry)
+                        validator: (value) =>
+                            _timelineEntryNeedsValidation(entry)
                             ? _requiredFieldValidator(value, 'sector')
                             : null,
                         decoration: _inputDecoration('Sector'),
@@ -3038,8 +3055,12 @@ class _TracerFormPageState extends State<TracerFormPage>
                       child: TextFormField(
                         controller: entry.locationController,
                         readOnly: _isReadOnly,
-                        validator: (value) => _timelineEntryNeedsValidation(entry)
-                            ? _requiredFieldValidator(value, 'country / location')
+                        validator: (value) =>
+                            _timelineEntryNeedsValidation(entry)
+                            ? _requiredFieldValidator(
+                                value,
+                                'country / location',
+                              )
                             : null,
                         decoration: _inputDecoration('Country / Location'),
                       ),
@@ -3089,7 +3110,8 @@ class _TracerFormPageState extends State<TracerFormPage>
                       child: TextFormField(
                         controller: entry.salaryRangeController,
                         readOnly: _isReadOnly,
-                        validator: (value) => _timelineEntryNeedsValidation(entry)
+                        validator: (value) =>
+                            _timelineEntryNeedsValidation(entry)
                             ? _requiredFieldValidator(value, 'salary range')
                             : null,
                         decoration: _inputDecoration('Salary Range'),
@@ -3101,8 +3123,12 @@ class _TracerFormPageState extends State<TracerFormPage>
                       child: TextFormField(
                         controller: entry.relatedToDegreeController,
                         readOnly: _isReadOnly,
-                        validator: (value) => _timelineEntryNeedsValidation(entry)
-                            ? _requiredFieldValidator(value, 'related to degree')
+                        validator: (value) =>
+                            _timelineEntryNeedsValidation(entry)
+                            ? _requiredFieldValidator(
+                                value,
+                                'related to degree',
+                              )
                             : null,
                         decoration: _inputDecoration('Related to Degree'),
                       ),
