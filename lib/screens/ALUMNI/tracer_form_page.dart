@@ -58,6 +58,13 @@ String _stringOrEmpty(dynamic value) {
   return text.toLowerCase() == 'null' ? '' : text;
 }
 
+String? _normalizeYesNo(dynamic value) {
+  final text = _stringOrEmpty(value).toLowerCase();
+  if (text == 'yes' || text == 'y' || text == 'true') return 'Yes';
+  if (text == 'no' || text == 'n' || text == 'false') return 'No';
+  return null;
+}
+
 enum _FieldType { text, multiline, dropdown, checkboxGroup, rating, decade }
 
 class _QuestionDef {
@@ -175,7 +182,7 @@ class _CareerTimelineEntry {
       salaryRange: _stringOrEmpty(
         map['salary_range'] ?? map['monthly_income'] ?? map['income_range'],
       ),
-      relatedToDegree: _stringOrEmpty(
+      relatedToDegree: _normalizeYesNo(
         map['related_to_degree'] ?? map['related_job'] ?? map['job_related'],
       ),
       notes: _stringOrEmpty(map['notes'] ?? map['remarks']),
@@ -472,7 +479,7 @@ class _TracerFormPageState extends State<TracerFormPage>
       key: 'related_job',
       label: _config.currentJobRelatedLabel,
       type: _FieldType.dropdown,
-      options: ['Yes', 'Somewhat', 'No'],
+      options: ['Yes', 'No'],
     ),
     const _QuestionDef(
       key: 'underutilized_reason',
@@ -3026,27 +3033,90 @@ class _TracerFormPageState extends State<TracerFormPage>
                   if (_timelineEntryUsesJobFields(entry))
                     SizedBox(
                       width: threeColumnWidth,
-                      child: TextFormField(
-                        controller: entry.employmentTypeController,
-                        readOnly: _isReadOnly,
+                      child: DropdownButtonFormField<String>(
+                        initialValue:
+                            [
+                              'Full-time',
+                              'Part-time',
+                              'Project-based',
+                              'Freelance',
+                            ].contains(
+                              entry.employmentTypeController.text.trim(),
+                            )
+                            ? entry.employmentTypeController.text.trim()
+                            : null,
+                        isExpanded: true,
+                        decoration: _inputDecoration('Employment Type'),
+                        items:
+                            const [
+                                  'Full-time',
+                                  'Part-time',
+                                  'Project-based',
+                                  'Freelance',
+                                ]
+                                .map(
+                                  (option) => DropdownMenuItem(
+                                    value: option,
+                                    child: Text(option),
+                                  ),
+                                )
+                                .toList(),
+                        onChanged: _isReadOnly
+                            ? null
+                            : (value) {
+                                setState(() {
+                                  entry.employmentTypeController.text =
+                                      value ?? '';
+                                });
+                              },
                         validator: (value) =>
                             _timelineEntryNeedsValidation(entry)
                             ? _requiredFieldValidator(value, 'employment type')
                             : null,
-                        decoration: _inputDecoration('Employment Type'),
                       ),
                     ),
                   if (_timelineEntryUsesJobFields(entry))
                     SizedBox(
                       width: fourColumnWidth,
-                      child: TextFormField(
-                        controller: entry.sectorController,
-                        readOnly: _isReadOnly,
+                      child: DropdownButtonFormField<String>(
+                        initialValue:
+                            [
+                              'Government',
+                              'Private',
+                              'NGO',
+                              'Academic',
+                              'Overseas',
+                            ].contains(entry.sectorController.text.trim())
+                            ? entry.sectorController.text.trim()
+                            : null,
+                        isExpanded: true,
+                        decoration: _inputDecoration('Sector'),
+                        items:
+                            const [
+                                  'Government',
+                                  'Private',
+                                  'NGO',
+                                  'Academic',
+                                  'Overseas',
+                                ]
+                                .map(
+                                  (option) => DropdownMenuItem(
+                                    value: option,
+                                    child: Text(option),
+                                  ),
+                                )
+                                .toList(),
+                        onChanged: _isReadOnly
+                            ? null
+                            : (value) {
+                                setState(() {
+                                  entry.sectorController.text = value ?? '';
+                                });
+                              },
                         validator: (value) =>
                             _timelineEntryNeedsValidation(entry)
                             ? _requiredFieldValidator(value, 'sector')
                             : null,
-                        decoration: _inputDecoration('Sector'),
                       ),
                     ),
                   if (_timelineEntryUsesJobFields(entry))
@@ -3107,22 +3177,78 @@ class _TracerFormPageState extends State<TracerFormPage>
                   if (_timelineEntryUsesJobFields(entry))
                     SizedBox(
                       width: twoColumnWidth,
-                      child: TextFormField(
-                        controller: entry.salaryRangeController,
-                        readOnly: _isReadOnly,
+                      child: DropdownButtonFormField<String>(
+                        initialValue:
+                            [
+                              '<15k',
+                              '15-25k',
+                              '25-35k',
+                              '35-50k',
+                              '50-75k',
+                              '>75k',
+                            ].contains(entry.salaryRangeController.text.trim())
+                            ? entry.salaryRangeController.text.trim()
+                            : null,
+                        isExpanded: true,
+                        decoration: _inputDecoration('Salary Range'),
+                        items:
+                            const [
+                                  '<15k',
+                                  '15-25k',
+                                  '25-35k',
+                                  '35-50k',
+                                  '50-75k',
+                                  '>75k',
+                                ]
+                                .map(
+                                  (option) => DropdownMenuItem(
+                                    value: option,
+                                    child: Text(option),
+                                  ),
+                                )
+                                .toList(),
+                        onChanged: _isReadOnly
+                            ? null
+                            : (value) {
+                                setState(() {
+                                  entry.salaryRangeController.text =
+                                      value ?? '';
+                                });
+                              },
                         validator: (value) =>
                             _timelineEntryNeedsValidation(entry)
                             ? _requiredFieldValidator(value, 'salary range')
                             : null,
-                        decoration: _inputDecoration('Salary Range'),
                       ),
                     ),
                   if (_timelineEntryUsesJobFields(entry))
                     SizedBox(
                       width: twoColumnWidth,
-                      child: TextFormField(
-                        controller: entry.relatedToDegreeController,
-                        readOnly: _isReadOnly,
+                      child: DropdownButtonFormField<String>(
+                        initialValue:
+                            ['Yes', 'No'].contains(
+                              entry.relatedToDegreeController.text.trim(),
+                            )
+                            ? entry.relatedToDegreeController.text.trim()
+                            : null,
+                        isExpanded: true,
+                        decoration: _inputDecoration('Related to Degree'),
+                        items: const ['Yes', 'No']
+                            .map(
+                              (option) => DropdownMenuItem(
+                                value: option,
+                                child: Text(option),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: _isReadOnly
+                            ? null
+                            : (value) {
+                                setState(() {
+                                  entry.relatedToDegreeController.text =
+                                      value ?? '';
+                                });
+                              },
                         validator: (value) =>
                             _timelineEntryNeedsValidation(entry)
                             ? _requiredFieldValidator(
@@ -3130,7 +3256,6 @@ class _TracerFormPageState extends State<TracerFormPage>
                                 'related to degree',
                               )
                             : null,
-                        decoration: _inputDecoration('Related to Degree'),
                       ),
                     ),
                   SizedBox(
