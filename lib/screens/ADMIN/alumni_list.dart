@@ -97,6 +97,26 @@ class _AlumniListState extends State<AlumniList> {
     }
   }
 
+  String _displayName(dynamic value) {
+    final normalized =
+        value?.toString().trim().replaceAll(RegExp(r'\s+'), ' ') ?? '';
+    if (normalized.isEmpty) return 'N/A';
+
+    return normalized
+        .split(' ')
+        .map((word) {
+          return word
+              .split('-')
+              .map((part) {
+                if (part.isEmpty) return part;
+                final lower = part.toLowerCase();
+                return lower[0].toUpperCase() + lower.substring(1);
+              })
+              .join('-');
+        })
+        .join(' ');
+  }
+
   String _resolveEmploymentStatus(Map<String, dynamic> user) {
     final candidates = [
       user['employment_status'],
@@ -251,16 +271,10 @@ class _AlumniListState extends State<AlumniList> {
                         ? Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _buildProfileDialogHeader(
-                                user,
-                                isCompact: true,
-                              ),
+                              _buildProfileDialogHeader(user, isCompact: true),
                             ],
                           )
-                        : _buildProfileDialogHeader(
-                            user,
-                            isCompact: false,
-                          ),
+                        : _buildProfileDialogHeader(user, isCompact: false),
                   ),
                   Flexible(
                     child: SingleChildScrollView(
@@ -278,7 +292,7 @@ class _AlumniListState extends State<AlumniList> {
                             [
                               _buildProfileInfoTile(
                                 'Full Name',
-                                user['name']?.toString(),
+                                _displayName(user['name']),
                               ),
                               _buildProfileInfoTile(
                                 'Email Address',
@@ -359,7 +373,7 @@ class _AlumniListState extends State<AlumniList> {
         _viewUserHistory(user);
         break;
       case 'delete':
-        await _deleteAlumni(user['id'].toString(), user['name']);
+        await _deleteAlumni(user['id'].toString(), _displayName(user['name']));
         break;
     }
   }
@@ -379,7 +393,10 @@ class _AlumniListState extends State<AlumniList> {
         final matchesYear =
             selectedYear == "All Years" ||
             alumni['year'].toString() == selectedYear;
-        return matchesActiveProgram && matchesSearch && matchesProgram && matchesYear;
+        return matchesActiveProgram &&
+            matchesSearch &&
+            matchesProgram &&
+            matchesYear;
       }).toList();
     });
   }
@@ -402,13 +419,12 @@ class _AlumniListState extends State<AlumniList> {
   Future<void> _exportCsv() async {
     try {
       final path = await CsvExportService.exportRows(
-        filename:
-            'alumni_list_${DateTime.now().millisecondsSinceEpoch}.csv',
+        filename: 'alumni_list_${DateTime.now().millisecondsSinceEpoch}.csv',
         headers: const ['Name', 'Email', 'Program', 'Year', 'Status'],
         rows: filteredAlumni
             .map(
               (user) => [
-                (user['name'] ?? 'N/A').toString(),
+                _displayName(user['name']),
                 (user['email'] ?? 'N/A').toString(),
                 (user['program'] ?? 'N/A').toString(),
                 (user['year'] ?? 'N/A').toString(),
@@ -449,7 +465,7 @@ class _AlumniListState extends State<AlumniList> {
     Map<String, dynamic> user, {
     required bool isCompact,
   }) {
-    final name = user['name']?.toString().trim();
+    final name = _displayName(user['name']);
     final program = user['program']?.toString().trim();
     final year = user['year']?.toString().trim();
     final summaryText = [
@@ -457,8 +473,7 @@ class _AlumniListState extends State<AlumniList> {
       if (year != null && year.isNotEmpty) 'Batch $year',
     ].join(' • ');
 
-    final displayName =
-        (name == null || name.isEmpty) ? 'Unnamed Alumni' : name;
+    final displayName = name.isEmpty || name == 'N/A' ? 'Unnamed Alumni' : name;
     final profileChip = Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
@@ -619,8 +634,9 @@ class _AlumniListState extends State<AlumniList> {
 
   Widget _buildProfileInfoTile(String label, String? value) {
     final normalized = value?.trim();
-    final displayValue =
-        (normalized == null || normalized.isEmpty) ? 'N/A' : normalized;
+    final displayValue = (normalized == null || normalized.isEmpty)
+        ? 'N/A'
+        : normalized;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -724,27 +740,19 @@ class _AlumniListState extends State<AlumniList> {
               children: [
                 _buildSearchField(),
                 const SizedBox(height: 12),
-                _buildDropdown(
-                  selectedProgram,
-                  _programOptions,
-                  (val) {
-                    setState(() {
-                      selectedProgram = val!;
-                      _applyFilters();
-                    });
-                  },
-                ),
+                _buildDropdown(selectedProgram, _programOptions, (val) {
+                  setState(() {
+                    selectedProgram = val!;
+                    _applyFilters();
+                  });
+                }),
                 const SizedBox(height: 12),
-                _buildDropdown(
-                  selectedYear,
-                  _yearOptions,
-                  (val) {
-                    setState(() {
-                      selectedYear = val!;
-                      _applyFilters();
-                    });
-                  },
-                ),
+                _buildDropdown(selectedYear, _yearOptions, (val) {
+                  setState(() {
+                    selectedYear = val!;
+                    _applyFilters();
+                  });
+                }),
               ],
             )
           : Row(
@@ -752,29 +760,23 @@ class _AlumniListState extends State<AlumniList> {
                 Expanded(flex: 3, child: _buildSearchField()),
                 const SizedBox(width: 16),
                 Expanded(
-                  child: _buildDropdown(
-                    selectedProgram,
-                    _programOptions,
-                    (val) {
-                      setState(() {
-                        selectedProgram = val!;
-                        _applyFilters();
-                      });
-                    },
-                  ),
+                  child: _buildDropdown(selectedProgram, _programOptions, (
+                    val,
+                  ) {
+                    setState(() {
+                      selectedProgram = val!;
+                      _applyFilters();
+                    });
+                  }),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
-                  child: _buildDropdown(
-                    selectedYear,
-                    _yearOptions,
-                    (val) {
-                      setState(() {
-                        selectedYear = val!;
-                        _applyFilters();
-                      });
-                    },
-                  ),
+                  child: _buildDropdown(selectedYear, _yearOptions, (val) {
+                    setState(() {
+                      selectedYear = val!;
+                      _applyFilters();
+                    });
+                  }),
                 ),
               ],
             ),
@@ -869,7 +871,7 @@ class _AlumniListState extends State<AlumniList> {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Text(
-                                    user['name'] ?? 'N/A',
+                                    _displayName(user['name']),
                                     style: const TextStyle(
                                       fontWeight: FontWeight.bold,
                                     ),

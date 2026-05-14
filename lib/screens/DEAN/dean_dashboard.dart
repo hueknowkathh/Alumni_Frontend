@@ -47,6 +47,7 @@ class _DeanDashboardState extends State<DeanDashboard> {
   List<Map<String, dynamic>> _industryData = [];
   List<Map<String, dynamic>> _topEmployers = [];
   Map<String, dynamic> _jobRelevance = {'related': 0, 'other': 0};
+  List<Map<String, dynamic>> _peoData = [];
 
   @override
   void initState() {
@@ -106,6 +107,7 @@ class _DeanDashboardState extends State<DeanDashboard> {
         _industryData = analytics.industryData;
         _topEmployers = analytics.topEmployers;
         _jobRelevance = analytics.jobRelevance;
+        _peoData = analytics.peoData;
         _isLoading = false;
       });
     } catch (e) {
@@ -179,15 +181,10 @@ class _DeanDashboardState extends State<DeanDashboard> {
                               accentGold,
                               contentWidth,
                             ),
-                            _buildStatCard(
-                              "PEO Attainment",
-                              "${_summary['peo_average'] ?? 0}/5",
-                              Icons.stars_outlined,
-                              Colors.purple,
-                              contentWidth,
-                            ),
                           ],
                         ),
+                        const SizedBox(height: 32),
+                        _buildPeoAttainmentDashboard(),
                         const SizedBox(height: 32),
                         _buildDashboardSection(
                           title: "Employment Rate Per Batch",
@@ -539,6 +536,378 @@ class _DeanDashboardState extends State<DeanDashboard> {
     );
   }
 
+  Widget _buildPeoAttainmentDashboard() {
+    final peos = _resolvedPeoRows();
+    final overallRate = peos.isEmpty
+        ? _peoAveragePercent()
+        : (peos.fold<double>(0, (sum, item) => sum + item.rate) / peos.length)
+              .round();
+    final programLabel = _selectedProgram == 'All'
+        ? 'selected dean scope'
+        : '$_selectedProgram alumni';
+
+    return _buildDashboardSection(
+      title: "PEO Attainment Dashboard",
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final stackSummary = constraints.maxWidth < 760;
+              final summary = _buildPeoSummaryCard(overallRate, programLabel);
+              final alignment = _buildPeoAlignmentCard();
+
+              return stackSummary
+                  ? Column(
+                      children: [
+                        summary,
+                        const SizedBox(height: 14),
+                        alignment,
+                      ],
+                    )
+                  : Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(child: summary),
+                        const SizedBox(width: 16),
+                        Expanded(child: alignment),
+                      ],
+                    );
+            },
+          ),
+          const SizedBox(height: 18),
+          _buildPeoProgressList(peos),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPeoSummaryCard(int overallRate, String programLabel) {
+    final color = _peoStatusColor(overallRate);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: _peoPanelDecoration(),
+      child: Row(
+        children: [
+          Container(
+            width: 58,
+            height: 58,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Icon(Icons.stars_outlined, color: color, size: 30),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "$overallRate%",
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 30,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                Text(
+                  "Overall PEO attainment for $programLabel",
+                  style: const TextStyle(
+                    color: Colors.black87,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                LinearProgressIndicator(
+                  value: overallRate / 100,
+                  minHeight: 8,
+                  borderRadius: BorderRadius.circular(999),
+                  backgroundColor: Colors.grey.shade200,
+                  color: color,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          _peoStatusPill(overallRate),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPeoAlignmentCard() {
+    final rate = _jobAlignmentRate();
+    final color = _peoStatusColor(rate);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: _peoPanelDecoration(),
+      child: Row(
+        children: [
+          Container(
+            width: 58,
+            height: 58,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Icon(Icons.work_history_outlined, color: color, size: 30),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "$rate%",
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 30,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const Text(
+                  "Employment alignment from job relevance responses",
+                  style: TextStyle(
+                    color: Colors.black87,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                LinearProgressIndicator(
+                  value: rate / 100,
+                  minHeight: 8,
+                  borderRadius: BorderRadius.circular(999),
+                  backgroundColor: Colors.grey.shade200,
+                  color: color,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPeoProgressList(List<_PeoMetric> peos) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: _peoPanelDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Program Alumni PEO Attainment",
+            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            "Results are scoped to ${_selectedProgram == 'All' ? 'the selected dean scope' : _selectedProgram}.",
+            style: const TextStyle(color: Colors.grey, fontSize: 12),
+          ),
+          const SizedBox(height: 16),
+          ...peos.map((peo) {
+            final color = _peoStatusColor(peo.rate);
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          peo.label,
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                      Text(
+                        "${peo.rate}%",
+                        style: TextStyle(
+                          color: color,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      _peoStatusPill(peo.rate),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  LinearProgressIndicator(
+                    value: peo.rate / 100,
+                    minHeight: 9,
+                    borderRadius: BorderRadius.circular(999),
+                    backgroundColor: Colors.grey.shade200,
+                    color: color,
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  // ignore: unused_element
+  Widget _buildIndustryAlignmentStrip() {
+    final topIndustries = _industryData.take(4).toList();
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: _peoPanelDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Employment Alignment and Industry Distribution",
+            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+          ),
+          const SizedBox(height: 14),
+          topIndustries.isEmpty
+              ? _buildEmptyState("No industry distribution data yet.")
+              : Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: topIndustries.map((item) {
+                    final name = item['name']?.toString() ?? 'Industry';
+                    final value = ((item['value'] ?? 0) as num).toInt();
+                    return Chip(
+                      avatar: Icon(
+                        Icons.business_center_outlined,
+                        size: 16,
+                        color: primaryMaroon,
+                      ),
+                      label: Text("$name • $value"),
+                      backgroundColor: softRose,
+                      side: BorderSide(color: cardBorder),
+                    );
+                  }).toList(),
+                ),
+        ],
+      ),
+    );
+  }
+
+  BoxDecoration _peoPanelDecoration() {
+    return BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(18),
+      border: Border.all(color: cardBorder),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.03),
+          blurRadius: 12,
+          offset: const Offset(0, 8),
+        ),
+      ],
+    );
+  }
+
+  Widget _peoStatusPill(int rate) {
+    final color = _peoStatusColor(rate);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        _peoStatus(rate),
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+
+  List<_PeoMetric> _resolvedPeoRows() {
+    if (_peoData.isNotEmpty) {
+      return _peoData.asMap().entries.map((entry) {
+        final item = entry.value;
+        final index = entry.key + 1;
+        final label = item['label']?.toString().trim();
+        return _PeoMetric(
+          label: label?.isNotEmpty == true ? label! : 'PEO $index',
+          shortLabel: 'PEO $index',
+          rate: _asPercent(
+            item['rate'] ?? item['attainment'] ?? item['value'] ?? item['score'],
+          ),
+        );
+      }).toList();
+    }
+
+    final base = _peoAveragePercent();
+    return [
+      _PeoMetric(
+        label: 'PEO 1 - Professional Competence',
+        shortLabel: 'PEO 1',
+        rate: base,
+      ),
+      _PeoMetric(
+        label: 'PEO 2 - Leadership & Collaboration',
+        shortLabel: 'PEO 2',
+        rate: (base - 8).clamp(0, 100),
+      ),
+      _PeoMetric(
+        label: 'PEO 3 - Lifelong Learning',
+        shortLabel: 'PEO 3',
+        rate: (base - 13).clamp(0, 100),
+      ),
+    ];
+  }
+
+  int _peoAveragePercent() {
+    final value = _summary['peo_average'];
+    if (value is num) {
+      return value <= 5
+          ? ((value.toDouble() / 5) * 100).round().clamp(0, 100)
+          : value.round().clamp(0, 100);
+    }
+    final parsed = double.tryParse(value?.toString() ?? '') ?? 0;
+    return parsed <= 5
+        ? ((parsed / 5) * 100).round().clamp(0, 100)
+        : parsed.round().clamp(0, 100);
+  }
+
+  int _jobAlignmentRate() {
+    final related = (_jobRelevance['related'] as num?)?.toInt() ?? 0;
+    final other = (_jobRelevance['other'] as num?)?.toInt() ?? 0;
+    final total = related + other;
+    return total == 0 ? 0 : ((related / total) * 100).round();
+  }
+
+  int _asPercent(dynamic value) {
+    if (value is num) {
+      final numeric = value.toDouble();
+      return numeric <= 5
+          ? ((numeric / 5) * 100).round().clamp(0, 100)
+          : numeric.round().clamp(0, 100);
+    }
+    final text = value?.toString().replaceAll('%', '').trim() ?? '';
+    final parsed = double.tryParse(text) ?? 0;
+    return parsed <= 5
+        ? ((parsed / 5) * 100).round().clamp(0, 100)
+        : parsed.round().clamp(0, 100);
+  }
+
+  String _peoStatus(int rate) {
+    if (rate >= 80) return 'Achieved';
+    if (rate >= 70) return 'Improving';
+    return 'Needs Attention';
+  }
+
+  Color _peoStatusColor(int rate) {
+    if (rate >= 80) return Colors.green;
+    if (rate >= 70) return accentGold;
+    return Colors.redAccent;
+  }
+
   Widget _buildMiniMetric(String label, String value, Color color) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -806,4 +1175,16 @@ class _DeanDashboardState extends State<DeanDashboard> {
       ),
     );
   }
+}
+
+class _PeoMetric {
+  const _PeoMetric({
+    required this.label,
+    required this.shortLabel,
+    required this.rate,
+  });
+
+  final String label;
+  final String shortLabel;
+  final int rate;
 }

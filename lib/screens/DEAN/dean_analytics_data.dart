@@ -11,6 +11,10 @@ class DeanAnalyticsData {
     required this.industryData,
     required this.topEmployers,
     required this.jobRelevance,
+    required this.peoData,
+    required this.peoTrends,
+    required this.careerProgression,
+    required this.graduateStudies,
   });
 
   final Map<String, dynamic> summary;
@@ -18,6 +22,10 @@ class DeanAnalyticsData {
   final List<Map<String, dynamic>> industryData;
   final List<Map<String, dynamic>> topEmployers;
   final Map<String, dynamic> jobRelevance;
+  final List<Map<String, dynamic>> peoData;
+  final List<Map<String, dynamic>> peoTrends;
+  final Map<String, dynamic> careerProgression;
+  final Map<String, dynamic> graduateStudies;
 
   factory DeanAnalyticsData.fromJson(Map<String, dynamic> decoded) {
     return DeanAnalyticsData(
@@ -36,6 +44,21 @@ class DeanAnalyticsData {
           .toList(),
       jobRelevance: Map<String, dynamic>.from(
         decoded['job_relevance'] ?? const {'related': 0, 'other': 0},
+      ),
+      peoData: ((decoded['peo_data'] ?? decoded['peo_attainment'] ?? []) as List)
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .toList(),
+      peoTrends: ((decoded['peo_trends'] ?? decoded['peo_yearly_trends'] ?? [])
+              as List)
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .toList(),
+      careerProgression: Map<String, dynamic>.from(
+        decoded['career_progression'] ?? const {},
+      ),
+      graduateStudies: Map<String, dynamic>.from(
+        decoded['graduate_studies'] ?? const {},
       ),
     );
   }

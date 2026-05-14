@@ -42,9 +42,7 @@ class _TracerDataPageState extends State<TracerDataPage> {
   bool _isExportingPdf = false;
   String _generatedOn = '';
   String selectedStatus = "All Status";
-  String selectedRelated = "All Degree Related";
   List<String> _statusOptions = const ['All Status'];
-  List<String> _relatedOptions = const ['All Degree Related'];
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -59,13 +57,9 @@ class _TracerDataPageState extends State<TracerDataPage> {
       final options = await FilterOptionsService.fetch();
       if (!mounted) return;
       setState(() {
-        _statusOptions = ['All Status', ...options.statuses];
-        _relatedOptions = ['All Degree Related', ...options.relatedOptions];
+        _statusOptions = _buildStatusOptions(options.statuses);
         if (!_statusOptions.contains(selectedStatus)) {
           selectedStatus = _statusOptions.first;
-        }
-        if (!_relatedOptions.contains(selectedRelated)) {
-          selectedRelated = _relatedOptions.first;
         }
       });
     } catch (_) {
@@ -79,10 +73,7 @@ class _TracerDataPageState extends State<TracerDataPage> {
       final response = await http.get(
         ApiService.uri(
           'get_tracer_submissions.php',
-          queryParameters: {
-            'include_drafts': '1',
-            'program': _activeProgram,
-          },
+          queryParameters: {'include_drafts': '1', 'program': _activeProgram},
         ),
         headers: ApiService.authHeaders(),
       );
@@ -111,41 +102,47 @@ class _TracerDataPageState extends State<TracerDataPage> {
         final summary = decoded is Map
             ? Map<String, dynamic>.from(decoded['summary'] ?? const {})
             : <String, dynamic>{};
-        final normalizedData = jsonData.map((item) {
-          final map = Map<String, dynamic>.from(item);
-          map['full_name'] = map['full_name'] ?? map['name'] ?? 'N/A';
-          map['job_related'] =
-              map['job_related'] ?? map['related_job'] ?? 'N/A';
-          map['company_name'] = map['company_name'] ?? map['employer'] ?? 'N/A';
-          map['contact_number'] =
-              map['contact_number'] ?? map['contact'] ?? 'N/A';
-          map['honors'] = map['honors'] ?? map['honors_awards'] ?? 'N/A';
-          map['pre_grad_experience'] =
-              map['pre_grad_experience'] ?? map['pre_grad_exp'] ?? 'N/A';
-          map['first_job_timing'] =
-              map['first_job_timing'] ?? map['time_to_first_job'] ?? 'N/A';
-          map['employment_type'] =
-              map['employment_type'] ?? map['job_type'] ?? 'N/A';
-          map['income_range'] =
-              map['income_range'] ?? map['monthly_income'] ?? 'N/A';
-          map['not_related_reason'] =
-              map['not_related_reason'] ?? map['underutilized_reason'] ?? 'N/A';
-          map['job_duration'] =
-              map['job_duration'] ?? map['employment_duration'] ?? 'N/A';
-          map['promotion'] = map['promotion'] ?? map['promoted'] ?? 'N/A';
-          map['classification'] =
-              map['classification'] ??
-              map['employment_classification'] ??
-              'N/A';
-          map['satisfaction'] =
-              map['satisfaction'] ?? map['job_satisfaction'] ?? 'N/A';
-          map['submitted_at'] =
-              map['submitted_at'] ?? map['date_submitted'] ?? 'N/A';
-          map['has_signed_submission'] = SignedTracerFilter.keepSignedOnly([
-            map,
-          ], signedRecords: signedRecords).isNotEmpty;
-          return map;
-        }).where((item) => _isActiveProgram(item['program'])).toList();
+        final normalizedData = jsonData
+            .map((item) {
+              final map = Map<String, dynamic>.from(item);
+              map['full_name'] = map['full_name'] ?? map['name'] ?? 'N/A';
+              map['job_related'] =
+                  map['job_related'] ?? map['related_job'] ?? 'N/A';
+              map['company_name'] =
+                  map['company_name'] ?? map['employer'] ?? 'N/A';
+              map['contact_number'] =
+                  map['contact_number'] ?? map['contact'] ?? 'N/A';
+              map['honors'] = map['honors'] ?? map['honors_awards'] ?? 'N/A';
+              map['pre_grad_experience'] =
+                  map['pre_grad_experience'] ?? map['pre_grad_exp'] ?? 'N/A';
+              map['first_job_timing'] =
+                  map['first_job_timing'] ?? map['time_to_first_job'] ?? 'N/A';
+              map['employment_type'] =
+                  map['employment_type'] ?? map['job_type'] ?? 'N/A';
+              map['income_range'] =
+                  map['income_range'] ?? map['monthly_income'] ?? 'N/A';
+              map['not_related_reason'] =
+                  map['not_related_reason'] ??
+                  map['underutilized_reason'] ??
+                  'N/A';
+              map['job_duration'] =
+                  map['job_duration'] ?? map['employment_duration'] ?? 'N/A';
+              map['promotion'] = map['promotion'] ?? map['promoted'] ?? 'N/A';
+              map['classification'] =
+                  map['classification'] ??
+                  map['employment_classification'] ??
+                  'N/A';
+              map['satisfaction'] =
+                  map['satisfaction'] ?? map['job_satisfaction'] ?? 'N/A';
+              map['submitted_at'] =
+                  map['submitted_at'] ?? map['date_submitted'] ?? 'N/A';
+              map['has_signed_submission'] = SignedTracerFilter.keepSignedOnly([
+                map,
+              ], signedRecords: signedRecords).isNotEmpty;
+              return map;
+            })
+            .where((item) => _isActiveProgram(item['program']))
+            .toList();
         setState(() {
           _allData = normalizedData;
           _filteredList = _allData;
@@ -178,14 +175,12 @@ class _TracerDataPageState extends State<TracerDataPage> {
         final query = _searchController.text.toLowerCase();
 
         final matchesSearch = name.contains(query);
-        final matchesStatus =
-            selectedStatus == "All Status" ||
-            item['employment_status'] == selectedStatus;
-        final matchesRelated =
-            selectedRelated == "All Degree Related" ||
-            item['job_related'] == selectedRelated;
+        final matchesStatus = _matchesStatusFilter(
+          item['employment_status'],
+          selectedStatus,
+        );
 
-        return matchesSearch && matchesStatus && matchesRelated;
+        return matchesSearch && matchesStatus;
       }).toList();
     });
   }
@@ -218,8 +213,8 @@ class _TracerDataPageState extends State<TracerDataPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   LuxuryModuleBanner(
-                  title: 'Tracer Governance & Report Oversight',
-                  description:
+                    title: 'Tracer Governance & Report Oversight',
+                    description:
                         'Review signed BSIT tracer records, validate institutional data quality, and manage accreditation-ready reporting in one workspace.',
                     icon: Icons.analytics_outlined,
                     compact: isNarrow,
@@ -891,17 +886,6 @@ class _TracerDataPageState extends State<TracerDataPage> {
                 });
               }),
             ),
-            SizedBox(
-              width: isCompact ? constraints.maxWidth : null,
-              child: _dropdown("Related", selectedRelated, _relatedOptions, (
-                val,
-              ) {
-                setState(() {
-                  selectedRelated = val!;
-                  _runFilter();
-                });
-              }),
-            ),
           ],
         );
       },
@@ -948,7 +932,6 @@ class _TracerDataPageState extends State<TracerDataPage> {
           DataColumn(label: Text("ALUMNI NAME")),
           DataColumn(label: Text("STATUS")),
           DataColumn(label: Text("JOB TITLE")),
-          DataColumn(label: Text("RELATED")),
           DataColumn(label: Text("ACTION")),
         ],
         rows: _filteredList.map((data) {
@@ -967,7 +950,6 @@ class _TracerDataPageState extends State<TracerDataPage> {
               // ✅ FIX: Hide job title if unemployed
               DataCell(Text(isUnemployed ? "—" : (data['job_title'] ?? "N/A"))),
 
-              DataCell(Text(data['job_related'] ?? "N/A")),
               DataCell(
                 IconButton(
                   icon: const Icon(Icons.visibility, color: Colors.blue),
@@ -1035,10 +1017,6 @@ class _TracerDataPageState extends State<TracerDataPage> {
                               ? '-'
                               : (data['job_title'] ?? 'N/A').toString(),
                         ),
-                        _mobileMetaChip(
-                          Icons.school_outlined,
-                          (data['job_related'] ?? 'N/A').toString(),
-                        ),
                       ],
                     ),
                     const SizedBox(height: 12),
@@ -1078,7 +1056,6 @@ class _TracerDataPageState extends State<TracerDataPage> {
                   DataColumn(label: Text("ALUMNI NAME")),
                   DataColumn(label: Text("STATUS")),
                   DataColumn(label: Text("JOB TITLE")),
-                  DataColumn(label: Text("RELATED")),
                   DataColumn(label: Text("ACTION")),
                 ],
                 rows: _filteredList.map((data) {
@@ -1109,7 +1086,6 @@ class _TracerDataPageState extends State<TracerDataPage> {
                           ),
                         ),
                       ),
-                      DataCell(Text(data['job_related'] ?? "N/A")),
                       DataCell(
                         IconButton(
                           icon: const Icon(
@@ -1131,10 +1107,12 @@ class _TracerDataPageState extends State<TracerDataPage> {
   }
 
   Widget _statusBadge(String status) {
+    final displayStatus = _displayEmploymentStatus(status);
     Color color = Colors.grey;
-    if (status == "Employed") color = Colors.green;
-    if (status == "Self-Employed") color = Colors.purple;
-    if (status == "Unemployed") color = Colors.red;
+    if (displayStatus == "Employed") color = Colors.green;
+    if (displayStatus == "Self-Employed") color = Colors.purple;
+    if (displayStatus == "Unemployed") color = Colors.red;
+    if (displayStatus == "Employment Unknown") color = Colors.orange;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -1143,7 +1121,7 @@ class _TracerDataPageState extends State<TracerDataPage> {
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
-        status,
+        displayStatus,
         style: TextStyle(
           color: color,
           fontWeight: FontWeight.bold,
@@ -1193,22 +1171,20 @@ class _TracerDataPageState extends State<TracerDataPage> {
         ? _generatedOn
         : _formatReportDate(DateTime.now());
     final summary = [
-      ['Generated On', generatedOn, '', '', '', ''],
-      ['Status Filter', selectedStatus, '', '', '', ''],
-      ['Degree Related Filter', selectedRelated, '', '', '', ''],
-      ['Filtered Responses', _filteredList.length.toString(), '', '', '', ''],
-      ['Signed Records', _signedRecords.length.toString(), '', '', '', ''],
-      ['', '', '', '', '', ''],
+      ['Generated On', generatedOn, '', '', ''],
+      ['Status Filter', selectedStatus, '', '', ''],
+      ['Filtered Responses', _filteredList.length.toString(), '', '', ''],
+      ['Signed Records', _signedRecords.length.toString(), '', '', ''],
+      ['', '', '', '', ''],
     ];
 
     final rows = _filteredList
         .map(
           (data) => [
             (data['full_name'] ?? 'N/A').toString(),
-            (data['employment_status'] ?? 'N/A').toString(),
+            _displayEmploymentStatus(data['employment_status']),
             (data['program'] ?? 'N/A').toString(),
             (data['company_name'] ?? 'N/A').toString(),
-            (data['job_related'] ?? 'N/A').toString(),
             (data['submitted_at'] ?? 'N/A').toString(),
           ],
         )
@@ -1227,7 +1203,6 @@ class _TracerDataPageState extends State<TracerDataPage> {
           'Employment Status',
           'Program',
           'Company',
-          'Degree Related',
           'Submitted At',
         ],
         rows: _buildTracerExportRows(),
@@ -1268,14 +1243,13 @@ class _TracerDataPageState extends State<TracerDataPage> {
     final filterSummaryRows = [
       ['Generated On', generatedOn],
       ['Status Filter', selectedStatus],
-      ['Degree Related Filter', selectedRelated],
       ['Filtered Response Count', '$filteredCount'],
       ['Signed Record Count', '${_signedRecords.length}'],
     ];
     final filteredSnapshot = _filteredList.take(10).map((data) {
       return [
         (data['full_name'] ?? 'N/A').toString(),
-        (data['employment_status'] ?? 'N/A').toString(),
+        _displayEmploymentStatus(data['employment_status']),
         (data['program'] ?? 'N/A').toString(),
         (data['company_name'] ?? 'N/A').toString(),
       ];
@@ -1567,6 +1541,49 @@ class _TracerDataPageState extends State<TracerDataPage> {
     return program?.toString().trim().toUpperCase() == _activeProgram;
   }
 
+  List<String> _buildStatusOptions(List<String> backendStatuses) {
+    final options = <String>['All Status'];
+    for (final status in backendStatuses) {
+      final displayStatus = _displayEmploymentStatus(status);
+      if (displayStatus == 'N/A') continue;
+      if (!options.contains(displayStatus)) {
+        options.add(displayStatus);
+      }
+    }
+    return options;
+  }
+
+  bool _matchesStatusFilter(dynamic value, String filter) {
+    if (filter == 'All Status') return true;
+
+    final normalized = _normalizedEmploymentStatus(value);
+    if (filter == 'Employment Unknown') {
+      return normalized == 'form-draft' ||
+          normalized == 'unemployed' ||
+          normalized == 'unknown' ||
+          normalized == 'employment-unknown' ||
+          normalized.isEmpty;
+    }
+
+    return _displayEmploymentStatus(value) == filter;
+  }
+
+  String _displayEmploymentStatus(dynamic value) {
+    final text = value?.toString().trim() ?? '';
+    final normalized = _normalizedEmploymentStatus(text);
+
+    if (normalized == 'form-draft' ||
+        normalized == 'unknown' ||
+        normalized == 'employment-unknown' ||
+        normalized.isEmpty) {
+      return 'Employment Unknown';
+    }
+    if (normalized == 'self-employed') return 'Self-Employed';
+    if (normalized == 'employed' || normalized == 'employer') return 'Employed';
+    if (normalized == 'unemployed') return 'Unemployed';
+    return text.isEmpty ? 'N/A' : text;
+  }
+
   int _employmentCount(String status, [List<Map<String, dynamic>>? rows]) {
     return (rows ?? _allData)
         .where((item) => item['employment_status']?.toString() == status)
@@ -1684,7 +1701,10 @@ class _TracerDataPageState extends State<TracerDataPage> {
                 const Divider(height: 32),
 
                 _detailSection("Employment Info", [
-                  _detailRow("Status", data['employment_status']),
+                  _detailRow(
+                    "Status",
+                    _displayEmploymentStatus(data['employment_status']),
+                  ),
 
                   if (!isUnemployed) ...[
                     _detailRow(

@@ -628,7 +628,7 @@ class _AccreditationReport {
     );
     report.employmentBars = _bars(charts['employment_bars']);
     report.firstJobBars = _bars(charts['first_job_bars']);
-    report.relevanceBars = _bars(charts['relevance_bars']);
+    report.relevanceBars = _yesNoBars(charts['relevance_bars']);
     report.salaryBars = _bars(charts['salary_bars']);
     report.skillBars = _bars(charts['skill_bars']);
     report.findings = _strings(source?['findings']);
@@ -683,6 +683,26 @@ class _AccreditationReport {
         })
         .where((item) => item.label.isNotEmpty)
         .toList();
+  }
+
+  static List<_BarPoint> _yesNoBars(dynamic value) {
+    final totals = {'Yes': 0.0, 'No': 0.0};
+    if (value is List) {
+      for (final item in value) {
+        final map = _map(item);
+        final label = _string(map['label'], fallback: '').toLowerCase().trim();
+        if (label == 'yes') {
+          totals['Yes'] = (totals['Yes'] ?? 0) + _double(map['value']);
+        } else if (label == 'no') {
+          totals['No'] = (totals['No'] ?? 0) + _double(map['value']);
+        }
+      }
+    }
+
+    return [
+      _BarPoint('Yes', totals['Yes'] ?? 0),
+      _BarPoint('No', totals['No'] ?? 0),
+    ];
   }
 
   static double _max(List<_BarPoint> items) {

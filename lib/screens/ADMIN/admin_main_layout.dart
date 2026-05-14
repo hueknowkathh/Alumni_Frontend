@@ -384,15 +384,15 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
       case 2:
         return const GraduateRegistryPage();
       case 3:
-        return const TracerDataPage();
-      case 4:
-        return const PendingUsersPage();
-      case 5:
-        return const AnnouncementsPage();
-      case 6:
-        return const JobsPage();
-      case 7:
         return const ProgramsPage();
+      case 4:
+        return const TracerDataPage();
+      case 5:
+        return const PendingUsersPage();
+      case 6:
+        return const AnnouncementsPage();
+      case 7:
+        return const JobsPage();
       case 8:
         return const AdminSettings();
       case 9:
