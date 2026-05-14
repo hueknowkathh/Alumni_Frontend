@@ -32,6 +32,7 @@ class _RegisterPageState extends State<RegisterPage> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
+  final graduationYearController = TextEditingController();
 
   String? selectedProgram;
   bool isLoading = false;
@@ -101,6 +102,9 @@ class _RegisterPageState extends State<RegisterPage> {
           firstName,
           lastName,
         ].where((part) => part.isNotEmpty).join(' ');
+        final graduationYear = _normalizeGraduationYear(
+          graduationYearController.text,
+        );
 
         final response = await http.post(
           url,
@@ -112,6 +116,10 @@ class _RegisterPageState extends State<RegisterPage> {
             "email": emailController.text,
             "password": passwordController.text,
             "program": selectedProgram,
+            "year_graduated": graduationYear,
+            "graduation_year": graduationYear,
+            "gradYear": graduationYear,
+            "batch": graduationYear,
             if (widget.linkedInPrefill != null) ...{
               "linkedin_sub": widget.linkedInPrefill!.linkedInSub,
               "linkedin_email": widget.linkedInPrefill!.email,
@@ -146,7 +154,10 @@ class _RegisterPageState extends State<RegisterPage> {
             userEmail: emailController.text.trim(),
             role: 'alumni',
             description: 'New alumni registration awaiting admin approval.',
-            metadata: {'program': selectedProgram},
+            metadata: {
+              'program': selectedProgram,
+              'year_graduated': graduationYear,
+            },
           );
           _showSuccess();
         } else {
@@ -213,7 +224,14 @@ class _RegisterPageState extends State<RegisterPage> {
     emailController.dispose();
     passwordController.dispose();
     confirmPasswordController.dispose();
+    graduationYearController.dispose();
     super.dispose();
+  }
+
+  String _normalizeGraduationYear(String value) {
+    final trimmed = value.trim();
+    final match = RegExp(r'(19|20)\d{2}').firstMatch(trimmed);
+    return match?.group(0) ?? trimmed;
   }
 
   @override
@@ -401,7 +419,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                 ),
                                 SizedBox(height: isSmallScreen ? 10.0 : 14.0),
                                 Text(
-                                  "Create your alumni access and let the system complete your official batch details after approval.",
+                                  "Create your alumni access with your program and batch year for cleaner verification.",
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     color: Colors.white.withValues(alpha: 0.78),
@@ -437,7 +455,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                       const SizedBox(width: 10),
                                       Expanded(
                                         child: Text(
-                                          "Your graduation year will be assigned from the official graduate list after admin approval.",
+                                          "Enter the batch year you graduated so your alumni record does not miss this information.",
                                           style: TextStyle(
                                             color: accentGold,
                                             fontSize: noteFontSize,
@@ -624,6 +642,14 @@ class _RegisterPageState extends State<RegisterPage> {
                                       setState(() => selectedProgram = val),
                                   isSmallScreen: isSmallScreen,
                                 ),
+                                SizedBox(height: fieldGap),
+                                _buildTextField(
+                                  graduationYearController,
+                                  "Batch Year",
+                                  Icons.calendar_month_outlined,
+                                  keyboardType: TextInputType.number,
+                                  isSmallScreen: isSmallScreen,
+                                ),
                                 SizedBox(height: actionGap),
                                 SizedBox(
                                   width: double.infinity,
@@ -768,12 +794,14 @@ class _RegisterPageState extends State<RegisterPage> {
     bool readOnly = false,
     bool isSmallScreen = false,
     bool passwordVisible = false,
+    TextInputType? keyboardType,
     VoidCallback? onTogglePassword,
   }) {
     return TextFormField(
       controller: controller,
       obscureText: isPass && !passwordVisible,
       readOnly: readOnly,
+      keyboardType: keyboardType,
       style: TextStyle(
         color: Colors.white,
         fontSize: isSmallScreen ? 13.5 : 14.0,
@@ -853,6 +881,16 @@ class _RegisterPageState extends State<RegisterPage> {
           }
           return null;
         }
+        if (label == "Batch Year") {
+          final normalized = _normalizeGraduationYear(value);
+          if (normalized.isEmpty) {
+            return "Batch year is required.";
+          }
+          if (!RegExp(r'^(19|20)\d{2}$').hasMatch(normalized)) {
+            return "Enter a valid 4-digit batch year.";
+          }
+          return null;
+        }
         if (value.trim().isEmpty) {
           return "$label is required.";
         }
@@ -869,15 +907,38 @@ class _RegisterPageState extends State<RegisterPage> {
   }) {
     return DropdownButtonFormField<String>(
       dropdownColor: primaryMaroon,
+      iconEnabledColor: Colors.white.withValues(alpha: 0.86),
+      iconDisabledColor: Colors.white.withValues(alpha: 0.46),
+      hint: Text(
+        hint,
+        style: TextStyle(
+          color: Colors.white.withValues(alpha: 0.72),
+          fontSize: isSmallScreen ? 12.5 : 13.0,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
       style: TextStyle(
-        color: Colors.white,
+        color: Colors.white.withValues(alpha: 0.86),
         fontSize: isSmallScreen ? 13.5 : 14.0,
+        fontWeight: FontWeight.w600,
       ),
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: TextStyle(
-          color: Colors.white.withValues(alpha: 0.60),
-          fontSize: isSmallScreen ? 13.0 : 14.0,
+          color: Colors.white.withValues(alpha: 0.72),
+          fontSize: isSmallScreen ? 12.5 : 13.0,
+          fontWeight: FontWeight.w600,
+        ),
+        prefixIcon: Container(
+          margin: EdgeInsets.only(
+            left: isSmallScreen ? 8.0 : 10.0,
+            right: isSmallScreen ? 4.0 : 6.0,
+          ),
+          child: Icon(
+            Icons.school_outlined,
+            color: accentGold.withValues(alpha: 0.92),
+            size: isSmallScreen ? 19.0 : 21.0,
+          ),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(isSmallScreen ? 20.0 : 24.0),
@@ -903,8 +964,35 @@ class _RegisterPageState extends State<RegisterPage> {
           height: 1.3,
         ),
       ),
+      selectedItemBuilder: (context) => items
+          .map(
+            (e) => Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                e,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: isSmallScreen ? 13.5 : 14.0,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          )
+          .toList(),
       items: items
-          .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+          .map(
+            (e) => DropdownMenuItem(
+              value: e,
+              child: Text(
+                e,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: isSmallScreen ? 13.5 : 14.0,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          )
           .toList(),
       onChanged: onChanged,
       validator: (val) => val == null ? "$hint is required." : null,
