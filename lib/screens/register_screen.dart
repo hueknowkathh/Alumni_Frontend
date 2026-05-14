@@ -32,7 +32,6 @@ class _RegisterPageState extends State<RegisterPage> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
-  final graduationYearController = TextEditingController();
 
   String? selectedProgram;
   bool isLoading = false;
@@ -96,15 +95,12 @@ class _RegisterPageState extends State<RegisterPage> {
       final url = ApiService.uri('register.php');
 
       try {
-        final firstName = _toSentenceCaseName(firstNameController.text);
-        final lastName = _toSentenceCaseName(lastNameController.text);
+        final firstName = firstNameController.text.trim();
+        final lastName = lastNameController.text.trim();
         final fullName = [
           firstName,
           lastName,
         ].where((part) => part.isNotEmpty).join(' ');
-        final graduationYear = _normalizeGraduationYear(
-          graduationYearController.text,
-        );
 
         final response = await http.post(
           url,
@@ -116,10 +112,6 @@ class _RegisterPageState extends State<RegisterPage> {
             "email": emailController.text,
             "password": passwordController.text,
             "program": selectedProgram,
-            "year_graduated": graduationYear,
-            "graduation_year": graduationYear,
-            "gradYear": graduationYear,
-            "batch": graduationYear,
             if (widget.linkedInPrefill != null) ...{
               "linkedin_sub": widget.linkedInPrefill!.linkedInSub,
               "linkedin_email": widget.linkedInPrefill!.email,
@@ -154,10 +146,7 @@ class _RegisterPageState extends State<RegisterPage> {
             userEmail: emailController.text.trim(),
             role: 'alumni',
             description: 'New alumni registration awaiting admin approval.',
-            metadata: {
-              'program': selectedProgram,
-              'year_graduated': graduationYear,
-            },
+            metadata: {'program': selectedProgram},
           );
           _showSuccess();
         } else {
@@ -224,33 +213,7 @@ class _RegisterPageState extends State<RegisterPage> {
     emailController.dispose();
     passwordController.dispose();
     confirmPasswordController.dispose();
-    graduationYearController.dispose();
     super.dispose();
-  }
-
-  String _normalizeGraduationYear(String value) {
-    final trimmed = value.trim();
-    final match = RegExp(r'(19|20)\d{2}').firstMatch(trimmed);
-    return match?.group(0) ?? trimmed;
-  }
-
-  String _toSentenceCaseName(String value) {
-    final normalized = value.trim().replaceAll(RegExp(r'\s+'), ' ');
-    if (normalized.isEmpty) return '';
-
-    return normalized
-        .split(' ')
-        .map((word) {
-          return word
-              .split('-')
-              .map((part) {
-                if (part.isEmpty) return part;
-                final lower = part.toLowerCase();
-                return lower[0].toUpperCase() + lower.substring(1);
-              })
-              .join('-');
-        })
-        .join(' ');
   }
 
   @override
@@ -438,7 +401,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                 ),
                                 SizedBox(height: isSmallScreen ? 10.0 : 14.0),
                                 Text(
-                                  "Create your alumni access with your program and batch year for cleaner verification.",
+                                  "Create your alumni access and let the system complete your official batch details after approval.",
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     color: Colors.white.withValues(alpha: 0.78),
@@ -474,7 +437,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                       const SizedBox(width: 10),
                                       Expanded(
                                         child: Text(
-                                          "Enter the batch year you graduated so your alumni record does not miss this information.",
+                                          "Your graduation year will be assigned from the official graduate list after admin approval.",
                                           style: TextStyle(
                                             color: accentGold,
                                             fontSize: noteFontSize,
@@ -661,14 +624,6 @@ class _RegisterPageState extends State<RegisterPage> {
                                       setState(() => selectedProgram = val),
                                   isSmallScreen: isSmallScreen,
                                 ),
-                                SizedBox(height: fieldGap),
-                                _buildTextField(
-                                  graduationYearController,
-                                  "Batch Year",
-                                  Icons.calendar_month_outlined,
-                                  keyboardType: TextInputType.number,
-                                  isSmallScreen: isSmallScreen,
-                                ),
                                 SizedBox(height: actionGap),
                                 SizedBox(
                                   width: double.infinity,
@@ -813,14 +768,12 @@ class _RegisterPageState extends State<RegisterPage> {
     bool readOnly = false,
     bool isSmallScreen = false,
     bool passwordVisible = false,
-    TextInputType? keyboardType,
     VoidCallback? onTogglePassword,
   }) {
     return TextFormField(
       controller: controller,
       obscureText: isPass && !passwordVisible,
       readOnly: readOnly,
-      keyboardType: keyboardType,
       style: TextStyle(
         color: Colors.white,
         fontSize: isSmallScreen ? 13.5 : 14.0,
@@ -897,16 +850,6 @@ class _RegisterPageState extends State<RegisterPage> {
           }
           if (value != passwordController.text) {
             return "Passwords do not match.";
-          }
-          return null;
-        }
-        if (label == "Batch Year") {
-          final normalized = _normalizeGraduationYear(value);
-          if (normalized.isEmpty) {
-            return "Batch year is required.";
-          }
-          if (!RegExp(r'^(19|20)\d{2}$').hasMatch(normalized)) {
-            return "Enter a valid 4-digit batch year.";
           }
           return null;
         }
