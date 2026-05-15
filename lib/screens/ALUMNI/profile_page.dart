@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 
 import '../../services/api_service.dart';
 import '../../services/activity_service.dart';
+import '../../services/user_media_service.dart';
 import '../../state/user_store.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -1185,6 +1186,9 @@ class _ProfilePageState extends State<ProfilePage> {
             ? _currentProfilePhotoFileName
             : 'No profile photo uploaded yet');
     final selectedBytes = _selectedProfilePhotoBytes;
+    final currentPhoto = UserMediaService.profilePhotoProvider({
+      'profile_photo_path': _currentProfilePhotoPath,
+    });
 
     return Container(
       width: double.infinity,
@@ -1201,9 +1205,9 @@ class _ProfilePageState extends State<ProfilePage> {
             radius: 34,
             backgroundColor: primaryMaroon.withValues(alpha: 0.10),
             backgroundImage: selectedBytes == null
-                ? null
+                ? currentPhoto
                 : MemoryImage(selectedBytes),
-            child: selectedBytes == null
+            child: selectedBytes == null && currentPhoto == null
                 ? Icon(Icons.person_outline, color: primaryMaroon, size: 30)
                 : null,
           ),

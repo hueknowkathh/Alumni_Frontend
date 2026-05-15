@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../services/content_service.dart';
+import '../../services/user_media_service.dart';
 import '../../state/user_store.dart';
 import '../widgets/sidebar.dart';
 import 'announcement_page.dart';
@@ -39,6 +40,7 @@ class _DeanMainLayoutState extends State<DeanMainLayout> {
   void initState() {
     super.initState();
     if (UserStore.value == null) UserStore.set(widget.user);
+    UserStore.currentUser.addListener(_handleUserChanged);
     _pages = [
       DeanDashboard(
         user: widget.user,
@@ -80,8 +82,13 @@ class _DeanMainLayoutState extends State<DeanMainLayout> {
 
   @override
   void dispose() {
+    UserStore.currentUser.removeListener(_handleUserChanged);
     _notificationTimer?.cancel();
     super.dispose();
+  }
+
+  void _handleUserChanged() {
+    if (mounted) setState(() {});
   }
 
   void _showNotifications() async {
@@ -315,6 +322,7 @@ class _DeanMainLayoutState extends State<DeanMainLayout> {
     final screenWidth = MediaQuery.of(context).size.width;
     final isCompact = screenWidth < 640;
     final liveUser = UserStore.value ?? widget.user;
+    final profilePhoto = UserMediaService.profilePhotoProvider(liveUser);
 
     return Container(
       height: isCompact ? 88 : 86,
@@ -431,11 +439,14 @@ class _DeanMainLayoutState extends State<DeanMainLayout> {
                 child: CircleAvatar(
                   backgroundColor: primaryMaroon,
                   radius: 18,
-                  child: const Icon(
-                    Icons.person,
-                    color: Colors.white,
-                    size: 18,
-                  ),
+                  backgroundImage: profilePhoto,
+                  child: profilePhoto == null
+                      ? const Icon(
+                          Icons.person,
+                          color: Colors.white,
+                          size: 18,
+                        )
+                      : null,
                 ),
               ),
             ],

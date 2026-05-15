@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../services/content_service.dart';
 import '../../services/program_service.dart';
+import '../../services/user_media_service.dart';
 import '../widgets/sidebar.dart';
 import 'alumni_dashboard.dart';
 import 'profile_page.dart';
@@ -40,6 +41,7 @@ class _AlumniMainLayoutState extends State<AlumniMainLayout> {
   void initState() {
     super.initState();
     if (UserStore.value == null) UserStore.set(widget.user);
+    UserStore.currentUser.addListener(_handleUserChanged);
     _alumniProgramCode = _currentUserProgramCode();
     _assignedTracerFormType = _fallbackTracerFormType();
     _loadAssignedTracerFormType();
@@ -140,8 +142,13 @@ class _AlumniMainLayoutState extends State<AlumniMainLayout> {
 
   @override
   void dispose() {
+    UserStore.currentUser.removeListener(_handleUserChanged);
     _notificationTimer?.cancel();
     super.dispose();
+  }
+
+  void _handleUserChanged() {
+    if (mounted) setState(() {});
   }
 
   bool _isTracerIndex(int index) => index == _tracerIndex;
@@ -399,6 +406,7 @@ class _AlumniMainLayoutState extends State<AlumniMainLayout> {
 
   Widget _buildHeader(bool isMobile) {
     final liveUser = UserStore.value ?? widget.user;
+    final profilePhoto = UserMediaService.profilePhotoProvider(liveUser);
     return Container(
       height: 86,
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -510,7 +518,10 @@ class _AlumniMainLayoutState extends State<AlumniMainLayout> {
             child: CircleAvatar(
               backgroundColor: primaryMaroon,
               radius: 18,
-              child: const Icon(Icons.person, color: Colors.white, size: 18),
+              backgroundImage: profilePhoto,
+              child: profilePhoto == null
+                  ? const Icon(Icons.person, color: Colors.white, size: 18)
+                  : null,
             ),
           ),
         ],

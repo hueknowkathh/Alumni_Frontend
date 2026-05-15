@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../services/activity_service.dart';
 import '../../services/api_service.dart';
+import '../../services/user_media_service.dart';
 import '../widgets/luxury_module_banner.dart';
 
 class PendingUsersPage extends StatefulWidget {
@@ -184,81 +185,246 @@ class _PendingUsersPageState extends State<PendingUsersPage> {
   void _showUserDetails(Map<String, dynamic> user) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        contentPadding: const EdgeInsets.all(32),
-        content: SizedBox(
-          width: 500,
+      builder: (context) => Dialog(
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        backgroundColor: Colors.transparent,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 560, maxHeight: 760),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(28),
+              gradient: const LinearGradient(
+                colors: [
+                  Color(0xFFFFFBF7),
+                  Color(0xFFF8F1F4),
+                  Color(0xFFFFFCFA),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              border: Border.all(color: primaryMaroon.withValues(alpha: 0.10)),
+              boxShadow: [
+                BoxShadow(
+                  color: primaryMaroon.withValues(alpha: 0.18),
+                  blurRadius: 28,
+                  offset: const Offset(0, 16),
+                ),
+              ],
+            ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    "User Details",
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close),
-                  ),
-                ],
-              ),
-              const Text(
-                "Review the alumni information before approval",
-                style: TextStyle(color: Colors.grey),
-              ),
-              const Divider(height: 32),
-              _buildPopupField("Full Name", user['name'] ?? 'N/A'),
-              _buildPopupField("Email Address", user['email'] ?? 'N/A'),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildPopupField(
-                      "Program",
-                      user['program'] ?? 'N/A',
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(22, 22, 18, 18),
+                  decoration: const BoxDecoration(
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(28),
+                    ),
+                    gradient: LinearGradient(
+                      colors: [
+                        Color(0xFF5A1832),
+                        Color(0xFF6A2A43),
+                        Color(0xFF35101E),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
                   ),
-                  Expanded(
-                    child: _buildPopupField(
-                      "Year Graduated",
-                      user['year_graduated'].toString(),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 66,
+                        height: 66,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.white.withValues(alpha: 0.14),
+                              Colors.white.withValues(alpha: 0.05),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          border: Border.all(
+                            color: accentGold.withValues(alpha: 0.35),
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.verified_user_outlined,
+                          color: accentGold,
+                          size: 32,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 7,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(999),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.08),
+                                ),
+                              ),
+                              child: Text(
+                                'ALUMNI VERIFICATION',
+                                style: TextStyle(
+                                  color: accentGold,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.7,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            const Text(
+                              'User details',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 28,
+                                fontWeight: FontWeight.w800,
+                                height: 1.05,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close, color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(22, 20, 22, 22),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildPopupField("Full Name", user['name'] ?? 'N/A'),
+                        const SizedBox(height: 14),
+                        _buildPopupField(
+                          "Email Address",
+                          user['email'] ?? 'N/A',
+                        ),
+                        const SizedBox(height: 14),
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            final isStacked = constraints.maxWidth < 440;
+                            final programField = _buildPopupField(
+                              "Program",
+                              user['program'] ?? 'N/A',
+                            );
+                            final yearField = _buildPopupField(
+                              "Year Graduated",
+                              user['year_graduated'].toString(),
+                            );
+                            if (isStacked) {
+                              return Column(
+                                children: [
+                                  programField,
+                                  const SizedBox(height: 14),
+                                  yearField,
+                                ],
+                              );
+                            }
+                            return Row(
+                              children: [
+                                Expanded(child: programField),
+                                const SizedBox(width: 14),
+                                Expanded(child: yearField),
+                              ],
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 14),
+                        _buildPopupField(
+                          "Student ID",
+                          user['student_number'] ??
+                              user['alumni_number'] ??
+                              user['id'].toString(),
+                        ),
+                        const SizedBox(height: 14),
+                        _buildAlumniIdProof(user),
+                        const SizedBox(height: 20),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                  _handleAction(
+                                    user['id'].toString(),
+                                    user['name'],
+                                    false,
+                                  );
+                                },
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: Colors.red,
+                                  side: BorderSide(
+                                    color: Colors.red.withValues(alpha: 0.18),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 16,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(18),
+                                  ),
+                                ),
+                                child: const Text(
+                                  "Reject",
+                                  style: TextStyle(fontWeight: FontWeight.w700),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: FilledButton.icon(
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                  _handleAction(
+                                    user['id'].toString(),
+                                    user['name'],
+                                    true,
+                                  );
+                                },
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: primaryMaroon,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 16,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(18),
+                                  ),
+                                ),
+                                icon: const Icon(
+                                  Icons.check_circle_outline,
+                                  size: 18,
+                                ),
+                                label: const Text(
+                                  "Approve",
+                                  style: TextStyle(fontWeight: FontWeight.w700),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
-              _buildPopupField(
-                "Student ID",
-                user['sid'] ?? user['id'].toString(),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  _buildBoxedButton(
-                    "Reject",
-                    const Color(0xFFFFEBEE),
-                    Colors.red,
-                    () {
-                      Navigator.pop(context);
-                      _handleAction(user['id'].toString(), user['name'], false);
-                    },
-                  ),
-                  const SizedBox(width: 12),
-                  _buildBoxedButton(
-                    "Approve",
-                    const Color(0xFF0D0D1D),
-                    Colors.white,
-                    () {
-                      Navigator.pop(context);
-                      _handleAction(user['id'].toString(), user['name'], true);
-                    },
-                  ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -266,21 +432,51 @@ class _PendingUsersPageState extends State<PendingUsersPage> {
   }
 
   Widget _buildPopupField(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-          ),
-          Text(
-            value,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+    return _buildReviewShell(
+      label: label,
+      child: Text(
+        value,
+        style: const TextStyle(
+          fontWeight: FontWeight.w800,
+          fontSize: 15,
+          color: Color(0xFF2B1A22),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReviewShell({required String label, required Widget child}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 12,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+          Text(
+            label.toUpperCase(),
+            style: TextStyle(
+              color: primaryMaroon.withValues(alpha: 0.72),
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.7,
+            ),
+          ),
+          const SizedBox(height: 10),
+          child,
+                ],
+              ),
     );
   }
 
@@ -355,6 +551,72 @@ class _PendingUsersPageState extends State<PendingUsersPage> {
         ),
       ],
     );
+  }
+
+  Widget _buildAlumniIdProof(Map<String, dynamic> user) {
+    final fileName =
+        (user['alumni_id_filename'] ?? user['alumniIdFilename'] ?? '')
+            .toString()
+            .trim();
+    final url = UserMediaService.alumniIdUrl(user);
+    final canPreview = _isPreviewableImage(fileName);
+
+    return _buildReviewShell(
+      label: "Uploaded Alumni ID",
+      child: fileName.isEmpty || url == null
+          ? const Text(
+              "No alumni ID uploaded",
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                fontSize: 15,
+                color: Color(0xFF2B1A22),
+              ),
+            )
+          : canPreview
+          ? ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Image.network(
+                url,
+                height: 220,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => _buildProofFallback(),
+              ),
+            )
+          : _buildProofFallback(),
+    );
+  }
+
+  Widget _buildProofFallback() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F1F4),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderColor),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.description_outlined, color: primaryMaroon, size: 20),
+          const SizedBox(width: 10),
+          const Expanded(
+            child: Text(
+              "Alumni ID proof uploaded",
+              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  bool _isPreviewableImage(String fileName) {
+    final lower = fileName.toLowerCase();
+    return lower.endsWith('.jpg') ||
+        lower.endsWith('.jpeg') ||
+        lower.endsWith('.png') ||
+        lower.endsWith('.webp');
   }
 
   Widget _buildTableContainer() {
@@ -454,7 +716,13 @@ class _PendingUsersPageState extends State<PendingUsersPage> {
                         DataColumn(label: Text("Email")),
                         DataColumn(label: Text("Program")),
                         DataColumn(label: Text("Year")),
-                        DataColumn(label: Text("Actions")),
+                        DataColumn(label: Text("Alumni ID")),
+                        DataColumn(
+                          label: SizedBox(
+                            width: 280,
+                            child: Text("Actions", textAlign: TextAlign.center),
+                          ),
+                        ),
                       ],
                       rows: pendingUsers
                           .map(
@@ -514,49 +782,9 @@ class _PendingUsersPageState extends State<PendingUsersPage> {
                                   Text(user['year_graduated'].toString()),
                                 ),
                                 DataCell(
-                                  SizedBox(
-                                    width: 250,
-                                    child: Align(
-                                      alignment: Alignment.centerRight,
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          IconButton(
-                                            icon: const Icon(
-                                              Icons.visibility_outlined,
-                                              size: 22,
-                                              color: Colors.blue,
-                                            ),
-                                            onPressed: () =>
-                                                _showUserDetails(user),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          _buildBoxedButton(
-                                            "Approve",
-                                            const Color(0xFFE8F5E9),
-                                            Colors.green,
-                                            () => _handleAction(
-                                              user['id'].toString(),
-                                              user['name'],
-                                              true,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          _buildBoxedButton(
-                                            "Reject",
-                                            const Color(0xFFFFEBEE),
-                                            Colors.red,
-                                            () => _handleAction(
-                                              user['id'].toString(),
-                                              user['name'],
-                                              false,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
+                                  _buildProofStatus(user),
                                 ),
+                                DataCell(_buildRowActions(user)),
                               ],
                             ),
                           )
@@ -567,6 +795,79 @@ class _PendingUsersPageState extends State<PendingUsersPage> {
               },
             ),
           const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProofStatus(Map<String, dynamic> user) {
+    final hasProof =
+        (user['alumni_id_path'] ?? user['alumniIdPath'] ?? '')
+            .toString()
+            .trim()
+            .isNotEmpty;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          hasProof ? Icons.check_circle_outline : Icons.error_outline,
+          size: 18,
+          color: hasProof ? Colors.green : Colors.orange,
+        ),
+        const SizedBox(width: 6),
+        Text(hasProof ? 'Uploaded' : 'Missing'),
+      ],
+    );
+  }
+
+  Widget _buildRowActions(Map<String, dynamic> user) {
+    final id = user['id'].toString();
+    final name = user['name']?.toString() ?? 'User';
+
+    return SizedBox(
+      width: 280,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Tooltip(
+            message: 'Review details',
+            child: SizedBox(
+              width: 40,
+              height: 40,
+              child: OutlinedButton(
+                onPressed: () => _showUserDetails(user),
+                style: OutlinedButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  foregroundColor: Colors.blue,
+                  side: BorderSide(color: Colors.blue.withValues(alpha: 0.16)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Icon(Icons.visibility_outlined, size: 20),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          SizedBox(
+            width: 92,
+            child: _buildBoxedButton(
+              "Approve",
+              const Color(0xFFE8F5E9),
+              Colors.green,
+              () => _handleAction(id, name, true),
+            ),
+          ),
+          const SizedBox(width: 10),
+          SizedBox(
+            width: 82,
+            child: _buildBoxedButton(
+              "Reject",
+              const Color(0xFFFFEBEE),
+              Colors.red,
+              () => _handleAction(id, name, false),
+            ),
+          ),
         ],
       ),
     );

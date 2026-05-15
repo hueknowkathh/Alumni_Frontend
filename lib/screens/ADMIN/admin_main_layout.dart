@@ -14,6 +14,7 @@ import 'latest_registrations.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../services/api_service.dart';
+import '../../services/user_media_service.dart';
 import '../../state/user_store.dart';
 
 class AdminMainLayout extends StatefulWidget {
@@ -68,6 +69,7 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
   void initState() {
     super.initState();
     if (UserStore.value == null) UserStore.set(widget.user);
+    UserStore.currentUser.addListener(_handleUserChanged);
     _pageCache = List<Widget?>.filled(11, null);
     fetchFullActivity();
     fetchAllUsers();
@@ -80,7 +82,7 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
   Future<void> _openRecentActivityPage() async {
     await fetchFullActivity(showLoader: true);
     if (!mounted) return;
-    setState(() => _selectedIndex = 8);
+    setState(() => _selectedIndex = 9);
   }
 
   Future<void> fetchFullActivity({bool showLoader = true}) async {
@@ -129,9 +131,14 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
 
   @override
   void dispose() {
+    UserStore.currentUser.removeListener(_handleUserChanged);
     _notificationTimer?.cancel();
     _dashboardRealtimeTimer?.cancel();
     super.dispose();
+  }
+
+  void _handleUserChanged() {
+    if (mounted) setState(() {});
   }
 
   void _showNotifications() async {
@@ -417,6 +424,8 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
   Widget _buildHeader(bool isMobile) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isCompact = screenWidth < 640;
+    final liveUser = UserStore.value ?? widget.user;
+    final profilePhoto = UserMediaService.profilePhotoProvider(liveUser);
     return Container(
       height: isCompact ? 88 : 86,
       padding: EdgeInsets.symmetric(horizontal: isCompact ? 12 : 20),
@@ -507,7 +516,10 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
             ),
             child: CircleAvatar(
               backgroundColor: primaryMaroon,
-              child: const Icon(Icons.person, color: Colors.white),
+              backgroundImage: profilePhoto,
+              child: profilePhoto == null
+                  ? const Icon(Icons.person, color: Colors.white)
+                  : null,
             ),
           ),
         ],
