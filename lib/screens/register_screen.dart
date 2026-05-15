@@ -1,6 +1,4 @@
 import 'dart:ui';
-import 'dart:typed_data';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -34,14 +32,11 @@ class _RegisterPageState extends State<RegisterPage> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
-  final graduationYearController = TextEditingController();
 
   String? selectedProgram;
   bool isLoading = false;
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
-  String? _selectedAlumniIdFileName;
-  Uint8List? _selectedAlumniIdBytes;
 
   List<String> programs = const ['BSIT', 'BSSW'];
 
@@ -94,11 +89,6 @@ class _RegisterPageState extends State<RegisterPage> {
         _showError("Passwords do not match.");
         return;
       }
-      if (_selectedAlumniIdBytes == null ||
-          (_selectedAlumniIdFileName ?? '').isEmpty) {
-        _showError("Upload a photo or PDF of your alumni ID for approval.");
-        return;
-      }
 
       setState(() => isLoading = true);
 
@@ -111,9 +101,6 @@ class _RegisterPageState extends State<RegisterPage> {
           firstName,
           lastName,
         ].where((part) => part.isNotEmpty).join(' ');
-        final graduationYear = _normalizeGraduationYear(
-          graduationYearController.text,
-        );
 
         final response = await http.post(
           url,
@@ -125,12 +112,6 @@ class _RegisterPageState extends State<RegisterPage> {
             "email": emailController.text,
             "password": passwordController.text,
             "program": selectedProgram,
-            "year_graduated": graduationYear,
-            "graduation_year": graduationYear,
-            "gradYear": graduationYear,
-            "batch": graduationYear,
-            "alumni_id_base64": base64Encode(_selectedAlumniIdBytes!),
-            "alumni_id_file_name": _selectedAlumniIdFileName,
             if (widget.linkedInPrefill != null) ...{
               "linkedin_sub": widget.linkedInPrefill!.linkedInSub,
               "linkedin_email": widget.linkedInPrefill!.email,
@@ -165,10 +146,7 @@ class _RegisterPageState extends State<RegisterPage> {
             userEmail: emailController.text.trim(),
             role: 'alumni',
             description: 'New alumni registration awaiting admin approval.',
-            metadata: {
-              'program': selectedProgram,
-              'year_graduated': graduationYear,
-            },
+            metadata: {'program': selectedProgram},
           );
           _showSuccess();
         } else {
@@ -185,44 +163,6 @@ class _RegisterPageState extends State<RegisterPage> {
 
       setState(() => isLoading = false);
     }
-  }
-
-  Future<void> _pickAlumniIdFile() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: const ['jpg', 'jpeg', 'png', 'webp', 'pdf'],
-      withData: true,
-      withReadStream: true,
-    );
-    if (result == null || result.files.isEmpty) return;
-
-    final file = result.files.single;
-    Uint8List? fileBytes = file.bytes;
-
-    if ((fileBytes == null || fileBytes.isEmpty) && file.readStream != null) {
-      final collected = <int>[];
-      await for (final chunk in file.readStream!) {
-        collected.addAll(chunk);
-      }
-      if (collected.isNotEmpty) {
-        fileBytes = Uint8List.fromList(collected);
-      }
-    }
-
-    if (fileBytes == null || fileBytes.isEmpty) {
-      _showError("Unable to read the selected alumni ID file.");
-      return;
-    }
-
-    if (fileBytes.length > 5 * 1024 * 1024) {
-      _showError("Alumni ID upload must be 5 MB or smaller.");
-      return;
-    }
-
-    setState(() {
-      _selectedAlumniIdBytes = fileBytes;
-      _selectedAlumniIdFileName = file.name;
-    });
   }
 
   void _showError(String message) {
@@ -273,14 +213,7 @@ class _RegisterPageState extends State<RegisterPage> {
     emailController.dispose();
     passwordController.dispose();
     confirmPasswordController.dispose();
-    graduationYearController.dispose();
     super.dispose();
-  }
-
-  String _normalizeGraduationYear(String value) {
-    final trimmed = value.trim();
-    final match = RegExp(r'(19|20)\d{2}').firstMatch(trimmed);
-    return match?.group(0) ?? trimmed;
   }
 
   @override
@@ -468,7 +401,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                 ),
                                 SizedBox(height: isSmallScreen ? 10.0 : 14.0),
                                 Text(
-                                  "Create your alumni access with your program and batch year for cleaner verification.",
+                                  "Create your alumni access and let the system complete your official batch details after approval.",
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     color: Colors.white.withValues(alpha: 0.78),
@@ -504,7 +437,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                       const SizedBox(width: 10),
                                       Expanded(
                                         child: Text(
-                                          "Enter the batch year you graduated so your alumni record does not miss this information.",
+                                          "Your graduation year will be assigned from the official graduate list after admin approval.",
                                           style: TextStyle(
                                             color: accentGold,
                                             fontSize: noteFontSize,
@@ -691,22 +624,6 @@ class _RegisterPageState extends State<RegisterPage> {
                                       setState(() => selectedProgram = val),
                                   isSmallScreen: isSmallScreen,
                                 ),
-                                SizedBox(height: fieldGap),
-                                _buildTextField(
-                                  graduationYearController,
-                                  "Batch Year",
-                                  Icons.calendar_month_outlined,
-                                  keyboardType: TextInputType.number,
-                                  isSmallScreen: isSmallScreen,
-                                ),
-                                SizedBox(height: sectionGap),
-                                _buildLabel(
-                                  "Verification",
-                                  isSmallScreen: isSmallScreen,
-                                ),
-                                _buildAlumniIdUploadCard(
-                                  isSmallScreen: isSmallScreen,
-                                ),
                                 SizedBox(height: actionGap),
                                 SizedBox(
                                   width: double.infinity,
@@ -851,14 +768,12 @@ class _RegisterPageState extends State<RegisterPage> {
     bool readOnly = false,
     bool isSmallScreen = false,
     bool passwordVisible = false,
-    TextInputType? keyboardType,
     VoidCallback? onTogglePassword,
   }) {
     return TextFormField(
       controller: controller,
       obscureText: isPass && !passwordVisible,
       readOnly: readOnly,
-      keyboardType: keyboardType,
       style: TextStyle(
         color: Colors.white,
         fontSize: isSmallScreen ? 13.5 : 14.0,
@@ -938,16 +853,6 @@ class _RegisterPageState extends State<RegisterPage> {
           }
           return null;
         }
-        if (label == "Batch Year") {
-          final normalized = _normalizeGraduationYear(value);
-          if (normalized.isEmpty) {
-            return "Batch year is required.";
-          }
-          if (!RegExp(r'^(19|20)\d{2}$').hasMatch(normalized)) {
-            return "Enter a valid 4-digit batch year.";
-          }
-          return null;
-        }
         if (value.trim().isEmpty) {
           return "$label is required.";
         }
@@ -964,38 +869,15 @@ class _RegisterPageState extends State<RegisterPage> {
   }) {
     return DropdownButtonFormField<String>(
       dropdownColor: primaryMaroon,
-      iconEnabledColor: Colors.white.withValues(alpha: 0.86),
-      iconDisabledColor: Colors.white.withValues(alpha: 0.46),
-      hint: Text(
-        hint,
-        style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.72),
-          fontSize: isSmallScreen ? 12.5 : 13.0,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
       style: TextStyle(
-        color: Colors.white.withValues(alpha: 0.86),
+        color: Colors.white,
         fontSize: isSmallScreen ? 13.5 : 14.0,
-        fontWeight: FontWeight.w600,
       ),
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: TextStyle(
-          color: Colors.white.withValues(alpha: 0.72),
-          fontSize: isSmallScreen ? 12.5 : 13.0,
-          fontWeight: FontWeight.w600,
-        ),
-        prefixIcon: Container(
-          margin: EdgeInsets.only(
-            left: isSmallScreen ? 8.0 : 10.0,
-            right: isSmallScreen ? 4.0 : 6.0,
-          ),
-          child: Icon(
-            Icons.school_outlined,
-            color: accentGold.withValues(alpha: 0.92),
-            size: isSmallScreen ? 19.0 : 21.0,
-          ),
+          color: Colors.white.withValues(alpha: 0.60),
+          fontSize: isSmallScreen ? 13.0 : 14.0,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(isSmallScreen ? 20.0 : 24.0),
@@ -1021,142 +903,11 @@ class _RegisterPageState extends State<RegisterPage> {
           height: 1.3,
         ),
       ),
-      selectedItemBuilder: (context) => items
-          .map(
-            (e) => Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                e,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: isSmallScreen ? 13.5 : 14.0,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          )
-          .toList(),
       items: items
-          .map(
-            (e) => DropdownMenuItem(
-              value: e,
-              child: Text(
-                e,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: isSmallScreen ? 13.5 : 14.0,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          )
+          .map((e) => DropdownMenuItem(value: e, child: Text(e)))
           .toList(),
       onChanged: onChanged,
       validator: (val) => val == null ? "$hint is required." : null,
-    );
-  }
-
-  Widget _buildAlumniIdUploadCard({bool isSmallScreen = false}) {
-    final fileName = _selectedAlumniIdFileName;
-    final hasFile = fileName != null && fileName.isNotEmpty;
-
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(isSmallScreen ? 14.0 : 16.0),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(isSmallScreen ? 20.0 : 24.0),
-        border: Border.all(
-          color: hasFile
-              ? accentGold.withValues(alpha: 0.58)
-              : Colors.white.withValues(alpha: 0.28),
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: isSmallScreen ? 42.0 : 46.0,
-            height: isSmallScreen ? 42.0 : 46.0,
-            decoration: BoxDecoration(
-              color: accentGold.withValues(alpha: 0.16),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(
-              hasFile ? Icons.verified_outlined : Icons.badge_outlined,
-              color: accentGold,
-              size: isSmallScreen ? 22.0 : 24.0,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Alumni ID',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                    fontSize: isSmallScreen ? 13.0 : 14.0,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  hasFile
-                      ? fileName
-                      : 'Upload a JPG, PNG, WEBP, or PDF copy of your alumni ID.',
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: hasFile
-                        ? accentGold
-                        : Colors.white.withValues(alpha: 0.74),
-                    fontSize: isSmallScreen ? 12.0 : 12.5,
-                    height: 1.35,
-                    fontWeight: hasFile ? FontWeight.w700 : FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 8,
-                  children: [
-                    OutlinedButton.icon(
-                      onPressed: isLoading ? null : _pickAlumniIdFile,
-                      icon: Icon(
-                        hasFile
-                            ? Icons.change_circle_outlined
-                            : Icons.upload_file_outlined,
-                        size: 18,
-                      ),
-                      label: Text(hasFile ? 'Replace ID' : 'Upload ID'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: accentGold,
-                        side: BorderSide(
-                          color: accentGold.withValues(alpha: 0.72),
-                        ),
-                      ),
-                    ),
-                    if (hasFile)
-                      TextButton(
-                        onPressed: isLoading
-                            ? null
-                            : () {
-                                setState(() {
-                                  _selectedAlumniIdFileName = null;
-                                  _selectedAlumniIdBytes = null;
-                                });
-                              },
-                        child: const Text('Clear'),
-                      ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 
