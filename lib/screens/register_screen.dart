@@ -1,5 +1,7 @@
 import 'dart:ui';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'login_screen.dart';
@@ -34,6 +36,8 @@ class _RegisterPageState extends State<RegisterPage> {
   final confirmPasswordController = TextEditingController();
 
   String? selectedProgram;
+  String? _selectedAlumniIdFileName;
+  Uint8List? _selectedAlumniIdBytes;
   bool isLoading = false;
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
@@ -89,6 +93,11 @@ class _RegisterPageState extends State<RegisterPage> {
         _showError("Passwords do not match.");
         return;
       }
+      if (_selectedAlumniIdBytes == null ||
+          (_selectedAlumniIdFileName ?? '').isEmpty) {
+        _showError("Upload a copy of your alumni ID before registering.");
+        return;
+      }
 
       setState(() => isLoading = true);
 
@@ -112,6 +121,8 @@ class _RegisterPageState extends State<RegisterPage> {
             "email": emailController.text,
             "password": passwordController.text,
             "program": selectedProgram,
+            "alumni_id_file_name": _selectedAlumniIdFileName,
+            "alumni_id_base64": base64Encode(_selectedAlumniIdBytes!),
             if (widget.linkedInPrefill != null) ...{
               "linkedin_sub": widget.linkedInPrefill!.linkedInSub,
               "linkedin_email": widget.linkedInPrefill!.email,
@@ -163,6 +174,46 @@ class _RegisterPageState extends State<RegisterPage> {
 
       setState(() => isLoading = false);
     }
+  }
+
+  Future<void> _pickAlumniIdProof() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const ['jpg', 'jpeg', 'png', 'webp', 'pdf'],
+      withData: true,
+      withReadStream: true,
+    );
+    if (result == null || result.files.isEmpty) return;
+
+    final file = result.files.single;
+    Uint8List? fileBytes = file.bytes;
+
+    if ((fileBytes == null || fileBytes.isEmpty) && file.readStream != null) {
+      final collected = <int>[];
+      await for (final chunk in file.readStream!) {
+        collected.addAll(chunk);
+      }
+      if (collected.isNotEmpty) {
+        fileBytes = Uint8List.fromList(collected);
+      }
+    }
+
+    if (fileBytes == null || fileBytes.isEmpty) {
+      if (!mounted) return;
+      _showError("Unable to read the selected alumni ID file.");
+      return;
+    }
+
+    if (fileBytes.length > 5 * 1024 * 1024) {
+      if (!mounted) return;
+      _showError("Alumni ID upload must be 5 MB or smaller.");
+      return;
+    }
+
+    setState(() {
+      _selectedAlumniIdBytes = fileBytes;
+      _selectedAlumniIdFileName = file.name;
+    });
   }
 
   void _showError(String message) {
@@ -624,6 +675,14 @@ class _RegisterPageState extends State<RegisterPage> {
                                       setState(() => selectedProgram = val),
                                   isSmallScreen: isSmallScreen,
                                 ),
+                                SizedBox(height: sectionGap),
+                                _buildLabel(
+                                  "Verification",
+                                  isSmallScreen: isSmallScreen,
+                                ),
+                                _buildAlumniIdUploadCard(
+                                  isSmallScreen: isSmallScreen,
+                                ),
                                 SizedBox(height: actionGap),
                                 SizedBox(
                                   width: double.infinity,
@@ -908,6 +967,93 @@ class _RegisterPageState extends State<RegisterPage> {
           .toList(),
       onChanged: onChanged,
       validator: (val) => val == null ? "$hint is required." : null,
+    );
+  }
+
+  Widget _buildAlumniIdUploadCard({bool isSmallScreen = false}) {
+    final fileName = _selectedAlumniIdFileName?.trim() ?? '';
+    final hasFile = fileName.isNotEmpty;
+
+    return InkWell(
+      onTap: isLoading ? null : _pickAlumniIdProof,
+      borderRadius: BorderRadius.circular(isSmallScreen ? 20.0 : 24.0),
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.all(isSmallScreen ? 14.0 : 16.0),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(isSmallScreen ? 20.0 : 24.0),
+          border: Border.all(
+            color: hasFile
+                ? accentGold.withValues(alpha: 0.72)
+                : Colors.white.withValues(alpha: 0.28),
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: isSmallScreen ? 42.0 : 46.0,
+              height: isSmallScreen ? 42.0 : 46.0,
+              decoration: BoxDecoration(
+                color: accentGold.withValues(alpha: hasFile ? 0.22 : 0.14),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(
+                hasFile
+                    ? Icons.check_circle_outline
+                    : Icons.upload_file_outlined,
+                color: accentGold,
+                size: isSmallScreen ? 22.0 : 24.0,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    hasFile ? fileName : "Upload Alumni ID",
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: isSmallScreen ? 13.0 : 14.0,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    "JPG, PNG, WEBP, or PDF up to 5 MB",
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.66),
+                      fontSize: isSmallScreen ? 11.5 : 12.0,
+                      height: 1.25,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
+            TextButton(
+              onPressed: isLoading ? null : _pickAlumniIdProof,
+              style: TextButton.styleFrom(
+                foregroundColor: accentGold,
+                padding: EdgeInsets.symmetric(
+                  horizontal: isSmallScreen ? 10.0 : 12.0,
+                  vertical: 10,
+                ),
+              ),
+              child: Text(
+                hasFile ? "Change" : "Choose",
+                style: TextStyle(
+                  fontSize: isSmallScreen ? 12.0 : 13.0,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
