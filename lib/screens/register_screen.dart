@@ -930,14 +930,22 @@ class _RegisterPageState extends State<RegisterPage> {
   }) {
     return DropdownButtonFormField<String>(
       dropdownColor: primaryMaroon,
+      iconEnabledColor: Colors.white.withValues(alpha: 0.70),
+      iconDisabledColor: Colors.white.withValues(alpha: 0.38),
       style: TextStyle(
         color: Colors.white,
         fontSize: isSmallScreen ? 13.5 : 14.0,
       ),
+      hint: Text(
+        hint,
+        style: TextStyle(
+          color: Colors.white.withValues(alpha: 0.72),
+          fontSize: isSmallScreen ? 13.0 : 14.0,
+        ),
+      ),
       decoration: InputDecoration(
-        hintText: hint,
         hintStyle: TextStyle(
-          color: Colors.white.withValues(alpha: 0.60),
+          color: Colors.white.withValues(alpha: 0.72),
           fontSize: isSmallScreen ? 13.0 : 14.0,
         ),
         enabledBorder: OutlineInputBorder(
@@ -964,8 +972,27 @@ class _RegisterPageState extends State<RegisterPage> {
           height: 1.3,
         ),
       ),
+      selectedItemBuilder: (context) => items
+          .map(
+            (e) => Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                e,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: isSmallScreen ? 13.5 : 14.0,
+                ),
+              ),
+            ),
+          )
+          .toList(),
       items: items
-          .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+          .map(
+            (e) => DropdownMenuItem(
+              value: e,
+              child: Text(e, style: const TextStyle(color: Colors.white)),
+            ),
+          )
           .toList(),
       onChanged: onChanged,
       validator: (val) => val == null ? "$hint is required." : null,
