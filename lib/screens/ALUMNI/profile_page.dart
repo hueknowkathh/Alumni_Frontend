@@ -266,7 +266,7 @@ class _ProfilePageState extends State<ProfilePage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Resume/CV upload must be 25 MB or smaller.'),
+          content: Text('Resume/CV upload has a maximum of 25 MB.'),
         ),
       );
       return;
@@ -311,7 +311,7 @@ class _ProfilePageState extends State<ProfilePage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Profile photo upload must be 25 MB or smaller.'),
+          content: Text('Profile photo upload has a maximum of 25 MB.'),
         ),
       );
       return;
@@ -1149,7 +1149,7 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Upload a PDF, DOC, or DOCX file up to 25 MB.',
+            'Upload a PDF, DOC, or DOCX file with a maximum of 25 MB.',
             style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
           ),
           const SizedBox(height: 12),
@@ -1244,7 +1244,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'JPG, PNG, or WEBP up to 25 MB.',
+                  'JPG, PNG, or WEBP, maximum of 25 MB.',
                   style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
                 ),
                 const SizedBox(height: 10),

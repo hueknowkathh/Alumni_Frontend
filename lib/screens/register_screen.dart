@@ -230,7 +230,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
     if (fileBytes.length > _maxUploadBytes) {
       if (!mounted) return;
-      _showError("Alumni ID upload must be 25 MB or smaller.");
+      _showError("Alumni ID upload has a maximum of 25 MB.");
       return;
     }
 
@@ -959,26 +959,29 @@ class _RegisterPageState extends State<RegisterPage> {
     bool isSmallScreen = false,
     bool enabled = true,
   }) {
+    final textStyle = TextStyle(
+      color: Colors.white,
+      fontSize: isSmallScreen ? 13.5 : 14.0,
+    );
+    final hintStyle = TextStyle(
+      color: Colors.white.withValues(alpha: 0.72),
+      fontSize: isSmallScreen ? 13.0 : 14.0,
+    );
+
     return DropdownButtonFormField<String>(
+      isExpanded: true,
       dropdownColor: primaryMaroon,
       iconEnabledColor: Colors.white.withValues(alpha: 0.70),
       iconDisabledColor: Colors.white.withValues(alpha: 0.38),
-      style: TextStyle(
-        color: Colors.white,
-        fontSize: isSmallScreen ? 13.5 : 14.0,
-      ),
+      style: textStyle,
       hint: Text(
         hint,
-        style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.72),
-          fontSize: isSmallScreen ? 13.0 : 14.0,
-        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: hintStyle,
       ),
       decoration: InputDecoration(
-        hintStyle: TextStyle(
-          color: Colors.white.withValues(alpha: 0.72),
-          fontSize: isSmallScreen ? 13.0 : 14.0,
-        ),
+        hintStyle: hintStyle,
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(isSmallScreen ? 20.0 : 24.0),
           borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.28)),
@@ -1009,10 +1012,9 @@ class _RegisterPageState extends State<RegisterPage> {
               alignment: Alignment.centerLeft,
               child: Text(
                 e,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: isSmallScreen ? 13.5 : 14.0,
-                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: textStyle,
               ),
             ),
           )
@@ -1021,7 +1023,12 @@ class _RegisterPageState extends State<RegisterPage> {
           .map(
             (e) => DropdownMenuItem(
               value: e,
-              child: Text(e, style: const TextStyle(color: Colors.white)),
+              child: Text(
+                e,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: textStyle,
+              ),
             ),
           )
           .toList(),
@@ -1083,7 +1090,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    "JPG, PNG, WEBP, or PDF up to 25 MB",
+                    "JPG, PNG, WEBP, or PDF, maximum of 25 MB",
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.66),
                       fontSize: isSmallScreen ? 11.5 : 12.0,

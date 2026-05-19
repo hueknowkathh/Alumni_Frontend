@@ -203,7 +203,7 @@ class _GraduateRegistryPageState extends State<GraduateRegistryPage> {
     }
 
     if (fileBytes.length > _maxUploadBytes) {
-      _showSnack('Graduate list upload must be 25 MB or smaller.', Colors.red);
+      _showSnack('Graduate list upload has a maximum of 25 MB.', Colors.red);
       return;
     }
 
