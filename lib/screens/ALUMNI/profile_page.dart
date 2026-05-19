@@ -20,6 +20,8 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
+  static const int _maxUploadBytes = 25 * 1024 * 1024;
+
   bool _isEditing = false;
   bool _isSaving = false;
   final _formKey = GlobalKey<FormState>();
@@ -260,6 +262,16 @@ class _ProfilePageState extends State<ProfilePage> {
       return;
     }
 
+    if (fileBytes.length > _maxUploadBytes) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Resume/CV upload must be 25 MB or smaller.'),
+        ),
+      );
+      return;
+    }
+
     setState(() {
       _selectedResumeBytes = fileBytes;
       _selectedResumeFileName = file.name;
@@ -291,6 +303,16 @@ class _ProfilePageState extends State<ProfilePage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Unable to read the selected photo.')),
+      );
+      return;
+    }
+
+    if (fileBytes.length > _maxUploadBytes) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Profile photo upload must be 25 MB or smaller.'),
+        ),
       );
       return;
     }
@@ -1127,7 +1149,7 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Upload a PDF, DOC, or DOCX file so your profile is ready for future industry-sharing features.',
+            'Upload a PDF, DOC, or DOCX file up to 25 MB.',
             style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
           ),
           const SizedBox(height: 12),
@@ -1222,7 +1244,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Used for profile presentation and future alumni ID generation.',
+                  'JPG, PNG, or WEBP up to 25 MB.',
                   style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
                 ),
                 const SizedBox(height: 10),

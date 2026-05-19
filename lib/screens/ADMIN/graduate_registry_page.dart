@@ -19,6 +19,7 @@ class GraduateRegistryPage extends StatefulWidget {
 }
 
 class _GraduateRegistryPageState extends State<GraduateRegistryPage> {
+  static const int _maxUploadBytes = 25 * 1024 * 1024;
   static const String _activeProgram = 'BSIT';
   static const Color primaryMaroon = Color(0xFF4A152C);
   static const Color accentGold = Color(0xFFC5A046);
@@ -198,6 +199,11 @@ class _GraduateRegistryPageState extends State<GraduateRegistryPage> {
 
     if (fileBytes == null || fileBytes.isEmpty) {
       _showSnack('Unable to read the selected file.', Colors.red);
+      return;
+    }
+
+    if (fileBytes.length > _maxUploadBytes) {
+      _showSnack('Graduate list upload must be 25 MB or smaller.', Colors.red);
       return;
     }
 

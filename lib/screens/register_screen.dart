@@ -24,6 +24,8 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
+  static const int _maxUploadBytes = 25 * 1024 * 1024;
+
   final Color primaryMaroon = const Color(0xFF4A152C);
   final Color accentGold = const Color(0xFFC5A046);
 
@@ -204,9 +206,9 @@ class _RegisterPageState extends State<RegisterPage> {
       return;
     }
 
-    if (fileBytes.length > 5 * 1024 * 1024) {
+    if (fileBytes.length > _maxUploadBytes) {
       if (!mounted) return;
-      _showError("Alumni ID upload must be 5 MB or smaller.");
+      _showError("Alumni ID upload must be 25 MB or smaller.");
       return;
     }
 
@@ -1023,7 +1025,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    "JPG, PNG, WEBP, or PDF up to 5 MB",
+                    "JPG, PNG, WEBP, or PDF up to 25 MB",
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.66),
                       fontSize: isSmallScreen ? 11.5 : 12.0,
