@@ -41,10 +41,12 @@ class _RegisterPageState extends State<RegisterPage> {
   String? _selectedAlumniIdFileName;
   Uint8List? _selectedAlumniIdBytes;
   bool isLoading = false;
+  bool _isLoadingPrograms = true;
+  String? _programLoadError;
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
 
-  List<String> programs = const ['BSIT', 'BSSW'];
+  List<String> programs = const [];
 
   bool get _hasLinkedInPrefill =>
       widget.linkedInPrefill != null && widget.linkedInPrefill!.hasImportedName;
@@ -75,17 +77,37 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   Future<void> _loadPrograms() async {
+    setState(() {
+      _isLoadingPrograms = true;
+      _programLoadError = null;
+    });
+
     try {
       final activePrograms = await ProgramService.fetch(activeOnly: true);
-      if (!mounted || activePrograms.isEmpty) return;
+      if (!mounted) return;
+      final activeProgramCodes = activePrograms
+          .where((program) => program.isActive)
+          .map((program) => program.code.trim())
+          .where((code) => code.isNotEmpty)
+          .toList();
       setState(() {
-        programs = activePrograms.map((program) => program.code).toList();
+        programs = activeProgramCodes;
+        _isLoadingPrograms = false;
+        _programLoadError = activeProgramCodes.isEmpty
+            ? 'No active programs are available for registration.'
+            : null;
         if (selectedProgram != null && !programs.contains(selectedProgram)) {
           selectedProgram = null;
         }
       });
     } catch (_) {
-      // Keep the local defaults when the program directory is unavailable.
+      if (!mounted) return;
+      setState(() {
+        programs = const [];
+        selectedProgram = null;
+        _isLoadingPrograms = false;
+        _programLoadError = 'Unable to load active programs.';
+      });
     }
   }
 
@@ -671,11 +693,15 @@ class _RegisterPageState extends State<RegisterPage> {
                                   isSmallScreen: isSmallScreen,
                                 ),
                                 _buildDropdown(
-                                  "Select Program",
+                                  _isLoadingPrograms
+                                      ? "Loading active programs..."
+                                      : _programLoadError ?? "Select Program",
                                   programs,
                                   (val) =>
                                       setState(() => selectedProgram = val),
                                   isSmallScreen: isSmallScreen,
+                                  enabled:
+                                      !_isLoadingPrograms && programs.isNotEmpty,
                                 ),
                                 SizedBox(height: sectionGap),
                                 _buildLabel(
@@ -712,7 +738,10 @@ class _RegisterPageState extends State<RegisterPage> {
                                       ),
                                     ),
                                     child: ElevatedButton(
-                                      onPressed: isLoading
+                                      onPressed:
+                                          isLoading ||
+                                              _isLoadingPrograms ||
+                                              programs.isEmpty
                                           ? null
                                           : _handleRegister,
                                       style: ElevatedButton.styleFrom(
@@ -927,6 +956,7 @@ class _RegisterPageState extends State<RegisterPage> {
     List<String> items,
     Function(String?) onChanged, {
     bool isSmallScreen = false,
+    bool enabled = true,
   }) {
     return DropdownButtonFormField<String>(
       dropdownColor: primaryMaroon,
@@ -994,7 +1024,7 @@ class _RegisterPageState extends State<RegisterPage> {
             ),
           )
           .toList(),
-      onChanged: onChanged,
+      onChanged: enabled ? onChanged : null,
       validator: (val) => val == null ? "$hint is required." : null,
     );
   }
