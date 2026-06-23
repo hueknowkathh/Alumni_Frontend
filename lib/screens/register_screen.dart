@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -36,6 +37,7 @@ class _RegisterPageState extends State<RegisterPage> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
+  final batchYearController = TextEditingController();
 
   String? selectedProgram;
   String? _selectedAlumniIdFileName;
@@ -145,6 +147,8 @@ class _RegisterPageState extends State<RegisterPage> {
             "email": emailController.text,
             "password": passwordController.text,
             "program": selectedProgram,
+            "year_graduated": batchYearController.text.trim(),
+            "batch": batchYearController.text.trim(),
             "alumni_id_file_name": _selectedAlumniIdFileName,
             "alumni_id_base64": base64Encode(_selectedAlumniIdBytes!),
             if (widget.linkedInPrefill != null) ...{
@@ -181,7 +185,10 @@ class _RegisterPageState extends State<RegisterPage> {
             userEmail: emailController.text.trim(),
             role: 'alumni',
             description: 'New alumni registration awaiting admin approval.',
-            metadata: {'program': selectedProgram},
+            metadata: {
+              'program': selectedProgram,
+              'year_graduated': batchYearController.text.trim(),
+            },
           );
           _showSuccess();
         } else {
@@ -288,6 +295,7 @@ class _RegisterPageState extends State<RegisterPage> {
     emailController.dispose();
     passwordController.dispose();
     confirmPasswordController.dispose();
+    batchYearController.dispose();
     super.dispose();
   }
 
@@ -476,7 +484,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                 ),
                                 SizedBox(height: isSmallScreen ? 10.0 : 14.0),
                                 Text(
-                                  "Create your alumni access and let the system complete your official batch details after approval.",
+                                  "Create your alumni access with your official batch details for admin approval.",
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     color: Colors.white.withValues(alpha: 0.78),
@@ -512,7 +520,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                       const SizedBox(width: 10),
                                       Expanded(
                                         child: Text(
-                                          "Your graduation year will be assigned from the official graduate list after admin approval.",
+                                          "Enter your batch year so it can be recorded with your alumni information after approval.",
                                           style: TextStyle(
                                             color: accentGold,
                                             fontSize: noteFontSize,
@@ -704,6 +712,18 @@ class _RegisterPageState extends State<RegisterPage> {
                                       !_isLoadingPrograms &&
                                       programs.isNotEmpty,
                                 ),
+                                SizedBox(height: fieldGap),
+                                _buildTextField(
+                                  batchYearController,
+                                  "Batch Year",
+                                  Icons.calendar_today_outlined,
+                                  isSmallScreen: isSmallScreen,
+                                  keyboardType: TextInputType.number,
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.digitsOnly,
+                                    LengthLimitingTextInputFormatter(4),
+                                  ],
+                                ),
                                 SizedBox(height: sectionGap),
                                 _buildLabel(
                                   "Verification",
@@ -860,11 +880,15 @@ class _RegisterPageState extends State<RegisterPage> {
     bool isSmallScreen = false,
     bool passwordVisible = false,
     VoidCallback? onTogglePassword,
+    TextInputType? keyboardType,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     return TextFormField(
       controller: controller,
       obscureText: isPass && !passwordVisible,
       readOnly: readOnly,
+      keyboardType: keyboardType,
+      inputFormatters: inputFormatters,
       style: TextStyle(
         color: Colors.white,
         fontSize: isSmallScreen ? 13.5 : 14.0,
@@ -941,6 +965,17 @@ class _RegisterPageState extends State<RegisterPage> {
           }
           if (value != passwordController.text) {
             return "Passwords do not match.";
+          }
+          return null;
+        }
+        if (label == "Batch Year") {
+          final year = int.tryParse(value.trim());
+          final currentYear = DateTime.now().year;
+          if (year == null) {
+            return "Batch year is required.";
+          }
+          if (year < 1900 || year > currentYear) {
+            return "Enter a valid batch year.";
           }
           return null;
         }
